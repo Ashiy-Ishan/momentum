@@ -1,0 +1,314 @@
+{
+  "quotes": [
+    {
+      "text": "Small steps create big progress.",
+      "author": null,
+      "category": "general"
+    },
+    {
+      "text": "Consistency beats intensity every single day.",
+      "author": null,
+      "category": "general"
+    },
+    {
+      "text": "You do not need to feel inspired to take action; action creates the inspiration.",
+      "author": null,
+      "category": "general"
+    },
+    {
+      "text": "Trust the compounding power of small, daily habits.",
+      "author": null,
+      "category": "general"
+    },
+    {
+      "text": "Focus on the direction of your effort, not the speed of the outcome.",
+      "author": null,
+      "category": "general"
+    },
+    {
+      "text": "Progress over perfection, always.",
+      "author": null,
+      "category": "general"
+    },
+    {
+      "text": "Discipline is simply remembering what you truly want.",
+      "author": null,
+      "category": "general"
+    },
+    {
+      "text": "Do what you can, with what you have, right where you are.",
+      "author": "Theodore Roosevelt",
+      "category": "general"
+    },
+    {
+      "text": "It does not matter how slowly you go as long as you do not stop.",
+      "author": "Confucius",
+      "category": "general"
+    },
+    {
+      "text": "Great works are performed not by strength, but by perseverance.",
+      "author": "Samuel Johnson",
+      "category": "general"
+    },
+    {
+      "text": "Drop by drop is the water pot filled.",
+      "author": "Dhammapada",
+      "category": "general"
+    },
+    {
+      "text": "Action is the foundational key to all success.",
+      "author": "Pablo Picasso",
+      "category": "general"
+    },
+    {
+      "text": "The journey of a thousand miles begins with a single step.",
+      "author": "Lao Tzu",
+      "category": "general"
+    },
+    {
+      "text": "Simplicity is the prerequisite for focus.",
+      "author": null,
+      "category": "general"
+    },
+    {
+      "text": "Each morning is a clean canvas. Choose your first stroke with intention.",
+      "author": null,
+      "category": "morning"
+    },
+    {
+      "text": "Small deliberate actions in the morning set the tone for the entire day.",
+      "author": null,
+      "category": "morning"
+    },
+    {
+      "text": "Wake up with purpose, move with grace, and let momentum build naturally.",
+      "author": null,
+      "category": "morning"
+    },
+    {
+      "text": "The secret to getting ahead is simply starting where you are right now.",
+      "author": null,
+      "category": "morning"
+    },
+    {
+      "text": "Embrace the quiet clarity of dawn. Your best focus lives here.",
+      "author": null,
+      "category": "morning"
+    },
+    {
+      "text": "You don't have to conquer everything today, just the very next step.",
+      "author": null,
+      "category": "morning"
+    },
+    {
+      "text": "A calm morning builds an unshakeable foundation for whatever lies ahead.",
+      "author": null,
+      "category": "morning"
+    },
+    {
+      "text": "Greet today not with pressure, but with curiosity and quiet determination.",
+      "author": null,
+      "category": "morning"
+    },
+    {
+      "text": "Your morning routine is an investment in your peace of mind.",
+      "author": null,
+      "category": "morning"
+    },
+    {
+      "text": "The sun rises without hurry, yet accomplishes everything. Move at your own steady pace.",
+      "author": null,
+      "category": "morning"
+    },
+    {
+      "text": "Begin with what is necessary, then what is possible, and suddenly you are doing the remarkable.",
+      "author": "Francis of Assisi",
+      "category": "morning"
+    },
+    {
+      "text": "A single productive hour in the morning can illuminate your whole day.",
+      "author": null,
+      "category": "morning"
+    },
+    {
+      "text": "Midday is a checkpoint, not a finish line. Recalibrate and keep moving.",
+      "author": null,
+      "category": "afternoon"
+    },
+    {
+      "text": "When energy dips, rely on rhythm. Small cadences carry you forward.",
+      "author": null,
+      "category": "afternoon"
+    },
+    {
+      "text": "Pause for a deep breath. Focus is a muscle that strengthens each time you gently bring it back.",
+      "author": null,
+      "category": "afternoon"
+    },
+    {
+      "text": "Steady persistence outperforms sudden bursts every single time.",
+      "author": null,
+      "category": "afternoon"
+    },
+    {
+      "text": "The middle of the day is where discipline turns good intentions into reality.",
+      "author": null,
+      "category": "afternoon"
+    },
+    {
+      "text": "Clear away the noise and pick just one priority for the next hour.",
+      "author": null,
+      "category": "afternoon"
+    },
+    {
+      "text": "Progress isn't always loud; often it is quiet, patient work done in the middle hours.",
+      "author": null,
+      "category": "afternoon"
+    },
+    {
+      "text": "Reset your posture, drink water, and reclaim your afternoon flow.",
+      "author": null,
+      "category": "afternoon"
+    },
+    {
+      "text": "Do not let the morning's unfinished ideas disrupt the afternoon's potential.",
+      "author": null,
+      "category": "afternoon"
+    },
+    {
+      "text": "Momentum doesn't require speed—it only requires that you do not stop.",
+      "author": null,
+      "category": "afternoon"
+    },
+    {
+      "text": "A brief reset can restore hours of creative clarity.",
+      "author": null,
+      "category": "afternoon"
+    },
+    {
+      "text": "Honor the work you've already done today and gently steer into what remains.",
+      "author": null,
+      "category": "afternoon"
+    },
+    {
+      "text": "Rest is not a reward for work; it is an essential part of the work itself.",
+      "author": null,
+      "category": "evening"
+    },
+    {
+      "text": "Reflect on what went well today, let go of what didn't, and welcome peaceful rest.",
+      "author": null,
+      "category": "evening"
+    },
+    {
+      "text": "Every sunset offers peace. Tomorrow brings another opportunity to grow.",
+      "author": null,
+      "category": "evening"
+    },
+    {
+      "text": "Celebrate the small victories you achieved today. They compound quietly over time.",
+      "author": null,
+      "category": "evening"
+    },
+    {
+      "text": "Close out your tasks with gratitude. You showed up, and that is what counts.",
+      "author": null,
+      "category": "evening"
+    },
+    {
+      "text": "Sleep well knowing that progress is measured across weeks, months, and years.",
+      "author": null,
+      "category": "evening"
+    },
+    {
+      "text": "A peaceful evening creates the soil from which tomorrow's focus blooms.",
+      "author": null,
+      "category": "evening"
+    },
+    {
+      "text": "Let today's efforts rest. Your mind and body have earned their recovery.",
+      "author": null,
+      "category": "evening"
+    },
+    {
+      "text": "Finish the day with kindness towards yourself. You did what you could.",
+      "author": null,
+      "category": "evening"
+    },
+    {
+      "text": "Put down your tools with contentment. Consistency is an enduring journey.",
+      "author": null,
+      "category": "evening"
+    },
+    {
+      "text": "The quiet hours of evening remind us that stillness is just as valuable as motion.",
+      "author": null,
+      "category": "evening"
+    },
+    {
+      "text": "Recharge deeply tonight; clarity and vigor will meet you in the morning.",
+      "author": null,
+      "category": "evening"
+    },
+    {
+      "text": "Done is better than perfect, and finished is a badge of courage.",
+      "author": null,
+      "category": "completion"
+    },
+    {
+      "text": "Look back at what you just finished. You turned an empty space into something real.",
+      "author": null,
+      "category": "completion"
+    },
+    {
+      "text": "Every completed task is a brick in the foundation of your confidence.",
+      "author": null,
+      "category": "completion"
+    },
+    {
+      "text": "Satisfaction isn't just reaching the end; it's knowing you stayed true to the process.",
+      "author": null,
+      "category": "completion"
+    },
+    {
+      "text": "Check that off! Notice how much lighter your mind feels.",
+      "author": null,
+      "category": "completion"
+    },
+    {
+      "text": "A completed goal is proof that your daily decisions hold real power.",
+      "author": null,
+      "category": "completion"
+    },
+    {
+      "text": "Celebrate this milestone. Even modest completions deserve a moment of acknowledgment.",
+      "author": null,
+      "category": "completion"
+    },
+    {
+      "text": "One task down, momentum intact. You are building trust with yourself.",
+      "author": null,
+      "category": "completion"
+    },
+    {
+      "text": "The thrill of completion comes from honoring the promise you made to begin.",
+      "author": null,
+      "category": "completion"
+    },
+    {
+      "text": "You conquered hesitation and brought this across the line. Well done.",
+      "author": null,
+      "category": "completion"
+    },
+    {
+      "text": "Completion brings clarity. With this behind you, the next step becomes obvious.",
+      "author": null,
+      "category": "completion"
+    },
+    {
+      "text": "Treasure the momentum created by finishing what you set out to do.",
+      "author": null,
+      "category": "completion"
+    }
+  ]
+}

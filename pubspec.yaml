@@ -1,0 +1,55 @@
+name: momentum
+description: "Personal productivity, task management, consistency & KPI tracking"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # State Management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+  # Database
+  drift: ^2.22.1
+  sqlite3_flutter_libs: ^0.5.28
+  # Routing
+  go_router: ^14.8.1
+  # Charts
+  fl_chart: ^0.70.2
+  # Utilities
+  uuid: ^4.5.1
+  intl: ^0.20.2
+  path_provider: ^2.1.5
+  path: ^1.9.1
+  connectivity_plus: ^6.1.4
+  collection: ^1.19.1
+  equatable: ^2.0.7
+  # Supabase
+  supabase_flutter: ^2.9.0
+  # Notifications
+  flutter_local_notifications: ^18.0.1
+  # Image
+  image_picker: ^1.1.2
+  # SVG (for wallpaper)
+  flutter_svg: ^2.0.17
+  # Timezone
+  timezone: ^0.10.1
+  # Shared preferences for simple settings
+  shared_preferences: ^2.5.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  drift_dev: ^2.22.1
+  build_runner: ^2.4.15
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    - assets/quotes.json
+    - assets/wallpaper_templates/
