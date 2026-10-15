@@ -39,6 +39,31 @@ class KpiDao extends DatabaseAccessor<AppDatabase> with _$KpiDaoMixin {
     await update(kpiDefinitions).replace(kpi);
   }
 
+  /// Updates the current value of a KPI definition.
+  Future<void> updateCurrentValue(String id, double newValue) async {
+    await (update(kpiDefinitions)..where((tbl) => tbl.id.equals(id))).write(
+      KpiDefinitionsCompanion(
+        currentValue: Value(newValue),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  /// Increments the current value of a KPI definition by [delta].
+  Future<void> incrementCurrentValue(String id, double delta) async {
+    final existing = await (select(kpiDefinitions)
+          ..where((tbl) => tbl.id.equals(id)))
+        .getSingleOrNull();
+    if (existing != null) {
+      await (update(kpiDefinitions)..where((tbl) => tbl.id.equals(id))).write(
+        KpiDefinitionsCompanion(
+          currentValue: Value(existing.currentValue + delta),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+    }
+  }
+
   /// Soft deletes a KPI definition by setting isDeleted = true.
   Future<void> softDeleteKpi(String id) async {
     await (update(kpiDefinitions)..where((tbl) => tbl.id.equals(id))).write(

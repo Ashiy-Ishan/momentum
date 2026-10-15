@@ -129,6 +129,12 @@ class KpiDefinitions extends Table {
   TextColumn get description => text().nullable()();
   TextColumn get kpiType => text()();
   RealColumn get targetValue => real()();
+  RealColumn get currentValue => real().withDefault(const Constant(0.0))();
+  RealColumn get longTermTarget => real().nullable()();
+  TextColumn get unit => text().withDefault(const Constant('count'))();
+  TextColumn get platform => text().withDefault(const Constant('general'))();
+  TextColumn get metricCategory =>
+      text().withDefault(const Constant('output'))();
   TextColumn get period => text()();
   DateTimeColumn get startDate => dateTime()();
   DateTimeColumn get endDate => dateTime().nullable()();

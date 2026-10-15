@@ -8,6 +8,7 @@ import '../../../core/theme/theme.dart';
 import '../../../data/sync/sync_engine.dart';
 import '../../../domain/enums/enums.dart';
 import '../../../domain/models/models.dart';
+import '../../../shared/providers/database_provider.dart';
 import '../../analytics/providers/analytics_providers.dart';
 import '../../labels/providers/label_providers.dart';
 import '../../motivation/domain/motivation_quote.dart';
@@ -47,6 +48,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final todayTasksAsync = ref.watch(todayTasksStreamProvider);
     final rootLabelsAsync = ref.watch(rootLabelsStreamProvider);
     final allLabels = ref.watch(allLabelsStreamProvider).valueOrNull ?? [];
+    final allKpisAsync = ref.watch(allKpisStreamProvider);
     final syncStatus = ref.watch(syncStatusStreamProvider).valueOrNull ??
         ref.watch(syncStatusProvider);
 
@@ -117,6 +119,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
 
             AppSpacing.vGapMd,
+
+            // Platform Output & Creator Cadence
+            allKpisAsync.when(
+              data: (kpis) => _buildPlatformOutputSection(context, kpis),
+              loading: () => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
+            ),
 
             // Focus Areas (Parent Labels Overview)
             Padding(
@@ -709,4 +718,225 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ),
     );
   }
+
+  Widget _buildPlatformOutputSection(
+      BuildContext context, List<KpiDefinition> kpis) {
+    if (kpis.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.bolt_rounded,
+                      size: 18, color: AppColors.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Creator Output & Cadence',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                '${kpis.length} tracked',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
+                ),
+              ),
+            ],
+          ),
+        ),
+        AppSpacing.vGapXs,
+        SizedBox(
+          height: 125,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            itemCount: kpis.length,
+            itemBuilder: (context, index) {
+              final kpi = kpis[index];
+              final platformColor = AppColors.forPlatform(kpi.platform);
+              final progress = kpi.targetValue > 0
+                  ? (kpi.currentValue / kpi.targetValue).clamp(0.0, 1.0)
+                  : 0.0;
+              final isMet =
+                  kpi.targetValue > 0 && kpi.currentValue >= kpi.targetValue;
+
+              return Container(
+                width: 220,
+                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.cardDark : AppColors.cardLight,
+                  borderRadius: AppRadius.borderMd,
+                  border: Border.all(
+                    color: isMet
+                        ? AppColors.statusDone.withValues(alpha: 0.4)
+                        : (isDark
+                            ? AppColors.borderDark
+                            : AppColors.borderLight),
+                    width: isMet ? 1.4 : 1.0,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color:
+                          Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: platformColor.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Icon(
+                                _platformIcon(kpi.platform),
+                                size: 14,
+                                color: platformColor,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              kpi.platform.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: platformColor,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                        InkWell(
+                          onTap: () async {
+                            await ref
+                                .read(kpiRepositoryProvider)
+                                .incrementCurrentValue(kpi.id, 1.0);
+                          },
+                          borderRadius: BorderRadius.circular(4),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: platformColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.add, size: 12, color: platformColor),
+                                Text(
+                                  '1',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: platformColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      kpi.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${kpi.currentValue.toInt()} / ${kpi.targetValue.toInt()} ${kpi.unit}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondaryLight,
+                          ),
+                        ),
+                        if (kpi.hasLongTermTarget)
+                          Text(
+                            'Goal: ${(kpi.longTermTarget! / 1000).toStringAsFixed(0)}k',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: isDark
+                                  ? AppColors.primaryLight
+                                  : AppColors.primaryDark,
+                            ),
+                          ),
+                      ],
+                    ),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 4,
+                        backgroundColor: isDark
+                            ? AppColors.surfaceVariantDark
+                            : AppColors.surfaceVariantLight,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          isMet ? AppColors.statusDone : platformColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        AppSpacing.vGapLg,
+      ],
+    );
+  }
+
+  IconData _platformIcon(String p) {
+    switch (p.toLowerCase()) {
+      case 'youtube':
+        return Icons.play_circle_filled_rounded;
+      case 'instagram':
+        return Icons.camera_alt_rounded;
+      case 'twitter':
+      case 'x':
+        return Icons.tag_rounded;
+      case 'blog':
+        return Icons.article_rounded;
+      case 'linkedin':
+        return Icons.business_center_rounded;
+      default:
+        return Icons.insights_rounded;
+    }
+  }
 }
+

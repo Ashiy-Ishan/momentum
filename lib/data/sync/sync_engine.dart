@@ -663,6 +663,22 @@ class SyncEngine {
               targetValue: Value(
                 _parseDouble(map['target_value'] ?? map['targetValue'], 1.0),
               ),
+              currentValue: Value(
+                _parseDouble(map['current_value'] ?? map['currentValue'], 0.0),
+              ),
+              longTermTarget: Value(
+                _tryParseDouble(
+                  map['long_term_target'] ?? map['longTermTarget'],
+                ),
+              ),
+              unit: Value((map['unit'] ?? 'count').toString()),
+              platform: Value((map['platform'] ?? 'general').toString()),
+              metricCategory: Value(
+                (map['metric_category'] ??
+                        map['metricCategory'] ??
+                        'output')
+                    .toString(),
+              ),
               period: Value((map['period'] ?? 'daily').toString()),
               startDate: Value(
                 _parseDateTime(map['start_date'] ?? map['startDate']),
@@ -906,6 +922,14 @@ class SyncEngine {
     if (val is num) return val.toDouble();
     if (val is String) return double.tryParse(val.trim()) ?? fallback;
     return fallback;
+  }
+
+  double? _tryParseDouble(dynamic val) {
+    if (val == null) return null;
+    if (val is double) return val;
+    if (val is num) return val.toDouble();
+    if (val is String) return double.tryParse(val.trim());
+    return null;
   }
 
   DateTime _parseDateTime(dynamic val) {

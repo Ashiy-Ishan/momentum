@@ -9,6 +9,7 @@ import '../../../core/theme/theme.dart';
 import '../../../domain/enums/enums.dart';
 import '../../../domain/models/models.dart';
 import '../../../shared/providers/database_provider.dart';
+import '../../../shared/widgets/kpi_card.dart';
 import '../../analytics/providers/analytics_providers.dart';
 import '../../tasks/providers/task_providers.dart';
 import '../../tasks/widgets/task_card.dart';
@@ -47,7 +48,12 @@ class _SubLabelDashboardScreenState
 
   Future<void> _showAddKpiDialog() async {
     final nameCtrl = TextEditingController();
-    final targetCtrl = TextEditingController(text: '5');
+    final targetCtrl = TextEditingController(text: '2');
+    final currentCtrl = TextEditingController(text: '0');
+    final longTermCtrl = TextEditingController();
+    final unitCtrl = TextEditingController(text: 'videos');
+    String selectedPlatform = 'youtube';
+    String selectedCategory = 'video_generation';
     KpiType selectedType = KpiType.count;
     KpiPeriod selectedPeriod = KpiPeriod.weekly;
 
@@ -56,103 +62,285 @@ class _SubLabelDashboardScreenState
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
           return AlertDialog(
-            title: const Text('Add KPI Target'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextField(
-                    controller: nameCtrl,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      labelText: 'KPI Goal Name *',
-                      hintText: 'e.g. Upload 3 Videos, 10h Programming',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
+            title: const Text('Add Creator KPI Target'),
+            content: SizedBox(
+              width: 440,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      controller: nameCtrl,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        labelText: 'KPI Goal Name *',
+                        hintText: 'e.g. Weekly Video Uploads, Subscribers',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
                       ),
                     ),
-                  ),
-                  AppSpacing.vGapMd,
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: targetCtrl,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: 'Target Value *',
-                            border: OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.md),
+                    AppSpacing.vGapMd,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            initialValue: selectedPlatform,
+                            decoration: InputDecoration(
+                              labelText: 'Platform',
+                              border: OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.md),
+                              ),
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'youtube',
+                                child: Text('YouTube'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'instagram',
+                                child: Text('Instagram'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'twitter',
+                                child: Text('X / Twitter'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'blog',
+                                child: Text('Blog / Writing'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'linkedin',
+                                child: Text('LinkedIn'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'tiktok',
+                                child: Text('TikTok'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'general',
+                                child: Text('General Focus'),
+                              ),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                setDialogState(() {
+                                  selectedPlatform = val;
+                                  if (val == 'youtube') {
+                                    selectedCategory = 'video_generation';
+                                    unitCtrl.text = 'videos';
+                                  } else if (val == 'instagram' || val == 'twitter' || val == 'linkedin') {
+                                    selectedCategory = 'post_publication';
+                                    unitCtrl.text = 'posts';
+                                  } else if (val == 'blog') {
+                                    selectedCategory = 'blog_publication';
+                                    unitCtrl.text = 'articles';
+                                  }
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        AppSpacing.hGapSm,
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            initialValue: selectedCategory,
+                            decoration: InputDecoration(
+                              labelText: 'Category',
+                              border: OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.md),
+                              ),
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'video_generation',
+                                child: Text('Video Prod.'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'post_publication',
+                                child: Text('Post Cadence'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'blog_publication',
+                                child: Text('Articles'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'subscriber_growth',
+                                child: Text('Subscribers'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'follower_growth',
+                                child: Text('Followers'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'output',
+                                child: Text('Output Tasks'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'time_invested',
+                                child: Text('Time Invested'),
+                              ),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                setDialogState(() {
+                                  selectedCategory = val;
+                                  if (val == 'video_generation') unitCtrl.text = 'videos';
+                                  if (val == 'post_publication') unitCtrl.text = 'posts';
+                                  if (val == 'blog_publication') unitCtrl.text = 'articles';
+                                  if (val == 'subscriber_growth') unitCtrl.text = 'subs';
+                                  if (val == 'follower_growth') unitCtrl.text = 'followers';
+                                  if (val == 'time_invested') {
+                                    unitCtrl.text = 'hrs';
+                                    selectedType = KpiType.time;
+                                  }
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    AppSpacing.vGapMd,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: targetCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: 'Cadence Target *',
+                              hintText: 'e.g. 2',
+                              border: OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.md),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      AppSpacing.hGapSm,
-                      Expanded(
-                        child: DropdownButtonFormField<KpiType>(
-                          initialValue: selectedType,
-                          decoration: InputDecoration(
-                            labelText: 'Type',
-                            border: OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.md),
+                        AppSpacing.hGapSm,
+                        Expanded(
+                          child: TextField(
+                            controller: unitCtrl,
+                            decoration: InputDecoration(
+                              labelText: 'Unit',
+                              hintText: 'videos, subs, etc.',
+                              border: OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.md),
+                              ),
                             ),
                           ),
-                          items: const [
-                            DropdownMenuItem(
-                              value: KpiType.count,
-                              child: Text('Count (Tasks)'),
-                            ),
-                            DropdownMenuItem(
-                              value: KpiType.time,
-                              child: Text('Time (Minutes)'),
-                            ),
-                            DropdownMenuItem(
-                              value: KpiType.rate,
-                              child: Text('Rate (%)'),
-                            ),
-                          ],
-                          onChanged: (val) {
-                            if (val != null) {
-                              setDialogState(() => selectedType = val);
-                            }
-                          },
                         ),
-                      ),
-                    ],
-                  ),
-                  AppSpacing.vGapMd,
-                  DropdownButtonFormField<KpiPeriod>(
-                    initialValue: selectedPeriod,
-                    decoration: InputDecoration(
-                      labelText: 'Reset Period',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
+                      ],
                     ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: KpiPeriod.daily,
-                        child: Text('Daily'),
-                      ),
-                      DropdownMenuItem(
-                        value: KpiPeriod.weekly,
-                        child: Text('Weekly'),
-                      ),
-                      DropdownMenuItem(
-                        value: KpiPeriod.monthly,
-                        child: Text('Monthly'),
-                      ),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) {
-                        setDialogState(() => selectedPeriod = val);
-                      }
-                    },
-                  ),
-                ],
+                    AppSpacing.vGapMd,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: currentCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: 'Current Value',
+                              hintText: 'e.g. 0 or 1250',
+                              border: OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.md),
+                              ),
+                            ),
+                          ),
+                        ),
+                        AppSpacing.hGapSm,
+                        Expanded(
+                          child: TextField(
+                            controller: longTermCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: 'Long-term Milestone',
+                              hintText: 'e.g. 10000',
+                              border: OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.md),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    AppSpacing.vGapMd,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<KpiPeriod>(
+                            initialValue: selectedPeriod,
+                            decoration: InputDecoration(
+                              labelText: 'Cadence Reset',
+                              border: OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.md),
+                              ),
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: KpiPeriod.daily,
+                                child: Text('Daily'),
+                              ),
+                              DropdownMenuItem(
+                                value: KpiPeriod.weekly,
+                                child: Text('Weekly'),
+                              ),
+                              DropdownMenuItem(
+                                value: KpiPeriod.monthly,
+                                child: Text('Monthly'),
+                              ),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                setDialogState(() => selectedPeriod = val);
+                              }
+                            },
+                          ),
+                        ),
+                        AppSpacing.hGapSm,
+                        Expanded(
+                          child: DropdownButtonFormField<KpiType>(
+                            initialValue: selectedType,
+                            decoration: InputDecoration(
+                              labelText: 'Metric Type',
+                              border: OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.md),
+                              ),
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: KpiType.count,
+                                child: Text('Count'),
+                              ),
+                              DropdownMenuItem(
+                                value: KpiType.time,
+                                child: Text('Time'),
+                              ),
+                              DropdownMenuItem(
+                                value: KpiType.rate,
+                                child: Text('Rate (%)'),
+                              ),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                setDialogState(() => selectedType = val);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
             actions: [
@@ -164,6 +352,10 @@ class _SubLabelDashboardScreenState
                 onPressed: () async {
                   final name = nameCtrl.text.trim();
                   final target = double.tryParse(targetCtrl.text.trim()) ?? 0.0;
+                  final currentVal = double.tryParse(currentCtrl.text.trim()) ?? 0.0;
+                  final longTarget = double.tryParse(longTermCtrl.text.trim());
+                  final unit = unitCtrl.text.trim();
+
                   if (name.isEmpty || target <= 0) return;
 
                   final userId = ref.read(currentUserIdProvider);
@@ -176,6 +368,11 @@ class _SubLabelDashboardScreenState
                     name: name,
                     kpiType: selectedType,
                     targetValue: target,
+                    currentValue: currentVal,
+                    longTermTarget: longTarget,
+                    unit: unit.isEmpty ? 'count' : unit,
+                    platform: selectedPlatform,
+                    metricCategory: selectedCategory,
                     period: selectedPeriod,
                     startDate: now,
                     createdAt: now,
@@ -188,7 +385,7 @@ class _SubLabelDashboardScreenState
                     Navigator.of(ctx).pop();
                   }
                   if (mounted) {
-                    context.showSnackBar('KPI target added');
+                    context.showSnackBar('Creator KPI target added');
                   }
                 },
                 child: const Text('Add Target'),
@@ -408,7 +605,25 @@ class _SubLabelDashboardScreenState
 
               return Column(
                 children: kpiSummaries.map((summary) {
-                  return _buildKpiCard(context, summary, labelColor);
+                  return KpiCard(
+                    kpi: summary.kpi,
+                    currentValue: summary.currentValue,
+                    onIncrement: () {
+                      ref
+                          .read(kpiRepositoryProvider)
+                          .incrementCurrentValue(summary.kpi.id, 1.0);
+                    },
+                    onUpdateValue: (val) {
+                      ref
+                          .read(kpiRepositoryProvider)
+                          .updateCurrentValue(summary.kpi.id, val);
+                    },
+                    onDelete: () {
+                      ref
+                          .read(kpiRepositoryProvider)
+                          .deleteKpi(summary.kpi.id);
+                    },
+                  );
                 }).toList(),
               );
             },
@@ -477,131 +692,6 @@ class _SubLabelDashboardScreenState
               },
             ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildKpiCard(
-    BuildContext context,
-    LabelKpiSummary summary,
-    Color accentColor,
-  ) {
-    final theme = Theme.of(context);
-    final kpi = summary.kpi;
-    final isAchieved = summary.isAchieved;
-    final percent = (summary.progressPercentage * 100).toInt();
-
-    String currentStr = summary.currentValue.toStringAsFixed(
-        summary.currentValue.truncateToDouble() == summary.currentValue
-            ? 0
-            : 1);
-    String targetStr = summary.targetValue.toStringAsFixed(
-        summary.targetValue.truncateToDouble() == summary.targetValue ? 0 : 1);
-
-    if (kpi.kpiType == KpiType.time) {
-      currentStr = '${summary.currentValue.toInt()}m';
-      targetStr = '${summary.targetValue.toInt()}m';
-    } else if (kpi.kpiType == KpiType.rate) {
-      currentStr = '$currentStr%';
-      targetStr = '$targetStr%';
-    }
-
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        side: BorderSide(
-          color: isAchieved
-              ? AppColors.statusDone.withValues(alpha: 0.5)
-              : theme.dividerColor.withValues(alpha: 0.6),
-          width: 1.2,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Icon(
-                        isAchieved
-                            ? Icons.check_circle
-                            : Icons.flag_outlined,
-                        size: 18,
-                        color: isAchieved
-                            ? AppColors.statusDone
-                            : theme.colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          kpi.name,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  child: Text(
-                    kpi.period.displayName,
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 16),
-                  color: AppColors.error,
-                  tooltip: 'Delete KPI',
-                  onPressed: () {
-                    ref.read(kpiRepositoryProvider).deleteKpi(kpi.id);
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            LinearProgressIndicator(
-              value: summary.progressPercentage,
-              backgroundColor: theme.colorScheme.surfaceContainerHighest,
-              color: isAchieved ? AppColors.statusDone : accentColor,
-              minHeight: 8,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '$currentStr / $targetStr',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  '$percent%',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: isAchieved ? AppColors.statusDone : accentColor,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }

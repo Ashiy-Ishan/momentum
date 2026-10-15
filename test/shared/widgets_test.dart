@@ -119,6 +119,48 @@ void main() {
       expect(find.text('Goal Met'), findsOneWidget);
       expect(find.text('100%'), findsOneWidget);
     });
+
+    testWidgets('renders Creator KPI with platform badge, cadence, and +1 quick log', (tester) async {
+      bool incrementCalled = false;
+      final kpi = KpiDefinition(
+        id: 'kpi-yt',
+        userId: 'u1',
+        name: 'Weekly Video Generation',
+        kpiType: KpiType.count,
+        targetValue: 2.0,
+        currentValue: 1.0,
+        unit: 'videos',
+        platform: 'youtube',
+        metricCategory: 'video_generation',
+        period: KpiPeriod.weekly,
+        longTermTarget: 50.0,
+        startDate: DateTime.now(),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      await tester.pumpWidget(
+        buildTestableWidget(
+          KpiCard(
+            kpi: kpi,
+            onIncrement: () => incrementCalled = true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('YouTube'), findsOneWidget);
+      expect(find.text('Weekly Video Generation'), findsOneWidget);
+      expect(find.text('1'), findsWidgets);
+      expect(find.text('/ 2 videos'), findsOneWidget);
+      expect(find.text('50%'), findsOneWidget);
+      expect(find.text('Macro Milestone'), findsOneWidget);
+      expect(find.text('1 / 50 (2.0%)'), findsOneWidget);
+      expect(find.text('+1 Video'), findsOneWidget);
+
+      await tester.tap(find.text('+1 Video'));
+      expect(incrementCalled, isTrue);
+    });
   });
 
   group('LabelCard Tests', () {

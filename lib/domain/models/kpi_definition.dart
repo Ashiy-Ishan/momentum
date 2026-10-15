@@ -11,6 +11,11 @@ class KpiDefinition with Equatable {
   final String? description;
   final KpiType kpiType;
   final double targetValue;
+  final double currentValue;
+  final double? longTermTarget;
+  final String unit;
+  final String platform;
+  final String metricCategory;
   final KpiPeriod period;
   final DateTime startDate;
   final DateTime? endDate;
@@ -27,6 +32,11 @@ class KpiDefinition with Equatable {
     this.description,
     this.kpiType = KpiType.count,
     this.targetValue = 0.0,
+    this.currentValue = 0.0,
+    this.longTermTarget,
+    this.unit = 'count',
+    this.platform = 'general',
+    this.metricCategory = 'output',
     this.period = KpiPeriod.daily,
     required this.startDate,
     this.endDate,
@@ -35,6 +45,19 @@ class KpiDefinition with Equatable {
     this.version = 1,
     this.isDeleted = false,
   });
+
+  /// Whether a valid long-term target milestone is configured.
+  bool get hasLongTermTarget => longTermTarget != null && longTermTarget! > 0;
+
+  /// Progress ratio towards short-term target (clamped between 0.0 and 1.0).
+  double get shortTermProgress =>
+      targetValue > 0 ? (currentValue / targetValue).clamp(0.0, 1.0) : 0.0;
+
+  /// Progress ratio towards long-term target (clamped between 0.0 and 1.0).
+  double get longTermProgress =>
+      (hasLongTermTarget && longTermTarget! > 0)
+          ? (currentValue / longTermTarget!).clamp(0.0, 1.0)
+          : 0.0;
 
   @override
   List<Object?> get props => [
@@ -45,6 +68,11 @@ class KpiDefinition with Equatable {
     description,
     kpiType,
     targetValue,
+    currentValue,
+    longTermTarget,
+    unit,
+    platform,
+    metricCategory,
     period,
     startDate,
     endDate,
@@ -64,6 +92,12 @@ class KpiDefinition with Equatable {
     bool clearDescription = false,
     KpiType? kpiType,
     double? targetValue,
+    double? currentValue,
+    double? longTermTarget,
+    bool clearLongTermTarget = false,
+    String? unit,
+    String? platform,
+    String? metricCategory,
     KpiPeriod? period,
     DateTime? startDate,
     DateTime? endDate,
@@ -81,6 +115,13 @@ class KpiDefinition with Equatable {
       description: clearDescription ? null : (description ?? this.description),
       kpiType: kpiType ?? this.kpiType,
       targetValue: targetValue ?? this.targetValue,
+      currentValue: currentValue ?? this.currentValue,
+      longTermTarget: clearLongTermTarget
+          ? null
+          : (longTermTarget ?? this.longTermTarget),
+      unit: unit ?? this.unit,
+      platform: platform ?? this.platform,
+      metricCategory: metricCategory ?? this.metricCategory,
       period: period ?? this.period,
       startDate: startDate ?? this.startDate,
       endDate: clearEndDate ? null : (endDate ?? this.endDate),
@@ -100,6 +141,11 @@ class KpiDefinition with Equatable {
       'description': description,
       'kpiType': kpiType.name,
       'targetValue': targetValue,
+      'currentValue': currentValue,
+      'longTermTarget': longTermTarget,
+      'unit': unit,
+      'platform': platform,
+      'metricCategory': metricCategory,
       'period': period.name,
       'startDate': startDate.toIso8601String(),
       'endDate': endDate?.toIso8601String(),
@@ -121,6 +167,19 @@ class KpiDefinition with Equatable {
           ? KpiType.fromString((map['kpiType'] ?? map['kpi_type']).toString())
           : KpiType.count,
       targetValue: _parseDouble(map['targetValue'] ?? map['target_value'], 0.0),
+      currentValue: _parseDouble(
+        map['currentValue'] ?? map['current_value'],
+        0.0,
+      ),
+      longTermTarget: _tryParseDouble(
+        map['longTermTarget'] ?? map['long_term_target'],
+      ),
+      unit: (map['unit'] ?? 'count').toString(),
+      platform: (map['platform'] ?? 'general').toString(),
+      metricCategory: (map['metricCategory'] ??
+              map['metric_category'] ??
+              'output')
+          .toString(),
       period: map['period'] != null
           ? KpiPeriod.fromString(map['period'].toString())
           : KpiPeriod.daily,
@@ -156,6 +215,14 @@ class KpiDefinition with Equatable {
     if (val is num) return val.toDouble();
     if (val is String) return double.tryParse(val) ?? fallback;
     return fallback;
+  }
+
+  static double? _tryParseDouble(dynamic val) {
+    if (val == null) return null;
+    if (val is double) return val;
+    if (val is num) return val.toDouble();
+    if (val is String) return double.tryParse(val);
+    return null;
   }
 
   static DateTime _parseDateTime(dynamic val) {

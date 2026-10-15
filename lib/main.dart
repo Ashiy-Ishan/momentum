@@ -30,13 +30,16 @@ void main() async {
   // 4. Run application with configured Riverpod ProviderScope
   final container = ProviderContainer();
 
-  // 5. Seed default labels if user has no labels yet
+  // 5. Seed default labels & platform creator KPIs if user has none yet
   try {
     final userId = container.read(currentUserIdProvider);
     final labelRepo = container.read(labelRepositoryProvider);
     await labelRepo.seedDefaultLabels(userId);
+    final labels = await labelRepo.getAllLabels(userId);
+    final kpiRepo = container.read(kpiRepositoryProvider);
+    await kpiRepo.seedDefaultPlatformKpis(userId, labels);
   } catch (e) {
-    debugPrint('Default labels seeding notice: $e');
+    debugPrint('Default labels & KPIs seeding notice: $e');
   }
 
   runApp(

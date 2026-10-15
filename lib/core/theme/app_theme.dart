@@ -7,12 +7,16 @@ import 'app_typography.dart';
 
 /// Complete Material 3 themes for the Momentum application.
 ///
-/// Features:
-/// - Indigo primary theme for productivity and focus
-/// - Teal / Emerald secondary theme for completion and positive momentum
-/// - Clean elevation surfaces with polished borders (12-16px radius)
-/// - Authentic slate dark mode with genuine depth (not washed out inverted grey)
-/// - Fully styled component themes for buttons, inputs, chips, dialogs, nav, etc.
+/// Palette Philosophy: "Solar Obsidian & Auroral Jade"
+/// - Editorial precision craft aesthetic (Linear, Raycast, Amie)
+/// - Primary: Solar Amber & Radiant Gold for sharp luminous focus
+/// - Secondary: Auroral Jade & Emerald for momentum, streaks, and completion
+/// - Tertiary: Electric Cyan for time tracking, deep focus, and metrics
+/// - Dark Mode: Deep space titanium obsidian (#080B11), elevated tactical surface (#0F1523),
+///   tactile card surface (#141C2E) with precision hairline borders rgba(255, 255, 255, 0.08),
+///   and elevated dialogs (#182238).
+/// - Light Mode: Architectural crisp ivory & slate (#F8FAFC, #FFFFFF, #F1F5F9)
+///   with deep graphite obsidian text (#0A0F1D) and warm solar amber accents.
 class AppTheme {
   // ===========================================================================
   // LIGHT THEME
@@ -41,8 +45,8 @@ class AppTheme {
       surfaceContainerHighest: AppColors.surfaceVariantLight,
       onSurfaceVariant: AppColors.textSecondaryLight,
       outline: AppColors.borderLight,
-      outlineVariant: AppColors.borderSubtleLight,
-      shadow: Color(0x140F172A),
+      outlineVariant: AppColors.borderLight,
+      shadow: Color(0x0F0A0F1D),
     );
 
     return ThemeData(
@@ -64,13 +68,13 @@ class AppTheme {
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimaryLight,
-          letterSpacing: 0,
+          letterSpacing: -0.2,
         ),
         iconTheme: IconThemeData(color: AppColors.textPrimaryLight, size: 24),
       ),
 
-      // 2. Card Theme
-      cardTheme: const CardThemeData(
+      // 2. Card Theme - Tactile hairline border via colorScheme.outlineVariant
+      cardTheme: CardThemeData(
         elevation: 0,
         color: AppColors.cardLight,
         surfaceTintColor: Colors.transparent,
@@ -78,7 +82,7 @@ class AppTheme {
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.borderMd,
-          side: BorderSide(color: AppColors.borderLight, width: 1.0),
+          side: BorderSide(color: colorScheme.outlineVariant, width: 1.0),
         ),
       ),
 
@@ -94,25 +98,26 @@ class AppTheme {
           color: AppColors.textSecondaryLight,
         ),
         floatingLabelStyle: AppTypography.labelLarge.copyWith(
-          color: AppColors.primary,
+          color: AppColors.primaryDark,
+          fontWeight: FontWeight.w600,
         ),
-        border: const OutlineInputBorder(
+        border: OutlineInputBorder(
           borderRadius: AppRadius.borderMd,
           borderSide: BorderSide(
-            color: AppColors.borderLight,
+            color: colorScheme.outlineVariant,
             width: 1.0,
           ),
         ),
-        enabledBorder: const OutlineInputBorder(
+        enabledBorder: OutlineInputBorder(
           borderRadius: AppRadius.borderMd,
           borderSide: BorderSide(
-            color: AppColors.borderLight,
+            color: colorScheme.outlineVariant,
             width: 1.0,
           ),
         ),
         focusedBorder: const OutlineInputBorder(
           borderRadius: AppRadius.borderMd,
-          borderSide: BorderSide(color: AppColors.primary, width: 2.0),
+          borderSide: BorderSide(color: AppColors.primary, width: 1.5),
         ),
         errorBorder: const OutlineInputBorder(
           borderRadius: AppRadius.borderMd,
@@ -120,11 +125,11 @@ class AppTheme {
         ),
         focusedErrorBorder: const OutlineInputBorder(
           borderRadius: AppRadius.borderMd,
-          borderSide: BorderSide(color: AppColors.error, width: 2.0),
+          borderSide: BorderSide(color: AppColors.error, width: 1.5),
         ),
       ),
 
-      // 4. Elevated Button Theme
+      // 4. Elevated Button Theme - Solar Amber with obsidian contrast
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
@@ -137,7 +142,7 @@ class AppTheme {
             vertical: 14.0,
           ),
           shape: AppRadius.shapeMd,
-          textStyle: AppTypography.labelLarge,
+          textStyle: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
 
@@ -145,28 +150,28 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           elevation: 0,
-          foregroundColor: AppColors.primary,
+          foregroundColor: AppColors.primaryDark,
           disabledForegroundColor: AppColors.textDisabledLight,
-          side: const BorderSide(color: AppColors.borderLight, width: 1.0),
+          side: BorderSide(color: colorScheme.outlineVariant, width: 1.0),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
             vertical: 14.0,
           ),
           shape: AppRadius.shapeMd,
-          textStyle: AppTypography.labelLarge,
+          textStyle: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
 
       // 6. Text Button Theme
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
+          foregroundColor: AppColors.primaryDark,
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md,
             vertical: AppSpacing.sm,
           ),
           shape: AppRadius.shapeMd,
-          textStyle: AppTypography.labelLarge,
+          textStyle: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
 
@@ -176,19 +181,23 @@ class AppTheme {
         selectedColor: AppColors.primaryContainerLight,
         disabledColor: AppColors.surfaceVariantLight,
         deleteIconColor: AppColors.textSecondaryLight,
-        labelStyle: AppTypography.labelMedium.copyWith(
+        labelStyle: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
           color: AppColors.textPrimaryLight,
         ),
-        secondaryLabelStyle: AppTypography.labelMedium.copyWith(
-          color: AppColors.primary,
+        secondaryLabelStyle: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: AppColors.onPrimaryContainerLight,
         ),
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.sm,
           vertical: AppSpacing.xs,
         ),
-        shape: const RoundedRectangleBorder(
+        shape: RoundedRectangleBorder(
           borderRadius: AppRadius.borderSm,
-          side: BorderSide(color: AppColors.borderLight, width: 1.0),
+          side: BorderSide(color: colorScheme.outlineVariant, width: 1.0),
         ),
         elevation: 0,
         pressElevation: 0,
@@ -198,8 +207,11 @@ class AppTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.dialogLight,
         surfaceTintColor: Colors.transparent,
-        elevation: 6.0,
-        shape: AppRadius.shapeLg,
+        elevation: 4.0,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.borderLg,
+          side: BorderSide(color: colorScheme.outlineVariant, width: 1.0),
+        ),
         titleTextStyle: AppTypography.titleLarge.copyWith(
           color: AppColors.textPrimaryLight,
         ),
@@ -211,7 +223,7 @@ class AppTheme {
       // 9. Bottom Navigation Bar Theme
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.surfaceLight,
-        selectedItemColor: AppColors.primary,
+        selectedItemColor: AppColors.primaryDark,
         unselectedItemColor: AppColors.textTertiaryLight,
         type: BottomNavigationBarType.fixed,
         elevation: 8.0,
@@ -229,7 +241,7 @@ class AppTheme {
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: AppColors.surfaceLight,
         selectedIconTheme: const IconThemeData(
-          color: AppColors.primary,
+          color: AppColors.primaryDark,
           size: 24,
         ),
         unselectedIconTheme: const IconThemeData(
@@ -237,7 +249,8 @@ class AppTheme {
           size: 24,
         ),
         selectedLabelTextStyle: AppTypography.labelMedium.copyWith(
-          color: AppColors.primary,
+          color: AppColors.primaryDark,
+          fontWeight: FontWeight.w600,
         ),
         unselectedLabelTextStyle: AppTypography.labelMedium.copyWith(
           color: AppColors.textTertiaryLight,
@@ -262,20 +275,20 @@ class AppTheme {
         contentTextStyle: AppTypography.bodyMedium.copyWith(
           color: Colors.white,
         ),
-        actionTextColor: AppColors.secondaryLight,
+        actionTextColor: AppColors.primaryLight,
         behavior: SnackBarBehavior.floating,
         shape: AppRadius.shapeSm,
         elevation: 4.0,
       ),
 
-      // 13. Floating Action Button Theme
+      // 13. Floating Action Button Theme - Solar Amber with obsidian contrast
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
-        elevation: 3.0,
+        elevation: 2.0,
         focusElevation: 4.0,
         hoverElevation: 4.0,
-        highlightElevation: 6.0,
+        highlightElevation: 4.0,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
       ),
 
@@ -293,11 +306,11 @@ class AppTheme {
         }),
         trackOutlineColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) return Colors.transparent;
-          return AppColors.borderLight;
+          return colorScheme.outlineVariant;
         }),
       ),
 
-      // 15. Checkbox Theme
+      // 15. Checkbox Theme - Auroral Jade accent
       checkboxTheme: CheckboxThemeData(
         shape: AppRadius.shapeXs,
         fillColor: WidgetStateProperty.resolveWith((states) {
@@ -305,23 +318,23 @@ class AppTheme {
           return Colors.transparent;
         }),
         checkColor: WidgetStateProperty.all(Colors.white),
-        side: const BorderSide(color: AppColors.borderLight, width: 1.5),
+        side: BorderSide(color: colorScheme.outlineVariant, width: 1.5),
       ),
 
       // 16. Divider Theme
-      dividerTheme: const DividerThemeData(
-        color: AppColors.dividerLight,
+      dividerTheme: DividerThemeData(
+        color: colorScheme.outlineVariant,
         thickness: 1.0,
         space: 1.0,
       ),
 
       // 17. TabBar Theme
-      tabBarTheme: const TabBarThemeData(
-        labelColor: AppColors.primary,
+      tabBarTheme: TabBarThemeData(
+        labelColor: AppColors.primaryDark,
         unselectedLabelColor: AppColors.textSecondaryLight,
         indicatorColor: AppColors.primary,
         indicatorSize: TabBarIndicatorSize.tab,
-        dividerColor: AppColors.dividerLight,
+        dividerColor: colorScheme.outlineVariant,
         labelStyle: AppTypography.labelLarge,
         unselectedLabelStyle: AppTypography.labelLarge,
       ),
@@ -337,20 +350,20 @@ class AppTheme {
   }
 
   // ===========================================================================
-  // DARK THEME
+  // DARK THEME ("Solar Obsidian & Auroral Jade")
   // ===========================================================================
   static ThemeData darkTheme() {
     const colorScheme = ColorScheme(
       brightness: Brightness.dark,
-      primary: AppColors.primaryLight,
+      primary: AppColors.primary,
       onPrimary: AppColors.onPrimary,
       primaryContainer: AppColors.primaryContainerDark,
       onPrimaryContainer: AppColors.onPrimaryContainerDark,
-      secondary: AppColors.secondaryLight,
+      secondary: AppColors.secondary,
       onSecondary: AppColors.onSecondary,
       secondaryContainer: AppColors.secondaryContainerDark,
       onSecondaryContainer: AppColors.onSecondaryContainerDark,
-      tertiary: AppColors.tertiaryLight,
+      tertiary: AppColors.tertiary,
       onTertiary: AppColors.onTertiary,
       tertiaryContainer: AppColors.tertiaryContainerDark,
       onTertiaryContainer: AppColors.onTertiaryContainerDark,
@@ -363,7 +376,7 @@ class AppTheme {
       surfaceContainerHighest: AppColors.surfaceVariantDark,
       onSurfaceVariant: AppColors.textSecondaryDark,
       outline: AppColors.borderDark,
-      outlineVariant: AppColors.borderSubtleDark,
+      outlineVariant: AppColors.borderDark,
       shadow: Color(0x66000000),
     );
 
@@ -374,25 +387,25 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.backgroundDark,
       textTheme: AppTypography.darkTextTheme,
 
-      // 1. AppBar Theme
+      // 1. AppBar Theme - Deep space titanium obsidian surface
       appBarTheme: const AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 1.0,
         surfaceTintColor: Colors.transparent,
-        backgroundColor: AppColors.surfaceDark,
+        backgroundColor: AppColors.backgroundDark,
         foregroundColor: AppColors.textPrimaryDark,
         centerTitle: false,
         titleTextStyle: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimaryDark,
-          letterSpacing: 0,
+          letterSpacing: -0.2,
         ),
         iconTheme: IconThemeData(color: AppColors.textPrimaryDark, size: 24),
       ),
 
-      // 2. Card Theme
-      cardTheme: const CardThemeData(
+      // 2. Card Theme - Tactile card surface with hairline border rgba(255, 255, 255, 0.08)
+      cardTheme: CardThemeData(
         elevation: 0,
         color: AppColors.cardDark,
         surfaceTintColor: Colors.transparent,
@@ -400,14 +413,14 @@ class AppTheme {
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.borderMd,
-          side: BorderSide(color: AppColors.borderDark, width: 1.0),
+          side: BorderSide(color: colorScheme.outlineVariant, width: 1.0),
         ),
       ),
 
-      // 3. Input Decoration Theme
+      // 3. Input Decoration Theme - Tactical dark surface with precision hairline border
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceVariantDark,
+        fillColor: AppColors.surfaceDark,
         contentPadding: AppSpacing.inputPadding,
         hintStyle: AppTypography.bodyMedium.copyWith(
           color: AppColors.textTertiaryDark,
@@ -416,21 +429,22 @@ class AppTheme {
           color: AppColors.textSecondaryDark,
         ),
         floatingLabelStyle: AppTypography.labelLarge.copyWith(
-          color: AppColors.primaryLight,
+          color: AppColors.primary,
+          fontWeight: FontWeight.w600,
         ),
-        border: const OutlineInputBorder(
+        border: OutlineInputBorder(
           borderRadius: AppRadius.borderMd,
-          borderSide: BorderSide(color: AppColors.borderDark, width: 1.0),
+          borderSide: BorderSide(color: colorScheme.outlineVariant, width: 1.0),
         ),
-        enabledBorder: const OutlineInputBorder(
+        enabledBorder: OutlineInputBorder(
           borderRadius: AppRadius.borderMd,
-          borderSide: BorderSide(color: AppColors.borderDark, width: 1.0),
+          borderSide: BorderSide(color: colorScheme.outlineVariant, width: 1.0),
         ),
         focusedBorder: const OutlineInputBorder(
           borderRadius: AppRadius.borderMd,
           borderSide: BorderSide(
-            color: AppColors.primaryLight,
-            width: 2.0,
+            color: AppColors.primary,
+            width: 1.5,
           ),
         ),
         errorBorder: const OutlineInputBorder(
@@ -439,16 +453,16 @@ class AppTheme {
         ),
         focusedErrorBorder: const OutlineInputBorder(
           borderRadius: AppRadius.borderMd,
-          borderSide: BorderSide(color: AppColors.error, width: 2.0),
+          borderSide: BorderSide(color: AppColors.error, width: 1.5),
         ),
       ),
 
-      // 4. Elevated Button Theme
+      // 4. Elevated Button Theme - Solar Gold with deep titanium obsidian text
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
-          backgroundColor: AppColors.primaryLight,
-          foregroundColor: Colors.white,
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.onPrimary,
           disabledBackgroundColor: AppColors.surfaceVariantDark,
           disabledForegroundColor: AppColors.textDisabledDark,
           padding: const EdgeInsets.symmetric(
@@ -456,23 +470,23 @@ class AppTheme {
             vertical: 14.0,
           ),
           shape: AppRadius.shapeMd,
-          textStyle: AppTypography.labelLarge,
+          textStyle: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
 
-      // 5. Outlined Button Theme
+      // 5. Outlined Button Theme - Hairline tactical border
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           elevation: 0,
           foregroundColor: AppColors.primaryLight,
           disabledForegroundColor: AppColors.textDisabledDark,
-          side: const BorderSide(color: AppColors.borderDark, width: 1.0),
+          side: BorderSide(color: colorScheme.outlineVariant, width: 1.0),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
             vertical: 14.0,
           ),
           shape: AppRadius.shapeMd,
-          textStyle: AppTypography.labelLarge,
+          textStyle: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
 
@@ -485,40 +499,47 @@ class AppTheme {
             vertical: AppSpacing.sm,
           ),
           shape: AppRadius.shapeMd,
-          textStyle: AppTypography.labelLarge,
+          textStyle: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
 
-      // 7. Chip Theme
+      // 7. Chip Theme - Tactical surface with hairline border
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.surfaceVariantDark,
+        backgroundColor: AppColors.surfaceDark,
         selectedColor: AppColors.primaryContainerDark,
-        disabledColor: AppColors.surfaceVariantDark,
+        disabledColor: AppColors.surfaceDark,
         deleteIconColor: AppColors.textSecondaryDark,
-        labelStyle: AppTypography.labelMedium.copyWith(
+        labelStyle: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
           color: AppColors.textPrimaryDark,
         ),
-        secondaryLabelStyle: AppTypography.labelMedium.copyWith(
-          color: AppColors.primaryLight,
+        secondaryLabelStyle: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: AppColors.onPrimaryContainerDark,
         ),
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.sm,
           vertical: AppSpacing.xs,
         ),
-        shape: const RoundedRectangleBorder(
+        shape: RoundedRectangleBorder(
           borderRadius: AppRadius.borderSm,
-          side: BorderSide(color: AppColors.borderDark, width: 1.0),
+          side: BorderSide(color: colorScheme.outlineVariant, width: 1.0),
         ),
         elevation: 0,
         pressElevation: 0,
       ),
 
-      // 8. Dialog Theme
+      // 8. Dialog Theme - Elevated dialog surface (#182238)
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.dialogDark,
         surfaceTintColor: Colors.transparent,
-        elevation: 6.0,
-        shape: AppRadius.shapeLg,
+        elevation: 8.0,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.borderLg,
+          side: BorderSide(color: colorScheme.outlineVariant, width: 1.0),
+        ),
         titleTextStyle: AppTypography.titleLarge.copyWith(
           color: AppColors.textPrimaryDark,
         ),
@@ -527,10 +548,10 @@ class AppTheme {
         ),
       ),
 
-      // 9. Bottom Navigation Bar Theme
+      // 9. Bottom Navigation Bar Theme - Elevated tactical surface
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.surfaceDark,
-        selectedItemColor: AppColors.primaryLight,
+        selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.textTertiaryDark,
         type: BottomNavigationBarType.fixed,
         elevation: 8.0,
@@ -548,7 +569,7 @@ class AppTheme {
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: AppColors.surfaceDark,
         selectedIconTheme: const IconThemeData(
-          color: AppColors.primaryLight,
+          color: AppColors.primary,
           size: 24,
         ),
         unselectedIconTheme: const IconThemeData(
@@ -556,7 +577,8 @@ class AppTheme {
           size: 24,
         ),
         selectedLabelTextStyle: AppTypography.labelMedium.copyWith(
-          color: AppColors.primaryLight,
+          color: AppColors.primary,
+          fontWeight: FontWeight.w600,
         ),
         unselectedLabelTextStyle: AppTypography.labelMedium.copyWith(
           color: AppColors.textTertiaryDark,
@@ -567,7 +589,7 @@ class AppTheme {
         indicatorColor: AppColors.primaryContainerDark,
       ),
 
-      // 11. Drawer Theme
+      // 11. Drawer Theme - Elevated tactical surface
       drawerTheme: const DrawerThemeData(
         backgroundColor: AppColors.surfaceDark,
         surfaceTintColor: Colors.transparent,
@@ -581,20 +603,20 @@ class AppTheme {
         contentTextStyle: AppTypography.bodyMedium.copyWith(
           color: AppColors.textPrimaryDark,
         ),
-        actionTextColor: AppColors.secondaryLight,
+        actionTextColor: AppColors.primaryLight,
         behavior: SnackBarBehavior.floating,
         shape: AppRadius.shapeSm,
         elevation: 6.0,
       ),
 
-      // 13. Floating Action Button Theme
+      // 13. Floating Action Button Theme - Solar Gold with obsidian contrast
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.primaryLight,
-        foregroundColor: Colors.white,
-        elevation: 3.0,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.onPrimary,
+        elevation: 2.0,
         focusElevation: 4.0,
         hoverElevation: 4.0,
-        highlightElevation: 6.0,
+        highlightElevation: 4.0,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
       ),
 
@@ -602,7 +624,7 @@ class AppTheme {
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.primaryLight;
+            return AppColors.primary;
           }
           return AppColors.textTertiaryDark;
         }),
@@ -614,37 +636,37 @@ class AppTheme {
         }),
         trackOutlineColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) return Colors.transparent;
-          return AppColors.borderDark;
+          return colorScheme.outlineVariant;
         }),
       ),
 
-      // 15. Checkbox Theme
+      // 15. Checkbox Theme - Auroral Jade accent
       checkboxTheme: CheckboxThemeData(
         shape: AppRadius.shapeXs,
         fillColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.secondaryLight;
+            return AppColors.secondary;
           }
           return Colors.transparent;
         }),
         checkColor: WidgetStateProperty.all(AppColors.backgroundDark),
-        side: const BorderSide(color: AppColors.borderDark, width: 1.5),
+        side: BorderSide(color: colorScheme.outlineVariant, width: 1.5),
       ),
 
       // 16. Divider Theme
-      dividerTheme: const DividerThemeData(
-        color: AppColors.dividerDark,
+      dividerTheme: DividerThemeData(
+        color: colorScheme.outlineVariant,
         thickness: 1.0,
         space: 1.0,
       ),
 
       // 17. TabBar Theme
-      tabBarTheme: const TabBarThemeData(
-        labelColor: AppColors.primaryLight,
+      tabBarTheme: TabBarThemeData(
+        labelColor: AppColors.primary,
         unselectedLabelColor: AppColors.textSecondaryDark,
-        indicatorColor: AppColors.primaryLight,
+        indicatorColor: AppColors.primary,
         indicatorSize: TabBarIndicatorSize.tab,
-        dividerColor: AppColors.dividerDark,
+        dividerColor: colorScheme.outlineVariant,
         labelStyle: AppTypography.labelLarge,
         unselectedLabelStyle: AppTypography.labelLarge,
       ),

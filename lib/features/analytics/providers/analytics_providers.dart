@@ -171,25 +171,28 @@ final labelKpisProvider =
           break;
       }
 
-      double currentValue = 0.0;
+      double currentValue = kpi.currentValue;
 
-      if (kpi.kpiType == KpiType.time) {
-        final totalSeconds = await timerRepo.getTotalTimeForLabel(
-          labelId,
-          periodStart,
-          now,
-        );
-        currentValue = totalSeconds / 60.0; // In minutes
-      } else if (kpi.kpiType == KpiType.count) {
-        final tasks = await taskRepo.getTasksByLabel(labelId);
-        final completed = tasks.where((t) => t.status == TaskStatus.done).length;
-        currentValue = completed.toDouble();
-      } else if (kpi.kpiType == KpiType.rate) {
-        final tasks = await taskRepo.getTasksByLabel(labelId);
-        if (tasks.isNotEmpty) {
+      if (currentValue == 0.0) {
+        if (kpi.kpiType == KpiType.time) {
+          final totalSeconds = await timerRepo.getTotalTimeForLabel(
+            labelId,
+            periodStart,
+            now,
+          );
+          currentValue = totalSeconds / 60.0; // In minutes
+        } else if (kpi.kpiType == KpiType.count) {
+          final tasks = await taskRepo.getTasksByLabel(labelId);
           final completed =
               tasks.where((t) => t.status == TaskStatus.done).length;
-          currentValue = (completed / tasks.length) * 100.0;
+          currentValue = completed.toDouble();
+        } else if (kpi.kpiType == KpiType.rate) {
+          final tasks = await taskRepo.getTasksByLabel(labelId);
+          if (tasks.isNotEmpty) {
+            final completed =
+                tasks.where((t) => t.status == TaskStatus.done).length;
+            currentValue = (completed / tasks.length) * 100.0;
+          }
         }
       }
 
@@ -210,6 +213,13 @@ final labelKpisProvider =
 
     return summaries;
   });
+});
+
+/// Watches all KPI definitions across all labels and platforms for the user.
+final allKpisStreamProvider = StreamProvider<List<KpiDefinition>>((ref) {
+  final userId = ref.watch(currentUserIdProvider);
+  final kpiRepo = ref.watch(kpiRepositoryProvider);
+  return kpiRepo.watchAllKpis(userId);
 });
 
 // =============================================================================

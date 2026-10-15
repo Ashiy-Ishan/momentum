@@ -4608,6 +4608,63 @@ class $KpiDefinitionsTable extends KpiDefinitions
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _currentValueMeta = const VerificationMeta(
+    'currentValue',
+  );
+  @override
+  late final GeneratedColumn<double> currentValue = GeneratedColumn<double>(
+    'current_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _longTermTargetMeta = const VerificationMeta(
+    'longTermTarget',
+  );
+  @override
+  late final GeneratedColumn<double> longTermTarget = GeneratedColumn<double>(
+    'long_term_target',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _unitMeta = const VerificationMeta('unit');
+  @override
+  late final GeneratedColumn<String> unit = GeneratedColumn<String>(
+    'unit',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('count'),
+  );
+  static const VerificationMeta _platformMeta = const VerificationMeta(
+    'platform',
+  );
+  @override
+  late final GeneratedColumn<String> platform = GeneratedColumn<String>(
+    'platform',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('general'),
+  );
+  static const VerificationMeta _metricCategoryMeta = const VerificationMeta(
+    'metricCategory',
+  );
+  @override
+  late final GeneratedColumn<String> metricCategory = GeneratedColumn<String>(
+    'metric_category',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('output'),
+  );
   static const VerificationMeta _periodMeta = const VerificationMeta('period');
   @override
   late final GeneratedColumn<String> period = GeneratedColumn<String>(
@@ -4697,6 +4754,11 @@ class $KpiDefinitionsTable extends KpiDefinitions
     description,
     kpiType,
     targetValue,
+    currentValue,
+    longTermTarget,
+    unit,
+    platform,
+    metricCategory,
     period,
     startDate,
     endDate,
@@ -4771,6 +4833,45 @@ class $KpiDefinitionsTable extends KpiDefinitions
       );
     } else if (isInserting) {
       context.missing(_targetValueMeta);
+    }
+    if (data.containsKey('current_value')) {
+      context.handle(
+        _currentValueMeta,
+        currentValue.isAcceptableOrUnknown(
+          data['current_value']!,
+          _currentValueMeta,
+        ),
+      );
+    }
+    if (data.containsKey('long_term_target')) {
+      context.handle(
+        _longTermTargetMeta,
+        longTermTarget.isAcceptableOrUnknown(
+          data['long_term_target']!,
+          _longTermTargetMeta,
+        ),
+      );
+    }
+    if (data.containsKey('unit')) {
+      context.handle(
+        _unitMeta,
+        unit.isAcceptableOrUnknown(data['unit']!, _unitMeta),
+      );
+    }
+    if (data.containsKey('platform')) {
+      context.handle(
+        _platformMeta,
+        platform.isAcceptableOrUnknown(data['platform']!, _platformMeta),
+      );
+    }
+    if (data.containsKey('metric_category')) {
+      context.handle(
+        _metricCategoryMeta,
+        metricCategory.isAcceptableOrUnknown(
+          data['metric_category']!,
+          _metricCategoryMeta,
+        ),
+      );
     }
     if (data.containsKey('period')) {
       context.handle(
@@ -4859,6 +4960,26 @@ class $KpiDefinitionsTable extends KpiDefinitions
         DriftSqlType.double,
         data['${effectivePrefix}target_value'],
       )!,
+      currentValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}current_value'],
+      )!,
+      longTermTarget: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}long_term_target'],
+      ),
+      unit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unit'],
+      )!,
+      platform: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}platform'],
+      )!,
+      metricCategory: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}metric_category'],
+      )!,
       period: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}period'],
@@ -4904,6 +5025,11 @@ class KpiDefinition extends DataClass implements Insertable<KpiDefinition> {
   final String? description;
   final String kpiType;
   final double targetValue;
+  final double currentValue;
+  final double? longTermTarget;
+  final String unit;
+  final String platform;
+  final String metricCategory;
   final String period;
   final DateTime startDate;
   final DateTime? endDate;
@@ -4919,6 +5045,11 @@ class KpiDefinition extends DataClass implements Insertable<KpiDefinition> {
     this.description,
     required this.kpiType,
     required this.targetValue,
+    required this.currentValue,
+    this.longTermTarget,
+    required this.unit,
+    required this.platform,
+    required this.metricCategory,
     required this.period,
     required this.startDate,
     this.endDate,
@@ -4941,6 +5072,13 @@ class KpiDefinition extends DataClass implements Insertable<KpiDefinition> {
     }
     map['kpi_type'] = Variable<String>(kpiType);
     map['target_value'] = Variable<double>(targetValue);
+    map['current_value'] = Variable<double>(currentValue);
+    if (!nullToAbsent || longTermTarget != null) {
+      map['long_term_target'] = Variable<double>(longTermTarget);
+    }
+    map['unit'] = Variable<String>(unit);
+    map['platform'] = Variable<String>(platform);
+    map['metric_category'] = Variable<String>(metricCategory);
     map['period'] = Variable<String>(period);
     map['start_date'] = Variable<DateTime>(startDate);
     if (!nullToAbsent || endDate != null) {
@@ -4966,6 +5104,13 @@ class KpiDefinition extends DataClass implements Insertable<KpiDefinition> {
           : Value(description),
       kpiType: Value(kpiType),
       targetValue: Value(targetValue),
+      currentValue: Value(currentValue),
+      longTermTarget: longTermTarget == null && nullToAbsent
+          ? const Value.absent()
+          : Value(longTermTarget),
+      unit: Value(unit),
+      platform: Value(platform),
+      metricCategory: Value(metricCategory),
       period: Value(period),
       startDate: Value(startDate),
       endDate: endDate == null && nullToAbsent
@@ -4991,6 +5136,11 @@ class KpiDefinition extends DataClass implements Insertable<KpiDefinition> {
       description: serializer.fromJson<String?>(json['description']),
       kpiType: serializer.fromJson<String>(json['kpiType']),
       targetValue: serializer.fromJson<double>(json['targetValue']),
+      currentValue: serializer.fromJson<double>(json['currentValue']),
+      longTermTarget: serializer.fromJson<double?>(json['longTermTarget']),
+      unit: serializer.fromJson<String>(json['unit']),
+      platform: serializer.fromJson<String>(json['platform']),
+      metricCategory: serializer.fromJson<String>(json['metricCategory']),
       period: serializer.fromJson<String>(json['period']),
       startDate: serializer.fromJson<DateTime>(json['startDate']),
       endDate: serializer.fromJson<DateTime?>(json['endDate']),
@@ -5011,6 +5161,11 @@ class KpiDefinition extends DataClass implements Insertable<KpiDefinition> {
       'description': serializer.toJson<String?>(description),
       'kpiType': serializer.toJson<String>(kpiType),
       'targetValue': serializer.toJson<double>(targetValue),
+      'currentValue': serializer.toJson<double>(currentValue),
+      'longTermTarget': serializer.toJson<double?>(longTermTarget),
+      'unit': serializer.toJson<String>(unit),
+      'platform': serializer.toJson<String>(platform),
+      'metricCategory': serializer.toJson<String>(metricCategory),
       'period': serializer.toJson<String>(period),
       'startDate': serializer.toJson<DateTime>(startDate),
       'endDate': serializer.toJson<DateTime?>(endDate),
@@ -5029,6 +5184,11 @@ class KpiDefinition extends DataClass implements Insertable<KpiDefinition> {
     Value<String?> description = const Value.absent(),
     String? kpiType,
     double? targetValue,
+    double? currentValue,
+    Value<double?> longTermTarget = const Value.absent(),
+    String? unit,
+    String? platform,
+    String? metricCategory,
     String? period,
     DateTime? startDate,
     Value<DateTime?> endDate = const Value.absent(),
@@ -5044,6 +5204,13 @@ class KpiDefinition extends DataClass implements Insertable<KpiDefinition> {
     description: description.present ? description.value : this.description,
     kpiType: kpiType ?? this.kpiType,
     targetValue: targetValue ?? this.targetValue,
+    currentValue: currentValue ?? this.currentValue,
+    longTermTarget: longTermTarget.present
+        ? longTermTarget.value
+        : this.longTermTarget,
+    unit: unit ?? this.unit,
+    platform: platform ?? this.platform,
+    metricCategory: metricCategory ?? this.metricCategory,
     period: period ?? this.period,
     startDate: startDate ?? this.startDate,
     endDate: endDate.present ? endDate.value : this.endDate,
@@ -5065,6 +5232,17 @@ class KpiDefinition extends DataClass implements Insertable<KpiDefinition> {
       targetValue: data.targetValue.present
           ? data.targetValue.value
           : this.targetValue,
+      currentValue: data.currentValue.present
+          ? data.currentValue.value
+          : this.currentValue,
+      longTermTarget: data.longTermTarget.present
+          ? data.longTermTarget.value
+          : this.longTermTarget,
+      unit: data.unit.present ? data.unit.value : this.unit,
+      platform: data.platform.present ? data.platform.value : this.platform,
+      metricCategory: data.metricCategory.present
+          ? data.metricCategory.value
+          : this.metricCategory,
       period: data.period.present ? data.period.value : this.period,
       startDate: data.startDate.present ? data.startDate.value : this.startDate,
       endDate: data.endDate.present ? data.endDate.value : this.endDate,
@@ -5085,6 +5263,11 @@ class KpiDefinition extends DataClass implements Insertable<KpiDefinition> {
           ..write('description: $description, ')
           ..write('kpiType: $kpiType, ')
           ..write('targetValue: $targetValue, ')
+          ..write('currentValue: $currentValue, ')
+          ..write('longTermTarget: $longTermTarget, ')
+          ..write('unit: $unit, ')
+          ..write('platform: $platform, ')
+          ..write('metricCategory: $metricCategory, ')
           ..write('period: $period, ')
           ..write('startDate: $startDate, ')
           ..write('endDate: $endDate, ')
@@ -5105,6 +5288,11 @@ class KpiDefinition extends DataClass implements Insertable<KpiDefinition> {
     description,
     kpiType,
     targetValue,
+    currentValue,
+    longTermTarget,
+    unit,
+    platform,
+    metricCategory,
     period,
     startDate,
     endDate,
@@ -5124,6 +5312,11 @@ class KpiDefinition extends DataClass implements Insertable<KpiDefinition> {
           other.description == this.description &&
           other.kpiType == this.kpiType &&
           other.targetValue == this.targetValue &&
+          other.currentValue == this.currentValue &&
+          other.longTermTarget == this.longTermTarget &&
+          other.unit == this.unit &&
+          other.platform == this.platform &&
+          other.metricCategory == this.metricCategory &&
           other.period == this.period &&
           other.startDate == this.startDate &&
           other.endDate == this.endDate &&
@@ -5141,6 +5334,11 @@ class KpiDefinitionsCompanion extends UpdateCompanion<KpiDefinition> {
   final Value<String?> description;
   final Value<String> kpiType;
   final Value<double> targetValue;
+  final Value<double> currentValue;
+  final Value<double?> longTermTarget;
+  final Value<String> unit;
+  final Value<String> platform;
+  final Value<String> metricCategory;
   final Value<String> period;
   final Value<DateTime> startDate;
   final Value<DateTime?> endDate;
@@ -5157,6 +5355,11 @@ class KpiDefinitionsCompanion extends UpdateCompanion<KpiDefinition> {
     this.description = const Value.absent(),
     this.kpiType = const Value.absent(),
     this.targetValue = const Value.absent(),
+    this.currentValue = const Value.absent(),
+    this.longTermTarget = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.platform = const Value.absent(),
+    this.metricCategory = const Value.absent(),
     this.period = const Value.absent(),
     this.startDate = const Value.absent(),
     this.endDate = const Value.absent(),
@@ -5174,6 +5377,11 @@ class KpiDefinitionsCompanion extends UpdateCompanion<KpiDefinition> {
     this.description = const Value.absent(),
     required String kpiType,
     required double targetValue,
+    this.currentValue = const Value.absent(),
+    this.longTermTarget = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.platform = const Value.absent(),
+    this.metricCategory = const Value.absent(),
     required String period,
     required DateTime startDate,
     this.endDate = const Value.absent(),
@@ -5199,6 +5407,11 @@ class KpiDefinitionsCompanion extends UpdateCompanion<KpiDefinition> {
     Expression<String>? description,
     Expression<String>? kpiType,
     Expression<double>? targetValue,
+    Expression<double>? currentValue,
+    Expression<double>? longTermTarget,
+    Expression<String>? unit,
+    Expression<String>? platform,
+    Expression<String>? metricCategory,
     Expression<String>? period,
     Expression<DateTime>? startDate,
     Expression<DateTime>? endDate,
@@ -5216,6 +5429,11 @@ class KpiDefinitionsCompanion extends UpdateCompanion<KpiDefinition> {
       if (description != null) 'description': description,
       if (kpiType != null) 'kpi_type': kpiType,
       if (targetValue != null) 'target_value': targetValue,
+      if (currentValue != null) 'current_value': currentValue,
+      if (longTermTarget != null) 'long_term_target': longTermTarget,
+      if (unit != null) 'unit': unit,
+      if (platform != null) 'platform': platform,
+      if (metricCategory != null) 'metric_category': metricCategory,
       if (period != null) 'period': period,
       if (startDate != null) 'start_date': startDate,
       if (endDate != null) 'end_date': endDate,
@@ -5235,6 +5453,11 @@ class KpiDefinitionsCompanion extends UpdateCompanion<KpiDefinition> {
     Value<String?>? description,
     Value<String>? kpiType,
     Value<double>? targetValue,
+    Value<double>? currentValue,
+    Value<double?>? longTermTarget,
+    Value<String>? unit,
+    Value<String>? platform,
+    Value<String>? metricCategory,
     Value<String>? period,
     Value<DateTime>? startDate,
     Value<DateTime?>? endDate,
@@ -5252,6 +5475,11 @@ class KpiDefinitionsCompanion extends UpdateCompanion<KpiDefinition> {
       description: description ?? this.description,
       kpiType: kpiType ?? this.kpiType,
       targetValue: targetValue ?? this.targetValue,
+      currentValue: currentValue ?? this.currentValue,
+      longTermTarget: longTermTarget ?? this.longTermTarget,
+      unit: unit ?? this.unit,
+      platform: platform ?? this.platform,
+      metricCategory: metricCategory ?? this.metricCategory,
       period: period ?? this.period,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
@@ -5286,6 +5514,21 @@ class KpiDefinitionsCompanion extends UpdateCompanion<KpiDefinition> {
     }
     if (targetValue.present) {
       map['target_value'] = Variable<double>(targetValue.value);
+    }
+    if (currentValue.present) {
+      map['current_value'] = Variable<double>(currentValue.value);
+    }
+    if (longTermTarget.present) {
+      map['long_term_target'] = Variable<double>(longTermTarget.value);
+    }
+    if (unit.present) {
+      map['unit'] = Variable<String>(unit.value);
+    }
+    if (platform.present) {
+      map['platform'] = Variable<String>(platform.value);
+    }
+    if (metricCategory.present) {
+      map['metric_category'] = Variable<String>(metricCategory.value);
     }
     if (period.present) {
       map['period'] = Variable<String>(period.value);
@@ -5324,6 +5567,11 @@ class KpiDefinitionsCompanion extends UpdateCompanion<KpiDefinition> {
           ..write('description: $description, ')
           ..write('kpiType: $kpiType, ')
           ..write('targetValue: $targetValue, ')
+          ..write('currentValue: $currentValue, ')
+          ..write('longTermTarget: $longTermTarget, ')
+          ..write('unit: $unit, ')
+          ..write('platform: $platform, ')
+          ..write('metricCategory: $metricCategory, ')
           ..write('period: $period, ')
           ..write('startDate: $startDate, ')
           ..write('endDate: $endDate, ')
@@ -10466,6 +10714,11 @@ typedef $$KpiDefinitionsTableCreateCompanionBuilder =
       Value<String?> description,
       required String kpiType,
       required double targetValue,
+      Value<double> currentValue,
+      Value<double?> longTermTarget,
+      Value<String> unit,
+      Value<String> platform,
+      Value<String> metricCategory,
       required String period,
       required DateTime startDate,
       Value<DateTime?> endDate,
@@ -10484,6 +10737,11 @@ typedef $$KpiDefinitionsTableUpdateCompanionBuilder =
       Value<String?> description,
       Value<String> kpiType,
       Value<double> targetValue,
+      Value<double> currentValue,
+      Value<double?> longTermTarget,
+      Value<String> unit,
+      Value<String> platform,
+      Value<String> metricCategory,
       Value<String> period,
       Value<DateTime> startDate,
       Value<DateTime?> endDate,
@@ -10535,6 +10793,31 @@ class $$KpiDefinitionsTableFilterComposer
 
   ColumnFilters<double> get targetValue => $composableBuilder(
     column: $table.targetValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get currentValue => $composableBuilder(
+    column: $table.currentValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get longTermTarget => $composableBuilder(
+    column: $table.longTermTarget,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get unit => $composableBuilder(
+    column: $table.unit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get platform => $composableBuilder(
+    column: $table.platform,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get metricCategory => $composableBuilder(
+    column: $table.metricCategory,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10618,6 +10901,31 @@ class $$KpiDefinitionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get currentValue => $composableBuilder(
+    column: $table.currentValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get longTermTarget => $composableBuilder(
+    column: $table.longTermTarget,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get unit => $composableBuilder(
+    column: $table.unit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get platform => $composableBuilder(
+    column: $table.platform,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get metricCategory => $composableBuilder(
+    column: $table.metricCategory,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get period => $composableBuilder(
     column: $table.period,
     builder: (column) => ColumnOrderings(column),
@@ -10688,6 +10996,27 @@ class $$KpiDefinitionsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<double> get currentValue => $composableBuilder(
+    column: $table.currentValue,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get longTermTarget => $composableBuilder(
+    column: $table.longTermTarget,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get unit =>
+      $composableBuilder(column: $table.unit, builder: (column) => column);
+
+  GeneratedColumn<String> get platform =>
+      $composableBuilder(column: $table.platform, builder: (column) => column);
+
+  GeneratedColumn<String> get metricCategory => $composableBuilder(
+    column: $table.metricCategory,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get period =>
       $composableBuilder(column: $table.period, builder: (column) => column);
 
@@ -10750,6 +11079,11 @@ class $$KpiDefinitionsTableTableManager
                 Value<String?> description = const Value.absent(),
                 Value<String> kpiType = const Value.absent(),
                 Value<double> targetValue = const Value.absent(),
+                Value<double> currentValue = const Value.absent(),
+                Value<double?> longTermTarget = const Value.absent(),
+                Value<String> unit = const Value.absent(),
+                Value<String> platform = const Value.absent(),
+                Value<String> metricCategory = const Value.absent(),
                 Value<String> period = const Value.absent(),
                 Value<DateTime> startDate = const Value.absent(),
                 Value<DateTime?> endDate = const Value.absent(),
@@ -10766,6 +11100,11 @@ class $$KpiDefinitionsTableTableManager
                 description: description,
                 kpiType: kpiType,
                 targetValue: targetValue,
+                currentValue: currentValue,
+                longTermTarget: longTermTarget,
+                unit: unit,
+                platform: platform,
+                metricCategory: metricCategory,
                 period: period,
                 startDate: startDate,
                 endDate: endDate,
@@ -10784,6 +11123,11 @@ class $$KpiDefinitionsTableTableManager
                 Value<String?> description = const Value.absent(),
                 required String kpiType,
                 required double targetValue,
+                Value<double> currentValue = const Value.absent(),
+                Value<double?> longTermTarget = const Value.absent(),
+                Value<String> unit = const Value.absent(),
+                Value<String> platform = const Value.absent(),
+                Value<String> metricCategory = const Value.absent(),
                 required String period,
                 required DateTime startDate,
                 Value<DateTime?> endDate = const Value.absent(),
@@ -10800,6 +11144,11 @@ class $$KpiDefinitionsTableTableManager
                 description: description,
                 kpiType: kpiType,
                 targetValue: targetValue,
+                currentValue: currentValue,
+                longTermTarget: longTermTarget,
+                unit: unit,
+                platform: platform,
+                metricCategory: metricCategory,
                 period: period,
                 startDate: startDate,
                 endDate: endDate,
