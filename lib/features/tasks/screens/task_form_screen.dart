@@ -111,8 +111,21 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
           orElse: () => null,
         );
     if (t != null) {
-      setState(() => _populateFromTask(t));
+      if (mounted) setState(() => _populateFromTask(t));
+      return;
     }
+
+    try {
+      final userId = ref.read(currentUserIdProvider);
+      final tasks = await ref.read(taskRepositoryProvider).getAllTasks(userId);
+      final fetched = tasks.cast<Task?>().firstWhere(
+            (item) => item?.id == widget.taskId,
+            orElse: () => null,
+          );
+      if (fetched != null && mounted) {
+        setState(() => _populateFromTask(fetched));
+      }
+    } catch (_) {}
   }
 
   @override
@@ -270,6 +283,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
         : <Label>[];
 
     final isEditing = _loadedTask != null || widget.taskId != null;
+    final isStillLoading = widget.taskId != null && _loadedTask == null;
 
     return Scaffold(
       appBar: AppBar(
@@ -299,16 +313,18 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                     )
                   : const Icon(Icons.check, size: 18),
               label: Text(isEditing ? 'Update' : 'Save'),
-              onPressed: _isLoading ? null : _saveTask,
+              onPressed: (_isLoading || isStillLoading) ? null : _saveTask,
             ),
           ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
+      body: isStillLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
             // Task Title
             TextFormField(
               controller: _titleController,
@@ -429,6 +445,12 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                           value: null,
                           child: Text('None (General)'),
                         ),
+                        if (_parentLabelId != null &&
+                            !rootLabels.any((l) => l.id == _parentLabelId))
+                          DropdownMenuItem(
+                            value: _parentLabelId,
+                            child: Text('Focus Area ($_parentLabelId)'),
+                          ),
                         ...rootLabels.map((l) {
                           return DropdownMenuItem(
                             value: l.id,
@@ -450,7 +472,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                       },
                     ),
 
-                    if (availableSubLabels.isNotEmpty) ...[
+                    if (availableSubLabels.isNotEmpty || _subLabelId != null) ...[
                       AppSpacing.vGapSm,
                       DropdownButtonFormField<String?>(
                         initialValue: _subLabelId,
@@ -466,6 +488,13 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                             value: null,
                             child: Text('All / Direct Parent'),
                           ),
+                          if (_subLabelId != null &&
+                              !availableSubLabels
+                                  .any((l) => l.id == _subLabelId))
+                            DropdownMenuItem(
+                              value: _subLabelId,
+                              child: Text('Sub-Label ($_subLabelId)'),
+                            ),
                           ...availableSubLabels.map((l) {
                             return DropdownMenuItem(
                               value: l.id,

@@ -316,6 +316,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'dashboard_fab',
         onPressed: () => context.push('/tasks/new'),
         tooltip: 'Create Task',
         child: const Icon(Icons.add),

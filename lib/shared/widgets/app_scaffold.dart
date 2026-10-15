@@ -533,6 +533,7 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
       floatingActionButton: widget.floatingActionButton ??
           (widget.showFab
               ? FloatingActionButton(
+                  heroTag: 'app_scaffold_fab',
                   onPressed: () => _handleAddTask(context),
                   tooltip: 'Add Task',
                   child: const Icon(Icons.add_rounded, size: 28),

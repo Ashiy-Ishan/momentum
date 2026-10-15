@@ -16,11 +16,11 @@ import '../local/database.dart';
 import '../remote/supabase_client.dart';
 import 'conflict_resolver.dart';
 
+import '../../shared/providers/database_provider.dart';
+
 /// Riverpod provider for the global database instance.
 final databaseProvider = Provider<AppDatabase>((ref) {
-  final db = AppDatabase();
-  ref.onDispose(() => db.close());
-  return db;
+  return ref.watch(appDatabaseProvider);
 });
 
 /// Riverpod provider exposing the [SyncEngine].

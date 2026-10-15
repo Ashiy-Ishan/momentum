@@ -164,17 +164,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           Expanded(
             child: tasksForSelected.isEmpty
                 ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 8,
+                      ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             Icons.event_available_outlined,
-                            size: 48,
+                            size: 40,
                             color: Colors.grey.withValues(alpha: 0.6),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           Text(
                             'No tasks scheduled for ${_selectedDay.relativeFormatted.toLowerCase()}',
                             style: const TextStyle(fontWeight: FontWeight.w600),
@@ -293,9 +296,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 7,
-          mainAxisSpacing: 4,
-          crossAxisSpacing: 4,
-          childAspectRatio: 1.15,
+          mainAxisSpacing: 3,
+          crossAxisSpacing: 3,
+          mainAxisExtent: 38,
         ),
         itemCount: totalCells,
         itemBuilder: (context, index) {
