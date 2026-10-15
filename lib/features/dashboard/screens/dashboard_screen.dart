@@ -13,6 +13,7 @@ import '../../analytics/providers/analytics_providers.dart';
 import '../../labels/providers/label_providers.dart';
 import '../../motivation/domain/motivation_quote.dart';
 import '../../motivation/providers/motivation_providers.dart';
+import '../../settings/providers/connected_accounts_provider.dart';
 import '../../tasks/providers/task_providers.dart';
 import '../../tasks/widgets/task_card.dart';
 
@@ -721,9 +722,76 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildPlatformOutputSection(
       BuildContext context, List<KpiDefinition> kpis) {
-    if (kpis.isEmpty) return const SizedBox.shrink();
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+
+    if (kpis.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.cardDark : AppColors.cardLight,
+            borderRadius: AppRadius.borderMd,
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.35),
+              width: 1.2,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.bolt_rounded,
+                    color: AppColors.primary, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Creator & Developer Cadence',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Track weekly videos, posts, blogs, GitHub commits, LinkedIn insights, and audience milestones.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.textSecondaryLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              FilledButton.tonal(
+                onPressed: () async {
+                  final userId = ref.read(currentUserIdProvider);
+                  final labels =
+                      ref.read(allLabelsStreamProvider).valueOrNull ?? [];
+                  await ref
+                      .read(kpiRepositoryProvider)
+                      .seedDefaultPlatformKpis(userId, labels);
+                },
+                child: const Text('Initialize'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final connectedAccounts = ref.watch(connectedAccountsProvider);
+    final activeAccounts = connectedAccounts.where((a) => a.isConnected).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -747,20 +815,94 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                 ],
               ),
-              Text(
-                '${kpis.length} tracked',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: isDark
-                      ? AppColors.textSecondaryDark
-                      : AppColors.textSecondaryLight,
-                ),
+              Row(
+                children: [
+                  TextButton.icon(
+                    onPressed: () => context.push('/settings'),
+                    icon: const Icon(Icons.link, size: 14),
+                    label: Text(
+                      activeAccounts.isEmpty
+                          ? 'Connect Accounts'
+                          : '${activeAccounts.length} Connected',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${kpis.length} tracked',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
+        if (activeAccounts.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          SizedBox(
+            height: 32,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: activeAccounts.length,
+              itemBuilder: (context, idx) {
+                final acc = activeAccounts[idx];
+                final color = AppColors.forPlatform(acc.platform);
+                return Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: color.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(_platformIcon(acc.platform), size: 13, color: color),
+                      const SizedBox(width: 5),
+                      Text(
+                        acc.handle,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                      ),
+                      if (acc.metricCount != null) ...[
+                        const SizedBox(width: 5),
+                        Text(
+                          '• ${_formatMetric(acc.metricCount!)} ${acc.metricUnit}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondaryLight,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
         AppSpacing.vGapXs,
         SizedBox(
-          height: 125,
+          height: 135,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -773,9 +915,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   : 0.0;
               final isMet =
                   kpi.targetValue > 0 && kpi.currentValue >= kpi.targetValue;
+              final isMilestone = kpi.metricCategory == 'subscriber_growth' ||
+                  kpi.metricCategory == 'follower_growth';
 
               return Container(
-                width: 220,
+                width: 230,
                 margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -831,34 +975,59 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             ),
                           ],
                         ),
-                        InkWell(
-                          onTap: () async {
-                            await ref
-                                .read(kpiRepositoryProvider)
-                                .incrementCurrentValue(kpi.id, 1.0);
-                          },
-                          borderRadius: BorderRadius.circular(4),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: platformColor.withValues(alpha: 0.12),
+                        Row(
+                          children: [
+                            InkWell(
+                              onTap: () => _showEditKpiDialog(context, kpi),
                               borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.add, size: 12, color: platformColor),
-                                Text(
-                                  '1',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: platformColor,
-                                  ),
+                              child: Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                  color: (isDark
+                                          ? AppColors.surfaceVariantDark
+                                          : AppColors.surfaceVariantLight)
+                                      .withValues(alpha: 0.5),
+                                  borderRadius: BorderRadius.circular(4),
                                 ),
-                              ],
+                                child: Icon(Icons.edit_outlined,
+                                    size: 13,
+                                    color: isDark
+                                        ? AppColors.textSecondaryDark
+                                        : AppColors.textSecondaryLight),
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 4),
+                            InkWell(
+                              onTap: () async {
+                                await ref
+                                    .read(kpiRepositoryProvider)
+                                    .incrementCurrentValue(kpi.id, 1.0);
+                              },
+                              borderRadius: BorderRadius.circular(4),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: platformColor.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.add,
+                                        size: 12, color: platformColor),
+                                    Text(
+                                      '1',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: platformColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -875,7 +1044,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${kpi.currentValue.toInt()} / ${kpi.targetValue.toInt()} ${kpi.unit}',
+                          isMilestone
+                              ? '${_formatMetric(kpi.currentValue)} / ${_formatMetric(kpi.targetValue)} ${kpi.unit}'
+                              : '${kpi.currentValue.toInt()} / ${kpi.targetValue.toInt()} ${kpi.unit}',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -886,7 +1057,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ),
                         if (kpi.hasLongTermTarget)
                           Text(
-                            'Goal: ${(kpi.longTermTarget! / 1000).toStringAsFixed(0)}k',
+                            'Goal: ${_formatMetric(kpi.longTermTarget!)}',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
@@ -921,8 +1092,75 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  String _formatMetric(double val) {
+    if (val >= 1000000) {
+      final m = val / 1000000;
+      return '${m.toStringAsFixed(m % 1 == 0 ? 0 : 1)}M';
+    } else if (val >= 1000) {
+      final k = val / 1000;
+      return '${k.toStringAsFixed(k % 1 == 0 ? 0 : 1)}k';
+    } else {
+      return val.toInt().toString();
+    }
+  }
+
+  Future<void> _showEditKpiDialog(
+      BuildContext context, KpiDefinition kpi) async {
+    final textCtrl = TextEditingController(
+      text: kpi.currentValue.toInt().toString(),
+    );
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Update ${kpi.name}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Enter your updated current count (${kpi.unit}):',
+              style: const TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: textCtrl,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              autofocus: true,
+              decoration: InputDecoration(
+                suffixText: kpi.unit,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final val = double.tryParse(textCtrl.text.trim());
+              if (val != null) {
+                await ref
+                    .read(kpiRepositoryProvider)
+                    .updateCurrentValue(kpi.id, val);
+              }
+              if (ctx.mounted) Navigator.of(ctx).pop();
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
   IconData _platformIcon(String p) {
     switch (p.toLowerCase()) {
+      case 'github':
+        return Icons.code_rounded;
       case 'youtube':
         return Icons.play_circle_filled_rounded;
       case 'instagram':

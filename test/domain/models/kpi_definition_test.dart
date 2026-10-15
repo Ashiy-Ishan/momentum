@@ -144,9 +144,9 @@ void main() {
   });
 
   group('DefaultKpis Constants', () {
-    test('Provides all 7 default platform creator KPIs', () {
+    test('Provides all 11 default platform creator & developer KPIs', () {
       final kpis = DefaultKpis.getDefaults('user_123');
-      expect(kpis.length, 7);
+      expect(kpis.length, 11);
 
       // YouTube: Weekly Video Generation
       final weeklyVideos = kpis.firstWhere((k) => k.name == 'Weekly Video Generation');
@@ -168,7 +168,7 @@ void main() {
       // YouTube: Channel Subscribers
       final subs = kpis.firstWhere((k) => k.name == 'Channel Subscribers');
       expect(subs.currentValue, 1250.0);
-      expect(subs.targetValue, 50.0);
+      expect(subs.targetValue, 2500.0);
       expect(subs.unit, 'subs');
       expect(subs.metricCategory, 'subscriber_growth');
       expect(subs.longTermTarget, 10000.0);
@@ -187,12 +187,39 @@ void main() {
       // Instagram: Audience & Followers
       final followers = kpis.firstWhere((k) => k.name == 'Audience & Followers');
       expect(followers.currentValue, 3400.0);
-      expect(followers.targetValue, 100.0);
+      expect(followers.targetValue, 5000.0);
       expect(followers.unit, 'followers');
       expect(followers.metricCategory, 'follower_growth');
       expect(followers.longTermTarget, 10000.0);
       expect(followers.period, KpiPeriod.monthly);
       expect(followers.platform, 'instagram');
+
+      // GitHub: Weekly Commits & PRs
+      final ghCommits = kpis.firstWhere((k) => k.name == 'Weekly Commits & PRs');
+      expect(ghCommits.targetValue, 10.0);
+      expect(ghCommits.unit, 'commits');
+      expect(ghCommits.metricCategory, 'output');
+      expect(ghCommits.platform, 'github');
+
+      // GitHub: GitHub Stars & Followers
+      final ghStars = kpis.firstWhere((k) => k.name == 'GitHub Stars & Followers');
+      expect(ghStars.currentValue, 120.0);
+      expect(ghStars.targetValue, 500.0);
+      expect(ghStars.unit, 'stars');
+      expect(ghStars.platform, 'github');
+
+      // LinkedIn: Weekly LinkedIn Insights
+      final linkedinPosts = kpis.firstWhere((k) => k.name == 'Weekly LinkedIn Insights');
+      expect(linkedinPosts.targetValue, 3.0);
+      expect(linkedinPosts.unit, 'posts');
+      expect(linkedinPosts.platform, 'linkedin');
+
+      // LinkedIn: Professional Network
+      final linkedinConn = kpis.firstWhere((k) => k.name == 'LinkedIn Connections');
+      expect(linkedinConn.currentValue, 850.0);
+      expect(linkedinConn.targetValue, 2500.0);
+      expect(linkedinConn.unit, 'connections');
+      expect(linkedinConn.platform, 'linkedin');
 
       // Blog: Weekly Blog Publication
       final blogs = kpis.firstWhere((k) => k.name == 'Weekly Blog Publication');
@@ -206,7 +233,7 @@ void main() {
       // Blog: Newsletter Readers
       final readers = kpis.firstWhere((k) => k.name == 'Newsletter Readers');
       expect(readers.currentValue, 450.0);
-      expect(readers.targetValue, 25.0);
+      expect(readers.targetValue, 1000.0);
       expect(readers.unit, 'readers');
       expect(readers.metricCategory, 'subscriber_growth');
       expect(readers.longTermTarget, 2500.0);
@@ -266,7 +293,7 @@ void main() {
       await kpiRepo.seedDefaultPlatformKpis(userId, []);
 
       final stored = await kpiRepo.getAllKpis(userId);
-      expect(stored.length, 7);
+      expect(stored.length, 11);
 
       final ytSub = stored.firstWhere((k) => k.name == 'Channel Subscribers');
       expect(ytSub.currentValue, 1250.0);

@@ -30,15 +30,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: '/',
-            builder: (context, state) => const DashboardScreen(),
+            pageBuilder: (context, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const DashboardScreen(),
+            ),
           ),
           GoRoute(
             path: '/today',
-            builder: (context, state) => const TodayTasksScreen(),
+            pageBuilder: (context, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const TodayTasksScreen(),
+            ),
           ),
           GoRoute(
             path: '/tasks',
-            builder: (context, state) => const AllTasksScreen(),
+            pageBuilder: (context, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const AllTasksScreen(),
+            ),
           ),
           GoRoute(
             path: '/tasks/new',
@@ -128,7 +137,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/labels',
-            builder: (context, state) => const LabelsScreen(),
+            pageBuilder: (context, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const LabelsScreen(),
+            ),
           ),
           GoRoute(
             path: '/labels/parent/:id',
@@ -160,15 +172,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/analytics',
-            builder: (context, state) => const AnalyticsScreen(),
+            pageBuilder: (context, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const AnalyticsScreen(),
+            ),
           ),
           GoRoute(
             path: '/calendar',
-            builder: (context, state) => const CalendarScreen(),
+            pageBuilder: (context, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const CalendarScreen(),
+            ),
           ),
           GoRoute(
             path: '/settings',
-            builder: (context, state) => const SettingsScreen(),
+            pageBuilder: (context, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const SettingsScreen(),
+            ),
           ),
         ],
       ),

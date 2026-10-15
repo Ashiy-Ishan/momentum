@@ -65,6 +65,7 @@ abstract class AppColors {
   static const Color platformBlog = Color(0xFFF97316); // Warm Craft Terracotta
   static const Color platformLinkedIn = Color(0xFF0A66C2); // LinkedIn Cyan
   static const Color platformTikTok = Color(0xFF00F2FE); // Neon Cyan
+  static const Color platformGithub = Color(0xFF2EA043); // GitHub Emerald Green
 
   // Convenient brand aliases
   static const Color youtube = platformYoutube;
@@ -74,6 +75,7 @@ abstract class AppColors {
   static const Color blog = platformBlog;
   static const Color linkedin = platformLinkedIn;
   static const Color tiktok = platformTikTok;
+  static const Color github = platformGithub;
 
   // ---------------------------------------------------------------------------
   // Light Mode Surfaces & Neutrals (Architectural Crisp Ivory & Slate)
@@ -342,6 +344,8 @@ abstract class AppColors {
         return platformLinkedIn;
       case 'tiktok':
         return platformTikTok;
+      case 'github':
+        return platformGithub;
       default:
         return primary;
     }

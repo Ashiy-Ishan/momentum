@@ -18,6 +18,7 @@ import '../../linux_wallpaper/renderers/wallpaper_svg_renderer.dart';
 import '../../linux_wallpaper/services/linux_wallpaper_service.dart';
 import '../../motivation/providers/motivation_providers.dart';
 import '../../tasks/providers/task_providers.dart';
+import '../providers/connected_accounts_provider.dart';
 import '../providers/settings_providers.dart';
 
 /// Application settings screen covering Appearance theming, Notifications & Active hours,
@@ -468,7 +469,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           AppSpacing.vGapLg,
 
-          // Section 3: Linux Desktop Dynamic Wallpaper
+          // Section 3: Connected Creator & Social Accounts
+          _buildConnectedAccountsSection(context),
+
+          // Section 4: Linux Desktop Dynamic Wallpaper
           _buildSectionHeader(
             'Linux Desktop Wallpaper Dashboard',
             Icons.desktop_windows_outlined,
@@ -890,5 +894,310 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildConnectedAccountsSection(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final accounts = ref.watch(connectedAccountsProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(
+          'Connected Creator & Social Accounts',
+          Icons.hub_outlined,
+        ),
+        Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.5)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Link your developer and creator handles to display your real profiles and audience counts across your Momentum dashboard.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
+                  ),
+                ),
+                AppSpacing.vGapMd,
+                ...accounts.map((acc) {
+                  final brandColor = AppColors.forPlatform(acc.platform);
+                  final isConnected = acc.isConnected;
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? AppColors.surfaceVariantDark.withValues(alpha: 0.3)
+                          : AppColors.surfaceVariantLight.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      border: Border.all(
+                        color: isConnected
+                            ? brandColor.withValues(alpha: 0.4)
+                            : (isDark
+                                ? AppColors.borderDark
+                                : AppColors.borderLight),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: brandColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Icon(
+                            _platformIcon(acc.platform),
+                            size: 16,
+                            color: brandColor,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    acc.platformDisplayName,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  if (isConnected) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 1),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.statusDone
+                                            .withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: const Text(
+                                        'Connected',
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.statusDone,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                isConnected
+                                    ? '${acc.handle} • ${acc.metricCount != null ? "${acc.metricCount!.toInt()} ${acc.metricUnit}" : acc.profileUrl}'
+                                    : 'Not connected yet',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isConnected
+                                      ? (isDark
+                                          ? AppColors.textSecondaryDark
+                                          : AppColors.textSecondaryLight)
+                                      : Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (isConnected) ...[
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 16),
+                            tooltip: 'Edit details',
+                            onPressed: () =>
+                                _showConnectAccountDialog(context, acc),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.link_off_rounded,
+                                size: 16, color: AppColors.statusCancelled),
+                            tooltip: 'Disconnect',
+                            onPressed: () async {
+                              await ref
+                                  .read(connectedAccountsProvider.notifier)
+                                  .disconnectAccount(acc.platform);
+                              if (context.mounted) {
+                                context.showSnackBar(
+                                    'Disconnected ${acc.platformDisplayName}');
+                              }
+                            },
+                          ),
+                        ] else ...[
+                          FilledButton.tonal(
+                            onPressed: () =>
+                                _showConnectAccountDialog(context, acc),
+                            style: FilledButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                            ),
+                            child: const Text('Connect',
+                                style: TextStyle(fontSize: 12)),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        ),
+        AppSpacing.vGapLg,
+      ],
+    );
+  }
+
+  Future<void> _showConnectAccountDialog(
+      BuildContext context, ConnectedAccount acc) async {
+    final handleCtrl = TextEditingController(text: acc.handle);
+    final urlCtrl = TextEditingController(text: acc.profileUrl);
+    final countCtrl = TextEditingController(
+      text: acc.metricCount != null ? acc.metricCount!.toInt().toString() : '',
+    );
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              _platformIcon(acc.platform),
+              color: AppColors.forPlatform(acc.platform),
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text('Connect ${acc.platformDisplayName}'),
+          ],
+        ),
+        content: SizedBox(
+          width: 420,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: handleCtrl,
+                decoration: InputDecoration(
+                  labelText: 'Username or Handle',
+                  hintText: acc.platform == 'github'
+                      ? 'e.g. torvalds'
+                      : (acc.platform == 'linkedin'
+                          ? 'e.g. in/satyanadella'
+                          : '@channel_handle'),
+                  prefixIcon: const Icon(Icons.alternate_email, size: 18),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: urlCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Profile or Website URL',
+                  hintText: 'https://...',
+                  prefixIcon: Icon(Icons.link, size: 18),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: countCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Current ${acc.metricUnit}',
+                  hintText: 'e.g. 1500',
+                  prefixIcon: const Icon(Icons.people_outline, size: 18),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final handle = handleCtrl.text.trim();
+              if (handle.isEmpty) {
+                if (ctx.mounted) {
+                  Navigator.of(ctx).pop();
+                }
+                return;
+              }
+              final url = urlCtrl.text.trim();
+              final count = double.tryParse(countCtrl.text.trim());
+
+              await ref.read(connectedAccountsProvider.notifier).saveAccount(
+                    platform: acc.platform,
+                    handle: handle,
+                    profileUrl: url,
+                    metricCount: count,
+                  );
+
+              // If count was provided, also sync matching KPI
+              if (count != null) {
+                final allKpis = await ref
+                    .read(kpiRepositoryProvider)
+                    .getAllKpis(ref.read(currentUserIdProvider));
+                for (final k in allKpis) {
+                  if (k.platform.toLowerCase() == acc.platform.toLowerCase() &&
+                      (k.metricCategory == 'subscriber_growth' ||
+                          k.metricCategory == 'follower_growth')) {
+                    await ref
+                        .read(kpiRepositoryProvider)
+                        .updateCurrentValue(k.id, count);
+                  }
+                }
+              }
+
+              if (ctx.mounted) {
+                Navigator.of(ctx).pop();
+                context.showSnackBar('Saved ${acc.platformDisplayName} account');
+              }
+            },
+            child: const Text('Save & Connect'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _platformIcon(String p) {
+    switch (p.toLowerCase()) {
+      case 'github':
+        return Icons.code_rounded;
+      case 'youtube':
+        return Icons.play_circle_filled_rounded;
+      case 'instagram':
+        return Icons.camera_alt_rounded;
+      case 'twitter':
+      case 'x':
+        return Icons.tag_rounded;
+      case 'blog':
+        return Icons.article_rounded;
+      case 'linkedin':
+        return Icons.business_center_rounded;
+      default:
+        return Icons.link_rounded;
+    }
   }
 }

@@ -49,6 +49,22 @@ abstract class DefaultKpis {
               l.name.toLowerCase().contains('projects')),
     );
 
+    final githubLabelId = findLabelId(
+      (l) =>
+          !l.isDeleted &&
+          (l.name.toLowerCase().contains('programming') ||
+              l.name.toLowerCase().contains('linux') ||
+              l.name.toLowerCase().contains('learning')),
+    );
+
+    final linkedinLabelId = findLabelId(
+      (l) =>
+          !l.isDeleted &&
+          (l.name.toLowerCase().contains('career') ||
+              l.name.toLowerCase().contains('internship') ||
+              l.name.toLowerCase().contains('portfolio')),
+    );
+
     return [
       // -----------------------------------------------------------------------
       // 1. YouTube: Weekly Video Generation
@@ -104,7 +120,7 @@ abstract class DefaultKpis {
         name: 'Channel Subscribers',
         description: 'Track YouTube channel subscriber growth against long-term milestone.',
         kpiType: KpiType.count,
-        targetValue: 50.0,
+        targetValue: 2500.0,
         currentValue: 1250.0,
         longTermTarget: 10000.0,
         unit: 'subs',
@@ -148,7 +164,7 @@ abstract class DefaultKpis {
         name: 'Audience & Followers',
         description: 'Instagram/Social media community reach and follower base growth.',
         kpiType: KpiType.count,
-        targetValue: 100.0,
+        targetValue: 5000.0,
         currentValue: 3400.0,
         longTermTarget: 10000.0,
         unit: 'followers',
@@ -192,12 +208,100 @@ abstract class DefaultKpis {
         name: 'Newsletter Readers',
         description: 'Subscribers and active readers engaged with written newsletter issues.',
         kpiType: KpiType.count,
-        targetValue: 25.0,
+        targetValue: 1000.0,
         currentValue: 450.0,
         longTermTarget: 2500.0,
         unit: 'readers',
         platform: 'blog',
         metricCategory: 'subscriber_growth',
+        period: KpiPeriod.monthly,
+        startDate: now,
+        createdAt: now,
+        updatedAt: now,
+      ),
+
+      // -----------------------------------------------------------------------
+      // 8. GitHub: Weekly Code Commits & PRs
+      // -----------------------------------------------------------------------
+      KpiDefinition(
+        id: 'kpi_${userId}_github_weekly_commits',
+        userId: userId,
+        labelId: githubLabelId,
+        name: 'Weekly Commits & PRs',
+        description: 'Maintain engineering velocity with weekly commits and shipped PRs.',
+        kpiType: KpiType.count,
+        targetValue: 10.0,
+        currentValue: 0.0,
+        longTermTarget: 500.0,
+        unit: 'commits',
+        platform: 'github',
+        metricCategory: 'output',
+        period: KpiPeriod.weekly,
+        startDate: now,
+        createdAt: now,
+        updatedAt: now,
+      ),
+
+      // -----------------------------------------------------------------------
+      // 9. GitHub: Stars & Followers
+      // -----------------------------------------------------------------------
+      KpiDefinition(
+        id: 'kpi_${userId}_github_followers',
+        userId: userId,
+        labelId: githubLabelId,
+        name: 'GitHub Stars & Followers',
+        description: 'Developer community engagement and repository stars growth.',
+        kpiType: KpiType.count,
+        targetValue: 500.0,
+        currentValue: 120.0,
+        longTermTarget: 1000.0,
+        unit: 'stars',
+        platform: 'github',
+        metricCategory: 'follower_growth',
+        period: KpiPeriod.monthly,
+        startDate: now,
+        createdAt: now,
+        updatedAt: now,
+      ),
+
+      // -----------------------------------------------------------------------
+      // 10. LinkedIn: Weekly Insights
+      // -----------------------------------------------------------------------
+      KpiDefinition(
+        id: 'kpi_${userId}_linkedin_weekly_posts',
+        userId: userId,
+        labelId: linkedinLabelId,
+        name: 'Weekly LinkedIn Insights',
+        description: 'Publish industry insights, software case studies, and career updates.',
+        kpiType: KpiType.count,
+        targetValue: 3.0,
+        currentValue: 0.0,
+        longTermTarget: 150.0,
+        unit: 'posts',
+        platform: 'linkedin',
+        metricCategory: 'post_publication',
+        period: KpiPeriod.weekly,
+        startDate: now,
+        createdAt: now,
+        updatedAt: now,
+      ),
+
+      // -----------------------------------------------------------------------
+      // 11. LinkedIn: Professional Network Connections
+      // -----------------------------------------------------------------------
+      KpiDefinition(
+        id: 'kpi_${userId}_linkedin_connections',
+        userId: userId,
+        labelId: linkedinLabelId,
+        name: 'LinkedIn Connections',
+        description: 'Grow high-value professional connections and industry peers.',
+        kpiType: KpiType.count,
+        targetValue: 2500.0,
+        currentValue: 850.0,
+        longTermTarget: 5000.0,
+        unit: 'connections',
+        platform: 'linkedin',
+        metricCategory: 'follower_growth',
         period: KpiPeriod.monthly,
         startDate: now,
         createdAt: now,
