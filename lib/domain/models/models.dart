@@ -9,3 +9,4 @@ export 'task_occurrence.dart';
 export 'timer_session.dart';
 export 'user_profile.dart';
 export 'connected_account.dart';
+export 'notification_history_item.dart';

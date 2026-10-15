@@ -11,6 +11,7 @@ import 'package:momentum/features/dashboard/screens/dashboard_screen.dart';
 import 'package:momentum/features/labels/screens/labels_screen.dart';
 import 'package:momentum/features/labels/screens/parent_label_dashboard_screen.dart';
 import 'package:momentum/features/labels/screens/sub_label_dashboard_screen.dart';
+import 'package:momentum/features/notifications/screens/notification_history_screen.dart';
 import 'package:momentum/features/settings/screens/settings_screen.dart';
 import 'package:momentum/features/tasks/screens/all_tasks_screen.dart';
 import 'package:momentum/features/tasks/screens/task_form_screen.dart';
@@ -249,8 +250,19 @@ void main() {
       expect(find.byType(SettingsScreen), findsOneWidget);
     });
 
+    testWidgets('16. Route /notifications loads NotificationHistoryScreen',
+        (tester) async {
+      await pumpApp(tester);
+
+      container.read(appRouterProvider).go('/notifications');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(NotificationHistoryScreen), findsOneWidget);
+    });
+
     testWidgets(
-        '16. Route /invalid/nonexistent/path renders the graceful Page Not Found error screen with Return to Dashboard button and redirects to /',
+        '17. Route /invalid/nonexistent/path renders the graceful Page Not Found error screen with Return to Dashboard button and redirects to /',
         (tester) async {
       container.read(appRouterProvider).go('/invalid/nonexistent/path');
       await pumpApp(tester);

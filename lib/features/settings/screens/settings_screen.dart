@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/extensions/context_extensions.dart';
 import '../../../core/theme/theme.dart';
@@ -463,6 +464,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   value: notifSettings.motivationEnabled,
                   onChanged: (val) => notifNotifier.toggleMotivation(val),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.history_toggle_off_rounded),
+                  title: const Text('Notification History'),
+                  subtitle:
+                      const Text('View and manage past alerts, reminders, and daily summaries'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/notifications'),
                 ),
               ],
             ),

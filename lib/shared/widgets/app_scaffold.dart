@@ -9,6 +9,7 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../data/sync/sync_engine.dart';
+import '../../features/notifications/providers/notification_history_provider.dart';
 import '../../features/settings/providers/settings_providers.dart';
 import 'active_timer_banner.dart';
 
@@ -431,6 +432,10 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
             AppSpacing.hGapSm,
           ],
 
+          // Notification Bell Button
+          const _NotificationBellButton(),
+          AppSpacing.hGapSm,
+
           // Quick Add Task Button
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
@@ -489,6 +494,7 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
               tooltip: 'Search',
               onPressed: widget.onSearch,
             ),
+          const _NotificationBellButton(),
           IconButton(
             icon: const Icon(Icons.add_task_rounded),
             tooltip: 'Add Task',
@@ -565,14 +571,21 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
                   horizontal: AppSpacing.sm,
                   vertical: AppSpacing.sm,
                 ),
-                children: kMomentumNavItems.map((item) {
-                  final isSelected = _isRouteSelected(item.route, currentPath);
-                  return _SidebarNavItemTile(
-                    item: item,
-                    isSelected: isSelected,
-                    onTap: () => _handleNavigate(context, item.route),
-                  );
-                }).toList(),
+                children: [
+                  ...kMomentumNavItems.map((item) {
+                    final isSelected = _isRouteSelected(item.route, currentPath);
+                    return _SidebarNavItemTile(
+                      item: item,
+                      isSelected: isSelected,
+                      onTap: () => _handleNavigate(context, item.route),
+                    );
+                  }),
+                  const Divider(height: 16),
+                  _DrawerNotificationTile(
+                    isSelected: _isRouteSelected('/notifications', currentPath),
+                    onTap: () => _handleNavigate(context, '/notifications'),
+                  ),
+                ],
               ),
             ),
 
@@ -810,3 +823,115 @@ class _ThemeModeToggleButton extends ConsumerWidget {
     );
   }
 }
+
+class _NotificationBellButton extends ConsumerWidget {
+  const _NotificationBellButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unreadCount = ref.watch(unreadNotificationCountProvider);
+
+    return Tooltip(
+      message: unreadCount > 0
+          ? '$unreadCount unread notification${unreadCount > 1 ? "s" : ""}'
+          : 'Notification History',
+      child: IconButton(
+        icon: Badge(
+          isLabelVisible: unreadCount > 0,
+          label: Text(
+            unreadCount > 99 ? '99+' : unreadCount.toString(),
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          backgroundColor: AppColors.primary,
+          textColor: Colors.black,
+          child: const Icon(Icons.notifications_outlined, size: 22),
+        ),
+        onPressed: () {
+          context.push('/notifications');
+        },
+      ),
+    );
+  }
+}
+
+class _DrawerNotificationTile extends ConsumerWidget {
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _DrawerNotificationTile({
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unreadCount = ref.watch(unreadNotificationCountProvider);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: ListTile(
+        dense: true,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        selected: isSelected,
+        selectedTileColor: isDark
+            ? AppColors.surfaceVariantDark
+            : AppColors.surfaceVariantLight,
+        leading: Badge(
+          isLabelVisible: unreadCount > 0,
+          backgroundColor: AppColors.primary,
+          textColor: Colors.black,
+          label: Text(
+            unreadCount.toString(),
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+          ),
+          child: Icon(
+            isSelected
+                ? Icons.notifications_rounded
+                : Icons.notifications_outlined,
+            size: 20,
+            color: isSelected
+                ? theme.colorScheme.primary
+                : (isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight),
+          ),
+        ),
+        title: Text(
+          'Notifications',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? theme.colorScheme.primary : null,
+          ),
+        ),
+        trailing: unreadCount > 0
+            ? Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$unreadCount new',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              )
+            : null,
+        onTap: onTap,
+      ),
+    );
+  }
+}
+

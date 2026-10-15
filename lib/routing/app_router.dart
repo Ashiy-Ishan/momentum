@@ -9,6 +9,7 @@ import '../features/dashboard/screens/dashboard_screen.dart';
 import '../features/labels/screens/labels_screen.dart';
 import '../features/labels/screens/parent_label_dashboard_screen.dart';
 import '../features/labels/screens/sub_label_dashboard_screen.dart';
+import '../features/notifications/screens/notification_history_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
 import '../features/tasks/screens/all_tasks_screen.dart';
 import '../features/tasks/screens/task_form_screen.dart';
@@ -189,6 +190,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) => NoTransitionPage(
               key: state.pageKey,
               child: const SettingsScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/notifications',
+            pageBuilder: (context, state) => NoTransitionPage(
+              key: state.pageKey,
+              child: const NotificationHistoryScreen(),
             ),
           ),
         ],
