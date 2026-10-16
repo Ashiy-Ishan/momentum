@@ -51,5 +51,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    - assets/icons/
     - assets/quotes.json
     - assets/wallpaper_templates/

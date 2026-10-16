@@ -810,6 +810,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         : AppColors.textSecondaryLight,
                   ),
                 ),
+                AppSpacing.vGapSm,
+                _buildAccountConnectionGuide(context, isDark),
                 AppSpacing.vGapMd,
                 ...accounts.map((acc) {
                   final brandColor = AppColors.forPlatform(acc.platform);
@@ -1099,6 +1101,158 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         AppSpacing.vGapLg,
       ],
+    );
+  }
+
+  Widget _buildAccountConnectionGuide(BuildContext context, bool isDark) {
+    final theme = Theme.of(context);
+    final guideBg = isDark
+        ? AppColors.surfaceVariantDark.withValues(alpha: 0.25)
+        : AppColors.surfaceVariantLight.withValues(alpha: 0.5);
+
+    return Theme(
+      data: theme.copyWith(dividerColor: Colors.transparent),
+      child: Material(
+        color: guideBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          side: BorderSide(
+            color: theme.colorScheme.primary.withValues(alpha: 0.2),
+          ),
+        ),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+          childrenPadding:
+              const EdgeInsets.only(left: 14, right: 14, bottom: 14),
+          leading: Icon(
+            Icons.help_outline_rounded,
+            size: 20,
+            color: theme.colorScheme.primary,
+          ),
+          title: Text(
+            'Connection Guidelines & API Setup',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          subtitle: Text(
+            'Step-by-step instructions for YouTube, GitHub, Instagram, & Cloud Sync',
+            style: TextStyle(
+              fontSize: 11,
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
+            ),
+          ),
+          children: [
+            const Divider(height: 1),
+            const SizedBox(height: 10),
+            _buildGuideItem(
+              icon: Icons.video_library_rounded,
+              color: const Color(0xFFFF0000),
+              title: 'YouTube Data API v3',
+              steps: [
+                '1. Go to Google Cloud Console (console.cloud.google.com) and create or select a project.',
+                '2. Navigate to "APIs & Services" -> "Library" -> Search for and enable "YouTube Data API v3".',
+                '3. In "Credentials", click "+ CREATE CREDENTIALS" -> "API key". Copy your generated API key.',
+                '4. In Momentum, click "Connect" on YouTube -> Enter your channel handle (e.g. @YourChannel or UC... ID) and paste the API key.',
+                '5. Click "Test & Verify Connection". Once verified, Momentum automatically syncs subscribers, video uploads, and weekly KPIs!',
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildGuideItem(
+              icon: Icons.code_rounded,
+              color: const Color(0xFF24292E),
+              title: 'GitHub (Commits, Repos & Stars)',
+              steps: [
+                '1. Open GitHub.com -> Click your avatar -> Settings -> Developer Settings.',
+                '2. Select "Personal access tokens" -> "Tokens (classic)" -> "Generate new token".',
+                '3. Choose expiration and check scopes: "read:user" (for profile/stats) and "repo" (if tracking private repositories/commits).',
+                '4. Paste the token and your GitHub username into Momentum and click "Test & Verify".',
+                '5. Momentum will monitor your weekly commit volume, repo count, and stars directly on the dashboard.',
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildGuideItem(
+              icon: Icons.camera_alt_rounded,
+              color: const Color(0xFFE1306C),
+              title: 'Instagram & Social Media',
+              steps: [
+                '1. Enter your public handle (e.g. @username) and profile URL.',
+                '2. Set your current follower milestone or target weekly posting frequency.',
+                '3. Momentum tracks your content output cadence and reels/posts progress on your dashboard.',
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildGuideItem(
+              icon: Icons.cloud_sync_rounded,
+              color: AppColors.primary,
+              title: 'Real-time Cross-Device Cloud Sync (Supabase)',
+              steps: [
+                '1. In Settings -> "Cloud Sync & Supabase", enter your Supabase Project URL and Anon Key.',
+                '2. Sign up or log in with your email to link your account.',
+                '3. Real-time WebSocket sync activates automatically: tasks, KPIs, occurrences, and notes update instantaneously on all your active devices!',
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGuideItem({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required List<String> steps,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.black.withValues(alpha: 0.2)
+            : Colors.white.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: color),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ...steps.map(
+            (step) => Padding(
+              padding: const EdgeInsets.only(bottom: 3),
+              child: Text(
+                step,
+                style: TextStyle(
+                  fontSize: 11,
+                  height: 1.35,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -609,6 +609,7 @@ class _DesktopHudScreenState extends ConsumerState<DesktopHudScreen> {
               runSpacing: 6,
               children: displayKpis.map((kpi) {
                 return Container(
+                  constraints: const BoxConstraints(maxWidth: 320),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -622,11 +623,15 @@ class _DesktopHudScreenState extends ConsumerState<DesktopHudScreen> {
                       const Icon(Icons.trending_up_rounded,
                           size: 13, color: AppColors.secondary),
                       const SizedBox(width: 4),
-                      Text(
-                        '${kpi.name}: ${kpi.targetValue.toInt()} ${kpi.unit}',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 11,
+                      Flexible(
+                        child: Text(
+                          '${kpi.name}: ${kpi.targetValue.toInt()} ${kpi.unit}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 11,
+                          ),
                         ),
                       ),
                     ],

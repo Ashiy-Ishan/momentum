@@ -38,7 +38,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -46,7 +46,41 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
     },
     onUpgrade: (Migrator m, int from, int to) async {
-      // Future migrations
+      if (from < 2) {
+        await m.addColumn(kpiDefinitions, kpiDefinitions.currentValue);
+        await m.addColumn(kpiDefinitions, kpiDefinitions.longTermTarget);
+        await m.addColumn(kpiDefinitions, kpiDefinitions.unit);
+        await m.addColumn(kpiDefinitions, kpiDefinitions.platform);
+        await m.addColumn(kpiDefinitions, kpiDefinitions.metricCategory);
+      }
+    },
+    beforeOpen: (details) async {
+      // Defensive migration to ensure existing databases have the new columns
+      try {
+        await customStatement(
+          'ALTER TABLE kpi_definitions ADD COLUMN current_value REAL NOT NULL DEFAULT 0.0',
+        );
+      } catch (_) {}
+      try {
+        await customStatement(
+          'ALTER TABLE kpi_definitions ADD COLUMN long_term_target REAL',
+        );
+      } catch (_) {}
+      try {
+        await customStatement(
+          'ALTER TABLE kpi_definitions ADD COLUMN unit TEXT NOT NULL DEFAULT "count"',
+        );
+      } catch (_) {}
+      try {
+        await customStatement(
+          'ALTER TABLE kpi_definitions ADD COLUMN platform TEXT NOT NULL DEFAULT "general"',
+        );
+      } catch (_) {}
+      try {
+        await customStatement(
+          'ALTER TABLE kpi_definitions ADD COLUMN metric_category TEXT NOT NULL DEFAULT "output"',
+        );
+      } catch (_) {}
     },
   );
 

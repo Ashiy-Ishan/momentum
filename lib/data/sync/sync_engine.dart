@@ -7,6 +7,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/constants/app_constants.dart';
@@ -113,6 +114,9 @@ class SyncEngine {
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   StreamSubscription<dynamic>? _authSubscription;
+  RealtimeChannel? _realtimeChannel;
+  Timer? _periodicSyncTimer;
+  Timer? _debounceTimer;
 
   /// Current status of the sync engine.
   SyncEngineStatus get currentStatus => _status;
@@ -159,6 +163,7 @@ class SyncEngine {
               _updateStatus(SyncEngineStatus.idle);
               if (_supabase.isConfigured && _supabase.isAuthenticated) {
                 unawaited(triggerSync());
+                _setupRealtimeSubscription();
               }
             }
           }
@@ -169,20 +174,80 @@ class SyncEngine {
       _authSubscription = _supabase.authStateChanges.listen((data) {
         if (_supabase.isAuthenticated && _isOnline) {
           unawaited(triggerSync());
+          _setupRealtimeSubscription();
+        } else {
+          _cleanupRealtime();
         }
       });
 
-      // Initial sync if online and authenticated
+      // Initial sync and realtime subscription if online and authenticated
       if (_isOnline && _supabase.isConfigured && _supabase.isAuthenticated) {
         unawaited(triggerSync());
+        _setupRealtimeSubscription();
       }
     } catch (e, st) {
       debugPrint('SyncEngine initialization warning: $e\n$st');
     }
   }
 
+  /// Sets up Supabase Realtime channel to listen for cross-device database changes
+  /// and establishes a reliable periodic sync heartbeat.
+  void _setupRealtimeSubscription() {
+    _cleanupRealtime();
+    if (!_supabase.isConfigured || !_supabase.isAuthenticated) return;
+
+    try {
+      final client = _supabase.client;
+      if (client != null) {
+        _realtimeChannel = client.channel('public:momentum_realtime')
+          ..onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            callback: (payload) {
+              debugPrint('SyncEngine: Realtime DB change received for ${payload.table}');
+              _debounceRemoteSync();
+            },
+          )
+          ..subscribe();
+      }
+    } catch (e) {
+      debugPrint('SyncEngine: Realtime subscription notice: $e');
+    }
+
+    // Periodic heartbeat sync every 25 seconds for cross-device parity
+    _periodicSyncTimer = Timer.periodic(const Duration(seconds: 25), (_) {
+      if (_isOnline &&
+          _supabase.isConfigured &&
+          _supabase.isAuthenticated &&
+          !_isSyncInProgress) {
+        unawaited(triggerSync());
+      }
+    });
+  }
+
+  void _debounceRemoteSync() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 600), () {
+      if (_isOnline && _supabase.isConfigured && _supabase.isAuthenticated) {
+        unawaited(triggerSync());
+      }
+    });
+  }
+
+  void _cleanupRealtime() {
+    try {
+      _realtimeChannel?.unsubscribe();
+      _realtimeChannel = null;
+    } catch (_) {}
+    _periodicSyncTimer?.cancel();
+    _periodicSyncTimer = null;
+    _debounceTimer?.cancel();
+    _debounceTimer = null;
+  }
+
   /// Disposes of background listeners and streams.
   void dispose() {
+    _cleanupRealtime();
     _connectivitySubscription?.cancel();
     _authSubscription?.cancel();
     _statusController.close();

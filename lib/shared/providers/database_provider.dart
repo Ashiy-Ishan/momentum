@@ -104,3 +104,24 @@ final currentUserIdProvider = StateProvider<String>((ref) {
   ref.onDispose(() => subscription.cancel());
   return initialUser;
 });
+
+/// Holds the currently active user display name for greetings and UI.
+final currentUserNameProvider = Provider<String>((ref) {
+  final supabase = ref.watch(supabaseClientProvider);
+  final user = supabase.currentUser;
+  if (user != null) {
+    final meta = user.userMetadata;
+    final metaName =
+        meta?['full_name'] ?? meta?['display_name'] ?? meta?['name'];
+    if (metaName != null && metaName.toString().trim().isNotEmpty) {
+      return metaName.toString().trim();
+    }
+    if (user.email != null && user.email!.contains('@')) {
+      final handle = user.email!.split('@').first.trim();
+      if (handle.isNotEmpty) {
+        return handle[0].toUpperCase() + handle.substring(1);
+      }
+    }
+  }
+  return 'Creator';
+});

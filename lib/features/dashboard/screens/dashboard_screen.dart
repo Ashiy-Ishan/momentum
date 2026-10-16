@@ -31,6 +31,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   TaskStatus? _selectedStatusFilter;
   bool _isInitializingKpis = false;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _autoSeedKpisIfEmpty();
+    });
+  }
+
+  Future<void> _autoSeedKpisIfEmpty() async {
+    try {
+      final userId = ref.read(currentUserIdProvider);
+      final kpiRepo = ref.read(kpiRepositoryProvider);
+      final existing = await kpiRepo.getAllKpis(userId);
+      if (existing.isEmpty && mounted) {
+        final labelRepo = ref.read(labelRepositoryProvider);
+        await labelRepo.seedDefaultLabels(userId);
+        final labels = await labelRepo.getAllLabels(userId);
+        await kpiRepo.seedDefaultPlatformKpis(userId, labels);
+      }
+    } catch (_) {}
+  }
+
   Color _colorFromHex(String? hex, Color fallback) {
     if (hex == null || hex.isEmpty) return fallback;
     final clean = hex.replaceAll('#', '');
@@ -46,6 +68,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final greeting = ref.watch(currentGreetingProvider);
+    final userName = ref.watch(currentUserNameProvider);
     final quoteAsync = ref.watch(currentQuoteProvider);
     final statsAsync = ref.watch(dashboardStatsProvider);
     final todayTasksAsync = ref.watch(todayTasksStreamProvider);
@@ -64,7 +87,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '$greeting, User',
+              '$greeting, $userName',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -168,10 +191,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       final label = labels[index];
                       final childCount =
                           allLabels.where((l) => l.parentId == label.id).length;
+                      final kpisList = allKpisAsync.valueOrNull ?? [];
+                      final matchingKpis = kpisList.where((k) {
+                        if (k.labelId == label.id) return true;
+                        final lname = label.name.toLowerCase();
+                        if (lname.contains('youtube') &&
+                            k.platform.toLowerCase() == 'youtube') {
+                          return true;
+                        }
+                        if ((lname.contains('social') ||
+                                lname.contains('instagram')) &&
+                            (k.platform.toLowerCase() == 'instagram' ||
+                                k.platform.toLowerCase() == 'social')) {
+                          return true;
+                        }
+                        if (lname.contains('learning') &&
+                            k.platform.toLowerCase() == 'github') {
+                          return true;
+                        }
+                        if (lname.contains('career') &&
+                            k.platform.toLowerCase() == 'linkedin') {
+                          return true;
+                        }
+                        return false;
+                      }).toList();
                       return _buildParentLabelCard(
                         context,
                         label: label,
                         subLabelCount: childCount,
+                        matchingKpis: matchingKpis,
                       );
                     },
                   ),
@@ -605,19 +653,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     BuildContext context, {
     required Label label,
     required int subLabelCount,
+    List<KpiDefinition> matchingKpis = const [],
   }) {
     final theme = Theme.of(context);
     final cardColor = _colorFromHex(label.color, AppColors.primary);
 
     return Container(
-      width: 170,
+      width: 180,
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       child: Card(
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
           side: BorderSide(
-            color: cardColor.withValues(alpha: 0.3),
+            color: cardColor.withValues(alpha: 0.35),
             width: 1.2,
           ),
         ),
@@ -664,14 +713,63 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$subLabelCount sub-labels',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 11,
-                        color: theme.colorScheme.onSurfaceVariant,
+                    if (matchingKpis.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              matchingKpis.first.metricCategory ==
+                                      'subscriber_growth'
+                                  ? '${_formatMetric(matchingKpis.first.currentValue)} ${matchingKpis.first.unit}'
+                                  : '${matchingKpis.first.currentValue.toInt()}/${matchingKpis.first.targetValue.toInt()} ${matchingKpis.first.unit}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: cardColor,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            matchingKpis.first.targetValue > 0
+                                ? '${((matchingKpis.first.currentValue / matchingKpis.first.targetValue).clamp(0.0, 1.0) * 100).toInt()}%'
+                                : '0%',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
+                      const SizedBox(height: 3),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(2),
+                        child: LinearProgressIndicator(
+                          value: matchingKpis.first.targetValue > 0
+                              ? (matchingKpis.first.currentValue /
+                                      matchingKpis.first.targetValue)
+                                  .clamp(0.0, 1.0)
+                              : 0.0,
+                          minHeight: 3,
+                          backgroundColor: cardColor.withValues(alpha: 0.15),
+                          valueColor: AlwaysStoppedAnimation<Color>(cardColor),
+                        ),
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '$subLabelCount sub-labels',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 11,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],
@@ -1118,19 +1216,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          isMilestone
-                              ? '${_formatMetric(kpi.currentValue)} / ${_formatMetric(kpi.targetValue)} ${kpi.unit}'
-                              : '${kpi.currentValue.toInt()} / ${kpi.targetValue.toInt()} ${kpi.unit}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: isDark
-                                ? AppColors.textSecondaryDark
-                                : AppColors.textSecondaryLight,
+                        Expanded(
+                          child: Text(
+                            isMilestone
+                                ? '${_formatMetric(kpi.currentValue)} / ${_formatMetric(kpi.targetValue)} ${kpi.unit}'
+                                : '${kpi.currentValue.toInt()} / ${kpi.targetValue.toInt()} ${kpi.unit}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondaryLight,
+                            ),
                           ),
                         ),
-                        if (kpi.hasLongTermTarget)
+                        if (kpi.hasLongTermTarget) ...[
+                          const SizedBox(width: 4),
                           Text(
                             'Goal: ${_formatMetric(kpi.longTermTarget!)}',
                             style: TextStyle(
@@ -1141,6 +1244,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   : AppColors.primaryDark,
                             ),
                           ),
+                        ],
                       ],
                     ),
                     ClipRRect(
