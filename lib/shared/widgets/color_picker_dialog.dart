@@ -28,22 +28,22 @@ class ColorPickerDialog extends StatefulWidget {
 
 class _ColorPickerDialogState extends State<ColorPickerDialog> {
   static const List<String> _presetHexColors = [
-    '#4F46E5', // Indigo
-    '#6366F1', // Light Indigo
-    '#8B5CF6', // Violet
-    '#A855F7', // Purple
-    '#EC4899', // Pink
-    '#F43F5E', // Rose
-    '#EF4444', // Red
-    '#F97316', // Orange
-    '#F59E0B', // Amber
-    '#84CC16', // Lime
-    '#10B981', // Emerald
-    '#14B8A6', // Teal
-    '#06B6D4', // Cyan
-    '#3B82F6', // Blue
-    '#64748B', // Slate
-    '#1E293B', // Dark Slate
+    '#C4A480', // Warm Platinum Bronze
+    '#A87C5C', // Warm Sepia
+    '#C28D4E', // Refined Warm Ochre
+    '#4E9B78', // Soft Muted Sage
+    '#5D8568', // Muted Moss
+    '#5B82A6', // Subtle Steel Blue
+    '#6889A4', // Slate Steel
+    '#5E7A96', // Dusky Slate Blue
+    '#A06B82', // Muted Mauve
+    '#BD5B5B', // Muted Rosewood
+    '#B85454', // Soft Crimson
+    '#7E7B92', // Dusky Plum
+    '#788D98', // Cool Graphite Slate
+    '#94A3B8', // Architectural Platinum
+    '#64748B', // Muted Slate
+    '#1E293B', // Deep Titanium Slate
   ];
 
   late String _selectedHex;

@@ -69,8 +69,8 @@ void main() {
       expect(totals.totalArticlesTarget, equals(1.0));
       expect(totals.totalArticlesLongTerm, equals(52.0));
 
-      // Combined Audience Reach (1250 YouTube subs + 3400 IG + 450 blog + 120 github + 850 linkedin = 6070)
-      expect(totals.totalAudienceCurrent, equals(6070.0));
+      // Combined Audience Reach (starts at 0.0 with clean unseeded starting values)
+      expect(totals.totalAudienceCurrent, equals(0.0));
       expect(totals.totalAudienceShortTermTarget, greaterThan(0));
       expect(totals.totalAudienceLongTermTarget, greaterThan(20000));
       expect(totals.audienceMetrics.length, equals(5));

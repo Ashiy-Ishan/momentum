@@ -302,7 +302,7 @@ class _LabelsScreenState extends ConsumerState<LabelsScreen> {
                   children: [
                     Icon(Icons.auto_awesome, size: 18),
                     SizedBox(width: 8),
-                    Text('Seed Default Labels'),
+                    Text('Add Starter Categories'),
                   ],
                 ),
               ),
@@ -333,19 +333,32 @@ class _LabelsScreenState extends ConsumerState<LabelsScreen> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Create custom labels or seed default areas (YouTube, Social Media, Learning, Career, Personal).',
+                      'Create custom categories to organize your projects, workflow, and goals.',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.grey),
                     ),
                     const SizedBox(height: 16),
-                    FilledButton.icon(
-                      icon: const Icon(Icons.auto_awesome),
-                      label: const Text('Seed Default Focus Areas'),
-                      onPressed: () {
-                        ref
-                            .read(labelControllerProvider.notifier)
-                            .seedDefaultLabels();
-                      },
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        FilledButton.icon(
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add Focus Area'),
+                          onPressed: () => _showLabelFormDialog(),
+                        ),
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.auto_awesome),
+                          label: const Text('Add Starter Categories'),
+                          onPressed: () {
+                            ref
+                                .read(labelControllerProvider.notifier)
+                                .seedDefaultLabels();
+                            context.showSnackBar('Starter categories added');
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),

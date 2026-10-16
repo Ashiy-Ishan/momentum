@@ -73,7 +73,7 @@ class LabelCard extends StatelessWidget {
               // Left Color Accent Bar
               // ---------------------------------------------------------------
               Container(
-                width: 6,
+                width: 3.5,
                 decoration: BoxDecoration(
                   color: labelColor,
                   borderRadius: const BorderRadius.only(
@@ -98,12 +98,20 @@ class LabelCard extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(AppSpacing.sm),
                             decoration: BoxDecoration(
-                              color: labelColor.withAlpha(isDark ? 50 : 35),
+                              color: isDark
+                                  ? AppColors.surfaceVariantDark
+                                  : AppColors.surfaceVariantLight,
                               borderRadius: AppRadius.borderSm,
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.borderDark
+                                    : AppColors.borderLight,
+                                width: 1.0,
+                              ),
                             ),
                             child: Icon(
                               label.iconData,
-                              size: 20,
+                              size: 18,
                               color: labelColor,
                             ),
                           ),

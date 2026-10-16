@@ -50,12 +50,12 @@ class _SubLabelDashboardScreenState
 
   Future<void> _showAddKpiDialog() async {
     final nameCtrl = TextEditingController();
-    final targetCtrl = TextEditingController(text: '2');
-    final currentCtrl = TextEditingController(text: '0');
+    final targetCtrl = TextEditingController();
+    final currentCtrl = TextEditingController();
     final longTermCtrl = TextEditingController();
-    final unitCtrl = TextEditingController(text: 'videos');
-    String selectedPlatform = 'youtube';
-    String selectedCategory = 'video_generation';
+    final unitCtrl = TextEditingController();
+    String selectedPlatform = 'general';
+    String selectedCategory = 'output';
     KpiType selectedType = KpiType.count;
     KpiPeriod selectedPeriod = KpiPeriod.weekly;
 
@@ -139,16 +139,6 @@ class _SubLabelDashboardScreenState
                               if (val != null) {
                                 setDialogState(() {
                                   selectedPlatform = val;
-                                  if (val == 'youtube') {
-                                    selectedCategory = 'video_generation';
-                                    unitCtrl.text = 'videos';
-                                  } else if (val == 'instagram' || val == 'twitter' || val == 'linkedin') {
-                                    selectedCategory = 'post_publication';
-                                    unitCtrl.text = 'posts';
-                                  } else if (val == 'blog') {
-                                    selectedCategory = 'blog_publication';
-                                    unitCtrl.text = 'articles';
-                                  }
                                 });
                               }
                             },
@@ -199,13 +189,7 @@ class _SubLabelDashboardScreenState
                               if (val != null) {
                                 setDialogState(() {
                                   selectedCategory = val;
-                                  if (val == 'video_generation') unitCtrl.text = 'videos';
-                                  if (val == 'post_publication') unitCtrl.text = 'posts';
-                                  if (val == 'blog_publication') unitCtrl.text = 'articles';
-                                  if (val == 'subscriber_growth') unitCtrl.text = 'subs';
-                                  if (val == 'follower_growth') unitCtrl.text = 'followers';
                                   if (val == 'time_invested') {
-                                    unitCtrl.text = 'hrs';
                                     selectedType = KpiType.time;
                                   }
                                 });

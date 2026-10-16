@@ -68,8 +68,8 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
     final query = selectOnly(syncQueueItems)
       ..addColumns([countExpr])
       ..where(syncQueueItems.status.equals('pending'));
-    final row = await query.getSingle();
-    return row.read(countExpr) ?? 0;
+    final row = await query.getSingleOrNull();
+    return row?.read(countExpr) ?? 0;
   }
 
   /// Watches the stream of pending item count.
@@ -78,6 +78,6 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
     final query = selectOnly(syncQueueItems)
       ..addColumns([countExpr])
       ..where(syncQueueItems.status.equals('pending'));
-    return query.watchSingle().map((row) => row.read(countExpr) ?? 0);
+    return query.watchSingleOrNull().map((row) => row?.read(countExpr) ?? 0);
   }
 }

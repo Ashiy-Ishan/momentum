@@ -87,13 +87,17 @@ class LabelRepositoryImpl implements LabelRepository {
 
   @override
   Future<void> updateLabel(domain.Label label) async {
-    await labelsDao.updateLabel(_mapLabelToCompanion(label));
+    final updated = label.copyWith(
+      version: label.version + 1,
+      updatedAt: DateTime.now(),
+    );
+    await labelsDao.updateLabel(_mapLabelToCompanion(updated));
 
     await syncEngine?.enqueueOperation(
       tableName: 'labels',
-      recordId: label.id,
+      recordId: updated.id,
       operation: SyncOperation.update,
-      payload: label.toMap(),
+      payload: updated.toMap(),
     );
   }
 
@@ -137,6 +141,12 @@ class LabelRepositoryImpl implements LabelRepository {
     final defaults = DefaultLabels.getDefaults(userId);
     for (final label in defaults) {
       await labelsDao.insertLabel(_mapLabelToCompanion(label));
+      await syncEngine?.enqueueOperation(
+        tableName: 'labels',
+        recordId: label.id,
+        operation: SyncOperation.insert,
+        payload: label.toMap(),
+      );
     }
   }
 

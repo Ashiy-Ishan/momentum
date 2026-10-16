@@ -53,8 +53,8 @@ class TimerDao extends DatabaseAccessor<AppDatabase> with _$TimerDaoMixin {
         timerSessions.taskId.equals(taskId) &
             timerSessions.isDeleted.equals(false),
       );
-    final row = await query.getSingle();
-    return row.read(sumExpr) ?? 0;
+    final row = await query.getSingleOrNull();
+    return row?.read(sumExpr) ?? 0;
   }
 
   /// Computes total elapsed seconds tracked for tasks under a label in a date range.
@@ -75,8 +75,8 @@ class TimerDao extends DatabaseAccessor<AppDatabase> with _$TimerDaoMixin {
                 timerSessions.startedAt.isBiggerOrEqualValue(start) &
                 timerSessions.startedAt.isSmallerOrEqualValue(end),
           );
-    final row = await query.getSingle();
-    return row.read(sumExpr) ?? 0;
+    final row = await query.getSingleOrNull();
+    return row?.read(sumExpr) ?? 0;
   }
 
   /// Watches the active timer session for a user.

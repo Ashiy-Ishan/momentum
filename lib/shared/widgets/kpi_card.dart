@@ -263,15 +263,27 @@ class KpiCard extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: platformColor.withValues(alpha: 0.12),
+                      color: isDark
+                          ? AppColors.surfaceVariantDark
+                          : AppColors.surfaceVariantLight,
                       borderRadius: AppRadius.borderSm,
+                      border: Border.all(
+                        color: isDark
+                            ? AppColors.borderDark
+                            : AppColors.borderLight,
+                        width: 0.8,
+                      ),
                     ),
                     child: Text(
                       '$shortPct%',
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: platformColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: isShortTargetReached
+                            ? AppColors.statusDone
+                            : (isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondaryLight),
                       ),
                     ),
                   ),
@@ -536,10 +548,12 @@ class _PlatformBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.2 : 0.12),
+        color: isDark
+            ? AppColors.surfaceVariantDark
+            : AppColors.surfaceVariantLight,
         borderRadius: AppRadius.borderSm,
         border: Border.all(
-          color: color.withValues(alpha: 0.35),
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
           width: 0.8,
         ),
       ),
@@ -552,8 +566,10 @@ class _PlatformBadge extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: color,
+              fontWeight: FontWeight.w600,
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight,
             ),
           ),
         ],

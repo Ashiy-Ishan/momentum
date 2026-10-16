@@ -634,9 +634,14 @@ class _LabelBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withAlpha(isDark ? 50 : 35),
+        color: isDark
+            ? AppColors.surfaceVariantDark
+            : AppColors.surfaceVariantLight,
         borderRadius: AppRadius.borderSm,
-        border: Border.all(color: color.withAlpha(80), width: 1),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -646,7 +651,9 @@ class _LabelBadge extends StatelessWidget {
           Text(
             label.name,
             style: AppTypography.labelSmall.copyWith(
-              color: color,
+              color: isDark
+                  ? AppColors.textPrimaryDark
+                  : AppColors.textPrimaryLight,
               fontWeight: FontWeight.w600,
               fontSize: 11,
             ),
@@ -664,14 +671,18 @@ class _RecurrenceBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDark ? AppColors.primaryLight : AppColors.primary;
+    final color = isDark ? AppColors.primaryLight : AppColors.primaryDark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
       decoration: BoxDecoration(
         color: isDark
-            ? AppColors.primaryContainerDark
-            : AppColors.primaryContainerLight,
+            ? AppColors.surfaceVariantDark
+            : AppColors.surfaceVariantLight,
         borderRadius: AppRadius.borderSm,
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -681,7 +692,9 @@ class _RecurrenceBadge extends StatelessWidget {
           Text(
             'Recurring',
             style: AppTypography.labelSmall.copyWith(
-              color: color,
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
               fontWeight: FontWeight.w600,
               fontSize: 11,
             ),

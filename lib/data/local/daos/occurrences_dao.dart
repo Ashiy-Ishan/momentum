@@ -69,10 +69,12 @@ class OccurrencesDao extends DatabaseAccessor<AppDatabase>
     String status, {
     DateTime? completedAt,
   }) async {
+    final existing = await (select(taskOccurrences)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
     await (update(taskOccurrences)..where((tbl) => tbl.id.equals(id))).write(
       TaskOccurrencesCompanion(
         status: Value(status),
         completedAt: Value(completedAt),
+        version: Value((existing?.version ?? 0) + 1),
         updatedAt: Value(DateTime.now()),
       ),
     );
@@ -105,12 +107,13 @@ class OccurrencesDao extends DatabaseAccessor<AppDatabase>
       ..where(
         taskOccurrences.userId.equals(userId) &
             taskOccurrences.isDeleted.equals(false) &
-            taskOccurrences.status.equals('completed') &
+            (taskOccurrences.status.equals('done') |
+                taskOccurrences.status.equals('completed')) &
             taskOccurrences.occurrenceDate.isBiggerOrEqualValue(start) &
             taskOccurrences.occurrenceDate.isSmallerOrEqualValue(end),
       );
-    final row = await query.getSingle();
-    return row.read(countExpr) ?? 0;
+    final row = await query.getSingleOrNull();
+    return row?.read(countExpr) ?? 0;
   }
 
   /// Counts all scheduled occurrences in a date range.
@@ -128,8 +131,8 @@ class OccurrencesDao extends DatabaseAccessor<AppDatabase>
             taskOccurrences.occurrenceDate.isBiggerOrEqualValue(start) &
             taskOccurrences.occurrenceDate.isSmallerOrEqualValue(end),
       );
-    final row = await query.getSingle();
-    return row.read(countExpr) ?? 0;
+    final row = await query.getSingleOrNull();
+    return row?.read(countExpr) ?? 0;
   }
 
   /// Watches occurrences on a specific calendar day.

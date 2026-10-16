@@ -11,15 +11,15 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     });
 
-    test('Loads initial seeded notifications on first startup', () async {
+    test('Starts with empty notification history without artificial mock seeds', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
       final history = container.read(notificationHistoryProvider);
-      expect(history.isNotEmpty, isTrue);
+      expect(history.isEmpty, isTrue);
 
       final unread = container.read(unreadNotificationCountProvider);
-      expect(unread, greaterThan(0));
+      expect(unread, 0);
     });
 
     test('addNotification prepends new notification item and updates unread count', () async {
@@ -47,12 +47,23 @@ void main() {
       addTearDown(container.dispose);
 
       final notifier = container.read(notificationHistoryProvider.notifier);
-      final list = container.read(notificationHistoryProvider);
-      final unreadItem = list.firstWhere((n) => !n.isRead);
+      final item1 = await notifier.addNotification(
+        title: 'Notification 1',
+        body: 'Body 1',
+        type: NotificationType.system,
+      );
+      await notifier.addNotification(
+        title: 'Notification 2',
+        body: 'Body 2',
+        type: NotificationType.streakMilestone,
+      );
 
-      await notifier.markAsRead(unreadItem.id);
+      expect(container.read(unreadNotificationCountProvider), 2);
+
+      await notifier.markAsRead(item1.id);
       final afterSingle = container.read(notificationHistoryProvider);
-      expect(afterSingle.firstWhere((n) => n.id == unreadItem.id).isRead, isTrue);
+      expect(afterSingle.firstWhere((n) => n.id == item1.id).isRead, isTrue);
+      expect(container.read(unreadNotificationCountProvider), 1);
 
       await notifier.markAllAsRead();
       expect(container.read(unreadNotificationCountProvider), 0);
@@ -63,11 +74,19 @@ void main() {
       addTearDown(container.dispose);
 
       final notifier = container.read(notificationHistoryProvider.notifier);
-      final list = container.read(notificationHistoryProvider);
-      final target = list.first;
+      final item1 = await notifier.addNotification(
+        title: 'Target Item',
+        body: 'Body',
+        type: NotificationType.system,
+      );
+      await notifier.addNotification(
+        title: 'Another Item',
+        body: 'Body',
+        type: NotificationType.system,
+      );
 
-      await notifier.deleteNotification(target.id);
-      expect(container.read(notificationHistoryProvider).any((n) => n.id == target.id), isFalse);
+      await notifier.deleteNotification(item1.id);
+      expect(container.read(notificationHistoryProvider).any((n) => n.id == item1.id), isFalse);
 
       await notifier.clearAll();
       expect(container.read(notificationHistoryProvider), isEmpty);

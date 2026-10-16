@@ -32,10 +32,33 @@ part 'database.g.dart';
   daos: [LabelsDao, TasksDao, OccurrencesDao, TimerDao, KpiDao, SyncDao],
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  static AppDatabase? _singletonInstance;
+
+  /// Central singleton database instance.
+  factory AppDatabase() {
+    return _singletonInstance ??= AppDatabase._internal();
+  }
+
+  AppDatabase._internal() : super(_openConnection());
 
   // For testing
   AppDatabase.forTesting(super.e);
+
+  /// Closes any dangling native database connections (useful for desktop / hot restart cleanup).
+  static Future<void> closeExistingInstances() async {
+    if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
+      try {
+        // ignore: experimental_member_use
+        await NativeDatabase.closeExistingInstances();
+      } catch (_) {}
+    }
+  }
+
+  @override
+  Future<void> close() {
+    _singletonInstance = null;
+    return super.close();
+  }
 
   @override
   int get schemaVersion => 2;
@@ -71,6 +94,10 @@ class AppDatabase extends _$AppDatabase {
     },
     beforeOpen: (details) async {
       try {
+        await customStatement('PRAGMA foreign_keys = ON;');
+      } catch (_) {}
+
+      try {
         final result = await customSelect('PRAGMA table_info(kpi_definitions)').get();
         final existingColumns = result.map((row) => row.read<String>('name')).toSet();
 
@@ -103,15 +130,16 @@ class AppDatabase extends _$AppDatabase {
     },
   );
 
-  /// Wipes all local data associated with a specific user ID.
+  /// Wipes all local data associated with a specific user ID in relational order.
   Future<void> wipeUserData(String userId) async {
     await transaction(() async {
+      // Delete child records before parent records
       await (delete(completionEvents)..where((t) => t.userId.equals(userId))).go();
       await (delete(taskOccurrences)..where((t) => t.userId.equals(userId))).go();
+      await (delete(timerSessions)..where((t) => t.userId.equals(userId))).go();
       await (delete(attachments)..where((t) => t.userId.equals(userId))).go();
       await (delete(tasks)..where((t) => t.userId.equals(userId))).go();
       await (delete(recurrenceRules)..where((t) => t.userId.equals(userId))).go();
-      await (delete(timerSessions)..where((t) => t.userId.equals(userId))).go();
       await (delete(kpiDefinitions)..where((t) => t.userId.equals(userId))).go();
       await (delete(labels)..where((t) => t.userId.equals(userId))).go();
       await (delete(notificationSettingsTable)..where((t) => t.userId.equals(userId))).go();
@@ -124,7 +152,19 @@ class AppDatabase extends _$AppDatabase {
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
+    if (!await dbFolder.exists()) {
+      await dbFolder.create(recursive: true);
+    }
     final file = File(p.join(dbFolder.path, 'momentum.db'));
-    return NativeDatabase.createInBackground(file, logStatements: false);
+
+    return NativeDatabase.createInBackground(
+      file,
+      logStatements: false,
+      setup: (database) {
+        database.execute('PRAGMA journal_mode = WAL;');
+        database.execute('PRAGMA busy_timeout = 5000;');
+        database.execute('PRAGMA synchronous = NORMAL;');
+      },
+    );
   });
 }

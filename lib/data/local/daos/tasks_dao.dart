@@ -88,16 +88,23 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
 
   /// Updates status for a task and refreshes updatedAt.
   Future<void> updateTaskStatus(String id, String status) async {
+    final existing = await (select(tasks)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
     await (update(tasks)..where((tbl) => tbl.id.equals(id))).write(
-      TasksCompanion(status: Value(status), updatedAt: Value(DateTime.now())),
+      TasksCompanion(
+        status: Value(status),
+        version: Value((existing?.version ?? 0) + 1),
+        updatedAt: Value(DateTime.now()),
+      ),
     );
   }
 
   /// Soft deletes a task.
   Future<void> softDeleteTask(String id) async {
+    final existing = await (select(tasks)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
     await (update(tasks)..where((tbl) => tbl.id.equals(id))).write(
       TasksCompanion(
         isDeleted: const Value(true),
+        version: Value((existing?.version ?? 0) + 1),
         updatedAt: Value(DateTime.now()),
       ),
     );
@@ -105,9 +112,11 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
 
   /// Archives or unarchives a task.
   Future<void> archiveTask(String id, bool archived) async {
+    final existing = await (select(tasks)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
     await (update(tasks)..where((tbl) => tbl.id.equals(id))).write(
       TasksCompanion(
         isArchived: Value(archived),
+        version: Value((existing?.version ?? 0) + 1),
         updatedAt: Value(DateTime.now()),
       ),
     );
@@ -160,7 +169,9 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
 
   /// Searches non-deleted tasks matching a text query in title or description.
   Future<List<Task>> searchTasks(String userId, String query) {
-    final pattern = '%$query%';
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return Future.value([]);
+    final pattern = '%$trimmed%';
     return (select(tasks)
           ..where(
             (tbl) =>
@@ -199,7 +210,7 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
     }
 
     query.where(predicate);
-    final row = await query.getSingle();
-    return row.read(countExpr) ?? 0;
+    final row = await query.getSingleOrNull();
+    return row?.read(countExpr) ?? 0;
   }
 }

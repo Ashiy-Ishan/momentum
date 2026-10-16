@@ -21,44 +21,8 @@ class NotificationHistoryNotifier
   static const String _prefKey = 'momentum_notification_history_v1';
   final _uuid = const Uuid();
 
-  NotificationHistoryNotifier() : super(_defaultSeededItems()) {
+  NotificationHistoryNotifier() : super(const []) {
     _loadFromPreferences();
-  }
-
-  static List<NotificationHistoryItem> _defaultSeededItems() {
-    final now = DateTime.now();
-    return [
-      NotificationHistoryItem(
-        id: 'seed_welcome',
-        title: 'Welcome to Momentum',
-        body:
-            'Your local-first productivity cockpit is ready. Start by planning your tasks for today.',
-        type: NotificationType.system,
-        createdAt: now.subtract(const Duration(hours: 1)),
-        isRead: false,
-        payload: '/today',
-      ),
-      NotificationHistoryItem(
-        id: 'seed_streak',
-        title: 'Consistency Streak Active',
-        body:
-            'Great job staying consistent! Complete all scheduled tasks today to protect your streak.',
-        type: NotificationType.streakMilestone,
-        createdAt: now.subtract(const Duration(hours: 3)),
-        isRead: false,
-        payload: '/analytics',
-      ),
-      NotificationHistoryItem(
-        id: 'seed_creator',
-        title: 'Weekly Creator Cadence',
-        body:
-            'Check your weekly output targets for videos, articles, and GitHub commits.',
-        type: NotificationType.creatorCadence,
-        createdAt: now.subtract(const Duration(hours: 5)),
-        isRead: true,
-        payload: '/',
-      ),
-    ];
   }
 
   Future<void> _loadFromPreferences() async {

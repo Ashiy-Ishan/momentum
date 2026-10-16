@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 import 'core/theme/theme.dart';
 import 'data/remote/supabase_client.dart';
+import 'data/sync/sync_engine.dart';
 import 'features/desktop_hud/screens/desktop_hud_screen.dart';
 import 'features/notifications/services/notification_service.dart';
 import 'shared/providers/database_provider.dart';
@@ -40,17 +41,13 @@ void main([List<String> args = const []]) async {
     container.read(currentUserIdProvider.notifier).state = currentUser.id;
   }
 
-  // 6. Seed default labels & platform creator KPIs if user has none yet
+  // 6. Eagerly boot SyncEngine to establish network listeners, auth stream, and sync
   try {
-    final userId = container.read(currentUserIdProvider);
-    final labelRepo = container.read(labelRepositoryProvider);
-    await labelRepo.seedDefaultLabels(userId);
-    final labels = await labelRepo.getAllLabels(userId);
-    final kpiRepo = container.read(kpiRepositoryProvider);
-    await kpiRepo.seedDefaultPlatformKpis(userId, labels);
+    container.read(syncEngineProvider);
   } catch (e) {
-    debugPrint('Default labels & KPIs seeding notice: $e');
+    debugPrint('SyncEngine boot init notice: $e');
   }
+
 
   runApp(
     UncontrolledProviderScope(

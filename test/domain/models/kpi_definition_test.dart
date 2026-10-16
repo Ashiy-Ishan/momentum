@@ -167,7 +167,7 @@ void main() {
 
       // YouTube: Channel Subscribers
       final subs = kpis.firstWhere((k) => k.name == 'Channel Subscribers');
-      expect(subs.currentValue, 1250.0);
+      expect(subs.currentValue, 0.0);
       expect(subs.targetValue, 2500.0);
       expect(subs.unit, 'subs');
       expect(subs.metricCategory, 'subscriber_growth');
@@ -186,7 +186,7 @@ void main() {
 
       // Instagram: Audience & Followers
       final followers = kpis.firstWhere((k) => k.name == 'Audience & Followers');
-      expect(followers.currentValue, 3400.0);
+      expect(followers.currentValue, 0.0);
       expect(followers.targetValue, 5000.0);
       expect(followers.unit, 'followers');
       expect(followers.metricCategory, 'follower_growth');
@@ -203,7 +203,7 @@ void main() {
 
       // GitHub: GitHub Stars & Followers
       final ghStars = kpis.firstWhere((k) => k.name == 'GitHub Stars & Followers');
-      expect(ghStars.currentValue, 120.0);
+      expect(ghStars.currentValue, 0.0);
       expect(ghStars.targetValue, 500.0);
       expect(ghStars.unit, 'stars');
       expect(ghStars.platform, 'github');
@@ -216,7 +216,7 @@ void main() {
 
       // LinkedIn: Professional Network
       final linkedinConn = kpis.firstWhere((k) => k.name == 'LinkedIn Connections');
-      expect(linkedinConn.currentValue, 850.0);
+      expect(linkedinConn.currentValue, 0.0);
       expect(linkedinConn.targetValue, 2500.0);
       expect(linkedinConn.unit, 'connections');
       expect(linkedinConn.platform, 'linkedin');
@@ -232,7 +232,7 @@ void main() {
 
       // Blog: Newsletter Readers
       final readers = kpis.firstWhere((k) => k.name == 'Newsletter Readers');
-      expect(readers.currentValue, 450.0);
+      expect(readers.currentValue, 0.0);
       expect(readers.targetValue, 1000.0);
       expect(readers.unit, 'readers');
       expect(readers.metricCategory, 'subscriber_growth');
@@ -296,7 +296,7 @@ void main() {
       expect(stored.length, 11);
 
       final ytSub = stored.firstWhere((k) => k.name == 'Channel Subscribers');
-      expect(ytSub.currentValue, 1250.0);
+      expect(ytSub.currentValue, 0.0);
       expect(ytSub.longTermTarget, 10000.0);
       expect(ytSub.unit, 'subs');
       expect(ytSub.platform, 'youtube');

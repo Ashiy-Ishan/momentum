@@ -84,6 +84,7 @@ final timerRepositoryProvider = Provider<TimerRepository>((ref) {
   return TimerRepositoryImpl(
     database: ref.watch(appDatabaseProvider),
     timerDao: ref.watch(timerDaoProvider),
+    syncEngine: ref.watch(syncEngineProvider),
   );
 });
 

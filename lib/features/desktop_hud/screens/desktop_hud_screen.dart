@@ -146,15 +146,15 @@ class _DesktopHudScreenState extends ConsumerState<DesktopHudScreen> {
                           : MediaQuery.of(context).size.height * 0.92,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0F172A).withValues(alpha: _opacity),
+                      color: AppColors.surfaceDark.withValues(alpha: _opacity),
                       borderRadius: BorderRadius.circular(AppRadius.lg),
                       border: Border.all(
-                        color: AppColors.secondary.withValues(alpha: 0.35),
-                        width: 1.5,
+                        color: AppColors.borderDark,
+                        width: 1.0,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.secondary.withValues(alpha: 0.15),
+                          color: Colors.black.withValues(alpha: 0.3),
                           blurRadius: 24,
                           spreadRadius: 2,
                         ),
@@ -716,7 +716,7 @@ class _DesktopHudScreenState extends ConsumerState<DesktopHudScreen> {
               ),
               DropdownButton<HudPosition>(
                 value: _position,
-                dropdownColor: const Color(0xFF0F172A),
+                dropdownColor: AppColors.surfaceDark,
                 underline: const SizedBox.shrink(),
                 icon: const Icon(Icons.arrow_drop_down, color: Colors.white70, size: 18),
                 style: const TextStyle(color: Colors.white, fontSize: 11),

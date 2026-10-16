@@ -41,15 +41,15 @@ enum TaskStatus {
   Color get color {
     switch (this) {
       case TaskStatus.pending:
-        return const Color(0xFFFFA000); // Amber
+        return const Color(0xFFC28D4E); // Refined Warm Ochre
       case TaskStatus.doing:
-        return const Color(0xFF2196F3); // Blue
+        return const Color(0xFF5B82A6); // Subtle Steel Blue
       case TaskStatus.done:
-        return const Color(0xFF4CAF50); // Green
+        return const Color(0xFF4E9B78); // Soft Muted Sage
       case TaskStatus.skipped:
-        return const Color(0xFF9E9E9E); // Grey
+        return const Color(0xFF64748B); // Muted Slate
       case TaskStatus.cancelled:
-        return const Color(0xFFF44336); // Red
+        return const Color(0xFFB85454); // Soft Muted Crimson
     }
   }
 
@@ -71,15 +71,15 @@ enum TaskStatus {
   String get colorHex {
     switch (this) {
       case TaskStatus.pending:
-        return '#FFA000';
+        return '#C28D4E';
       case TaskStatus.doing:
-        return '#2196F3';
+        return '#5B82A6';
       case TaskStatus.done:
-        return '#4CAF50';
+        return '#4E9B78';
       case TaskStatus.skipped:
-        return '#9E9E9E';
+        return '#64748B';
       case TaskStatus.cancelled:
-        return '#F44336';
+        return '#B85454';
     }
   }
 
@@ -150,13 +150,13 @@ enum TaskPriority {
   Color get color {
     switch (this) {
       case TaskPriority.low:
-        return const Color(0xFF4CAF50); // Green
+        return const Color(0xFF64748B); // Muted Slate
       case TaskPriority.medium:
-        return const Color(0xFF2196F3); // Blue
+        return const Color(0xFF5B82A6); // Subtle Steel Blue
       case TaskPriority.high:
-        return const Color(0xFFFF9800); // Orange
+        return const Color(0xFFC28D4E); // Refined Warm Ochre
       case TaskPriority.urgent:
-        return const Color(0xFFF44336); // Red
+        return const Color(0xFFB85454); // Soft Muted Crimson
     }
   }
 
@@ -176,13 +176,13 @@ enum TaskPriority {
   String get colorHex {
     switch (this) {
       case TaskPriority.low:
-        return '#4CAF50';
+        return '#64748B';
       case TaskPriority.medium:
-        return '#2196F3';
+        return '#5B82A6';
       case TaskPriority.high:
-        return '#FF9800';
+        return '#C28D4E';
       case TaskPriority.urgent:
-        return '#F44336';
+        return '#B85454';
     }
   }
 

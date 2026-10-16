@@ -105,7 +105,7 @@ class TaskRepositoryImpl implements TaskRepository {
             database.taskOccurrences.occurrenceDate.isSmallerOrEqualValue(endOfDay) &
             database.taskOccurrences.isDeleted.equals(false),
       ),
-    ]);
+    ])..where(database.tasks.userId.equals(userId) & database.tasks.isDeleted.equals(false));
 
     return triggerQuery.watch().asyncMap((_) async {
       return getTasksForDate(userId, date);
@@ -167,13 +167,17 @@ class TaskRepositoryImpl implements TaskRepository {
 
   @override
   Future<void> updateTask(domain.Task task) async {
-    await tasksDao.updateTask(_mapTaskToCompanion(task));
+    final updated = task.copyWith(
+      version: task.version + 1,
+      updatedAt: DateTime.now(),
+    );
+    await tasksDao.updateTask(_mapTaskToCompanion(updated));
 
     await syncEngine?.enqueueOperation(
       tableName: 'tasks',
-      recordId: task.id,
+      recordId: updated.id,
       operation: SyncOperation.update,
-      payload: task.toMap(),
+      payload: updated.toMap(),
     );
   }
 
@@ -387,6 +391,10 @@ class TaskRepositoryImpl implements TaskRepository {
         completedAt: null,
       );
 
+      final compEvents = await (database.select(database.completionEvents)
+            ..where((tbl) => tbl.occurrenceId.equals(occ.id)))
+          .get();
+
       // Soft delete completion events for this occurrence
       await (database.update(database.completionEvents)
             ..where((tbl) => tbl.occurrenceId.equals(occ.id)))
@@ -395,6 +403,19 @@ class TaskRepositoryImpl implements TaskRepository {
           isDeleted: Value(true),
         ),
       );
+
+      for (final ce in compEvents) {
+        await syncEngine?.enqueueOperation(
+          tableName: 'completion_events',
+          recordId: ce.id,
+          operation: SyncOperation.delete,
+          payload: {
+            'id': ce.id,
+            'is_deleted': true,
+            'updated_at': DateTime.now().toIso8601String(),
+          },
+        );
+      }
 
       await syncEngine?.enqueueOperation(
         tableName: 'task_occurrences',

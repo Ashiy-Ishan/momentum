@@ -68,10 +68,14 @@ class MomentumSupabaseClient {
       _instance ??= MomentumSupabaseClient();
 
   SupabaseClient? _client;
+  String? _currentUrl;
   bool _isConfigured = false;
 
   /// Returns `true` if Supabase has been properly initialized with valid credentials.
   bool get isConfigured => _isConfigured && _client != null;
+
+  /// Returns the currently configured Supabase project URL, or null.
+  String? get currentUrl => _currentUrl;
 
   /// Access to the underlying [SupabaseClient], or `null` if not configured.
   SupabaseClient? get client => _client;
@@ -142,7 +146,15 @@ class MomentumSupabaseClient {
       debugPrint('MomentumSupabaseClient: Failed to remove saved credentials: $e');
     }
 
+    try {
+      if (Supabase.instance.isInitialized) {
+        await Supabase.instance.dispose();
+      }
+    } catch (_) {}
+
+    _client = null;
     _isConfigured = false;
+    _currentUrl = null;
   }
 
   /// Tests network and credential connectivity to a Supabase project.
@@ -170,10 +182,13 @@ class MomentumSupabaseClient {
       final client = HttpClient();
       client.connectionTimeout = const Duration(seconds: 8);
       try {
-        final request = await client.getUrl(uri.replace(path: '/auth/v1/health'));
+        final request = await client
+            .getUrl(uri.replace(path: '/auth/v1/health'))
+            .timeout(const Duration(seconds: 8));
         request.headers.set('apikey', anonKey);
         request.headers.set('Authorization', 'Bearer $anonKey');
-        final response = await request.close();
+        final response = await request.close().timeout(const Duration(seconds: 8));
+        await response.drain<void>();
 
         if (response.statusCode >= 200 && response.statusCode < 400) {
           return Result.success(true);
@@ -191,7 +206,7 @@ class MomentumSupabaseClient {
           );
         }
       } finally {
-        client.close();
+        client.close(force: true);
       }
     } catch (e, st) {
       return Result.failure(
@@ -302,9 +317,16 @@ class MomentumSupabaseClient {
 
       // Check if Supabase was already initialized globally
       try {
-        _client = Supabase.instance.client;
-        _isConfigured = true;
-        return Result.success(true);
+        if (Supabase.instance.isInitialized) {
+          if (_currentUrl != url) {
+            await Supabase.instance.dispose();
+          } else {
+            _client = Supabase.instance.client;
+            _isConfigured = true;
+            _currentUrl = url;
+            return Result.success(true);
+          }
+        }
       } catch (_) {
         // Not initialized yet, proceed to initialize
       }
@@ -319,10 +341,12 @@ class MomentumSupabaseClient {
 
       _client = supabase.client;
       _isConfigured = true;
+      _currentUrl = url;
       debugPrint('MomentumSupabaseClient: Successfully initialized Supabase.');
       return Result.success(true);
     } catch (e, st) {
       _isConfigured = false;
+      _currentUrl = null;
       debugPrint('MomentumSupabaseClient: Failed to initialize Supabase: $e');
       return Result.failure(
         AuthError(
@@ -400,8 +424,12 @@ class MomentumSupabaseClient {
       final response = await _client!.auth.signInWithPassword(
         email: trimmedEmail,
         password: password,
-      );
+      ).timeout(const Duration(seconds: 15));
       return Result.success(response);
+    } on TimeoutException {
+      return Result.failure(
+        const NetworkError('Sign in request timed out. Please check your network connection.'),
+      );
     } on AuthException catch (e, st) {
       final friendlyMsg = _getFriendlyAuthErrorMessage(e);
       return Result.failure(
@@ -462,7 +490,7 @@ class MomentumSupabaseClient {
         email: trimmedEmail,
         password: password,
         data: data,
-      );
+      ).timeout(const Duration(seconds: 15));
 
       final sessionCreated = response.session != null;
       final confirmationEmailSent =
@@ -474,6 +502,10 @@ class MomentumSupabaseClient {
           sessionCreated: sessionCreated,
           confirmationEmailSent: confirmationEmailSent,
         ),
+      );
+    } on TimeoutException {
+      return Result.failure(
+        const NetworkError('Sign up request timed out. Please check your network connection.'),
       );
     } on AuthException catch (e, st) {
       final friendlyMsg = _getFriendlyAuthErrorMessage(e);
@@ -494,7 +526,10 @@ class MomentumSupabaseClient {
     }
 
     try {
-      await _client!.auth.signOut();
+      await _client!.auth.signOut().timeout(const Duration(seconds: 10));
+      return Result.success(null);
+    } on TimeoutException {
+      // Local sign out fallback even if remote timed out
       return Result.success(null);
     } on AuthException catch (e, st) {
       return Result.failure(
@@ -523,8 +558,12 @@ class MomentumSupabaseClient {
     }
 
     try {
-      await _client!.auth.resetPasswordForEmail(trimmedEmail);
+      await _client!.auth.resetPasswordForEmail(trimmedEmail).timeout(const Duration(seconds: 10));
       return Result.success(null);
+    } on TimeoutException {
+      return Result.failure(
+        const NetworkError('Password reset request timed out. Please check your network connection.'),
+      );
     } on AuthException catch (e, st) {
       final friendlyMsg = _getFriendlyAuthErrorMessage(e);
       return Result.failure(
@@ -571,7 +610,7 @@ class MomentumSupabaseClient {
     final List<String> errors = [];
     for (final table in tables) {
       try {
-        await _client!.from(table).delete().eq('user_id', trimmedId);
+        await _client!.from(table).delete().eq('user_id', trimmedId).timeout(const Duration(seconds: 10));
       } catch (e) {
         debugPrint(
           'MomentumSupabaseClient: Notice deleting from $table for user $trimmedId: $e',
@@ -614,7 +653,7 @@ class MomentumSupabaseClient {
 
     // 2. Delete user profile from public.users
     try {
-      await _client!.from('users').delete().eq('id', userId);
+      await _client!.from('users').delete().eq('id', userId).timeout(const Duration(seconds: 10));
     } catch (e) {
       debugPrint(
         'MomentumSupabaseClient: Notice deleting profile from users table: $e',

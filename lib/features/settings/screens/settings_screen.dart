@@ -1151,7 +1151,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 10),
             _buildGuideItem(
               icon: Icons.video_library_rounded,
-              color: const Color(0xFFFF0000),
+              color: AppColors.platformYoutube,
               title: 'YouTube Data API v3',
               steps: [
                 '1. Go to Google Cloud Console (console.cloud.google.com) and create or select a project.',
@@ -1164,7 +1164,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 12),
             _buildGuideItem(
               icon: Icons.code_rounded,
-              color: const Color(0xFF24292E),
+              color: AppColors.platformGithub,
               title: 'GitHub (Commits, Repos & Stars)',
               steps: [
                 '1. Open GitHub.com -> Click your avatar -> Settings -> Developer Settings.',
@@ -1177,7 +1177,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 12),
             _buildGuideItem(
               icon: Icons.camera_alt_rounded,
-              color: const Color(0xFFE1306C),
+              color: AppColors.platformInstagram,
               title: 'Instagram & Social Media',
               steps: [
                 '1. Enter your public handle (e.g. @username) and profile URL.',
@@ -2712,10 +2712,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _handleSyncNow() async {
     setState(() => _isManualSyncing = true);
-    await ref.read(syncEngineProvider).triggerSync();
+    final res =
+        await ref.read(syncEngineProvider).triggerSync(forceFullSync: true);
     if (!mounted) return;
     setState(() => _isManualSyncing = false);
-    context.showSnackBar('Sync complete');
+    if (res.isSuccess) {
+      context.showSnackBar(
+        'Full sync complete: local and cloud databases are up to date.',
+      );
+    } else {
+      context.showSnackBar(
+        'Sync notice: ${res.errorOrNull?.message ?? 'Unable to connect to sync server.'}',
+        isError: true,
+      );
+    }
   }
 
   Future<void> _handleForgotPassword() async {

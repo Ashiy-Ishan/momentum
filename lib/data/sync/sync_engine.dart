@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -152,27 +153,83 @@ class SyncEngine {
   bool get isOnline => _isOnline;
 
   /// Initializes connectivity listeners, loads stored sync timestamps, and triggers initial sync.
+  /// Verifies active network socket connectivity by resolving a reliable host
+  /// (Supabase host if configured, or google.com).
+  Future<bool> _verifyInternetAccess() async {
+    try {
+      String? host;
+      final url = _supabase.currentUrl;
+      if (url != null && url.isNotEmpty) {
+        host = Uri.tryParse(url)?.host;
+      }
+      host ??= 'google.com';
+
+      final lookup = await InternetAddress.lookup(host)
+          .timeout(const Duration(seconds: 4));
+      return lookup.isNotEmpty && lookup[0].rawAddress.isNotEmpty;
+    } catch (_) {
+      try {
+        final fallbackLookup = await InternetAddress.lookup('google.com')
+            .timeout(const Duration(seconds: 3));
+        return fallbackLookup.isNotEmpty &&
+            fallbackLookup[0].rawAddress.isNotEmpty;
+      } catch (_) {
+        return false;
+      }
+    }
+  }
+
+  /// Checks connectivity using connectivity_plus if available, and falls back
+  /// to an active socket lookup if missing or reporting offline on desktop.
+  Future<bool> _checkAndSetOnlineStatus() async {
+    bool hasNet = false;
+    try {
+      final results = await _connectivity.checkConnectivity();
+      hasNet = _hasConnection(results);
+    } catch (e) {
+      // MissingPluginException on desktop platforms (e.g. Linux desktop)
+      debugPrint('SyncEngine: connectivity_plus check notice ($e), checking socket...');
+      hasNet = false;
+    }
+
+    // If connectivity plugin reported false or failed, perform active socket verification
+    if (!hasNet) {
+      hasNet = await _verifyInternetAccess();
+    }
+
+    _isOnline = hasNet;
+    _status = _isOnline ? SyncEngineStatus.idle : SyncEngineStatus.offline;
+    _emitStatus(_status);
+    return _isOnline;
+  }
+
+  /// Initializes connectivity listeners, loads stored sync timestamps, and triggers initial sync.
   Future<void> initialize() async {
     if (_isInitialized) return;
     _isInitialized = true;
 
+    // 1. Load stored sync timestamp
     try {
       prefs ??= await SharedPreferences.getInstance();
       final storedSync = prefs?.getString(_prefLastSyncKey);
       if (storedSync != null && storedSync.isNotEmpty) {
         _lastSyncTime = DateTime.tryParse(storedSync);
       }
+    } catch (e) {
+      debugPrint('SyncEngine: prefs load notice: $e');
+    }
 
-      // Check initial connectivity
-      final initialResults = await _connectivity.checkConnectivity();
-      _isOnline = _hasConnection(initialResults);
-      _status = _isOnline ? SyncEngineStatus.idle : SyncEngineStatus.offline;
-      _emitStatus(_status);
+    // 2. Check initial connectivity with active socket fallback
+    await _checkAndSetOnlineStatus();
 
-      // Listen to connectivity transitions
+    // 3. Listen to connectivity transitions (safely catching missing plugin on desktop)
+    try {
       _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
-        (results) {
-          final online = _hasConnection(results);
+        (results) async {
+          var online = _hasConnection(results);
+          if (!online) {
+            online = await _verifyInternetAccess();
+          }
           if (_isOnline != online) {
             _isOnline = online;
             if (!_isOnline) {
@@ -187,24 +244,39 @@ class SyncEngine {
           }
         },
       );
+    } catch (e) {
+      debugPrint('SyncEngine: connectivity listener notice: $e');
+    }
 
-      // Listen to auth state transitions
-      _authSubscription = _supabase.authStateChanges.listen((data) {
-        if (_supabase.isAuthenticated && _isOnline) {
-          unawaited(triggerSync());
-          _setupRealtimeSubscription();
+    // 4. Listen to auth state transitions
+    try {
+      _authSubscription = _supabase.authStateChanges.listen((data) async {
+        debugPrint('SyncEngine: Auth state change: ${data.event}');
+        if (_supabase.isAuthenticated) {
+          if (!_isOnline) {
+            await _checkAndSetOnlineStatus();
+          }
+          if (_isOnline) {
+            unawaited(triggerSync());
+            _setupRealtimeSubscription();
+          }
         } else {
           _cleanupRealtime();
         }
       });
+    } catch (e) {
+      debugPrint('SyncEngine: auth listener notice: $e');
+    }
 
-      // Initial sync and realtime subscription if online and authenticated
-      if (_isOnline && _supabase.isConfigured && _supabase.isAuthenticated) {
+    // 5. Initial sync and realtime subscription if authenticated and online
+    if (_supabase.isConfigured && _supabase.isAuthenticated) {
+      if (!_isOnline) {
+        await _checkAndSetOnlineStatus();
+      }
+      if (_isOnline) {
         unawaited(triggerSync());
         _setupRealtimeSubscription();
       }
-    } catch (e, st) {
-      debugPrint('SyncEngine initialization warning: $e\n$st');
     }
   }
 
@@ -233,11 +305,14 @@ class SyncEngine {
     }
 
     // Periodic heartbeat sync every 25 seconds for cross-device parity
-    _periodicSyncTimer = Timer.periodic(const Duration(seconds: 25), (_) {
-      if (_isOnline &&
-          _supabase.isConfigured &&
-          _supabase.isAuthenticated &&
-          !_isSyncInProgress) {
+    _periodicSyncTimer = Timer.periodic(const Duration(seconds: 25), (_) async {
+      if (!_supabase.isConfigured || !_supabase.isAuthenticated || _isSyncInProgress) {
+        return;
+      }
+      if (!_isOnline) {
+        await _checkAndSetOnlineStatus();
+      }
+      if (_isOnline) {
         unawaited(triggerSync());
       }
     });
@@ -245,7 +320,10 @@ class SyncEngine {
 
   void _debounceRemoteSync() {
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 600), () {
+    _debounceTimer = Timer(const Duration(milliseconds: 600), () async {
+      if (!_isOnline) {
+        await _checkAndSetOnlineStatus();
+      }
       if (_isOnline && _supabase.isConfigured && _supabase.isAuthenticated) {
         unawaited(triggerSync());
       }
@@ -294,8 +372,13 @@ class SyncEngine {
       await db.syncDao.enqueue(item);
 
       // Attempt automatic sync if online and authenticated
-      if (_isOnline && _supabase.isConfigured && _supabase.isAuthenticated) {
-        unawaited(triggerSync());
+      if (_supabase.isConfigured && _supabase.isAuthenticated) {
+        if (!_isOnline) {
+          await _checkAndSetOnlineStatus();
+        }
+        if (_isOnline) {
+          unawaited(triggerSync());
+        }
       }
     } catch (e, st) {
       debugPrint('SyncEngine: Failed to enqueue operation: $e\n$st');
@@ -303,14 +386,18 @@ class SyncEngine {
   }
 
   /// Manually triggers a synchronization cycle (Push local changes -> Pull remote changes).
-  Future<Result<bool>> triggerSync() async {
+  Future<Result<bool>> triggerSync({bool forceFullSync = false}) async {
     if (_isSyncInProgress) {
       return Result.success(false);
     }
 
+    // If currently marked offline, re-verify network access before aborting
     if (!_isOnline) {
-      _updateStatus(SyncEngineStatus.offline);
-      return Result.success(false);
+      final hasNet = await _checkAndSetOnlineStatus();
+      if (!hasNet) {
+        _updateStatus(SyncEngineStatus.offline);
+        return Result.success(false);
+      }
     }
 
     if (!_supabase.isConfigured || !_supabase.isAuthenticated) {
@@ -322,11 +409,11 @@ class SyncEngine {
     _updateStatus(SyncEngineStatus.syncing);
 
     try {
-      // 1. Push local changes
+      // 1. Push local changes (including local records reconciliation)
       await _pushLocalChanges();
 
       // 2. Pull remote changes
-      await _pullRemoteChanges();
+      await _pullRemoteChanges(forceFullSync: forceFullSync);
 
       // 3. Clear completed queue items
       await db.syncDao.clearCompleted();
@@ -353,6 +440,11 @@ class SyncEngine {
   // PUSH LOCAL CHANGES
   // ===========================================================================
   Future<void> _pushLocalChanges() async {
+    final currentAuthUserId = _supabase.currentUserId;
+    if (currentAuthUserId != null && currentAuthUserId.isNotEmpty) {
+      await _reconcileUnsyncedLocalRecords(currentAuthUserId);
+    }
+
     final pendingItems = await db.syncDao.getPendingItems();
     if (pendingItems.isEmpty) return;
 
@@ -378,7 +470,6 @@ class SyncEngine {
 
       // If user is authenticated, ensure payload uses authenticated user's ID
       // rather than offline/local 'local-user' placeholder for Supabase RLS compatibility.
-      final currentAuthUserId = _supabase.currentUserId;
       if (currentAuthUserId != null && currentAuthUserId.isNotEmpty) {
         if (remotePayload.containsKey('user_id') &&
             (remotePayload['user_id'] == 'local-user' || remotePayload['user_id'] == null)) {
@@ -399,10 +490,10 @@ class SyncEngine {
           await client.from(remoteTable).update({
             'is_deleted': true,
             'updated_at': DateTime.now().toIso8601String(),
-          }).eq('id', item.recordId);
+          }).eq('id', item.recordId).timeout(const Duration(seconds: 15));
         } else {
           // Insert or update (upsert)
-          await client.from(remoteTable).upsert(remotePayload);
+          await client.from(remoteTable).upsert(remotePayload).timeout(const Duration(seconds: 15));
         }
 
         await db.syncDao.markCompleted(item.id);
@@ -420,16 +511,405 @@ class SyncEngine {
     }
   }
 
+  /// Migrates local-user records to current authenticated user and pushes
+  /// any local records that exist in SQLite but are missing on Supabase.
+  Future<void> _reconcileUnsyncedLocalRecords(String currentUserId) async {
+    final client = _supabase.client;
+    if (client == null) return;
+
+    // 1. Migrate local SQLite tables where user_id is 'local-user' or empty
+    const tables = [
+      'tasks',
+      'labels',
+      'kpi_definitions',
+      'recurrence_rules',
+      'task_occurrences',
+      'completion_events',
+      'timer_sessions',
+      'attachments',
+      'notification_settings_table',
+    ];
+    for (final table in tables) {
+      try {
+        await db.customUpdate(
+          'UPDATE $table SET user_id = ? WHERE user_id = ? OR user_id IS NULL OR user_id = ""',
+          variables: [
+            Variable.withString(currentUserId),
+            Variable.withString('local-user'),
+          ],
+          updates: {},
+        );
+      } catch (e) {
+        debugPrint('SyncEngine: Notice updating user_id on $table: $e');
+      }
+    }
+
+    try {
+      await db.customUpdate(
+        'UPDATE user_profiles SET id = ? WHERE id = ? OR id IS NULL OR id = ""',
+        variables: [
+          Variable.withString(currentUserId),
+          Variable.withString('local-user'),
+        ],
+        updates: {},
+      );
+    } catch (e) {
+      debugPrint('SyncEngine: Notice updating id on user_profiles: $e');
+    }
+
+    // 2. Reconcile Labels first (Root labels first, then child labels)
+    try {
+      final remoteLabelRows = await client
+          .from('labels')
+          .select('id')
+          .eq('user_id', currentUserId)
+          .timeout(const Duration(seconds: 10));
+      final Set<String> remoteLabelIds = {
+        for (final r in (remoteLabelRows as List<dynamic>)) (r['id'] as String),
+      };
+
+      final localLabels = await (db.select(db.labels)
+            ..where((tbl) => tbl.userId.equals(currentUserId)))
+          .get();
+
+      // Separate root labels from child labels so parents exist before children
+      final rootLabels = localLabels
+          .where((l) => l.parentId == null || l.parentId!.isEmpty)
+          .toList();
+      final childLabels = localLabels
+          .where((l) => l.parentId != null && l.parentId!.isNotEmpty)
+          .toList();
+
+      for (final l in rootLabels) {
+        if (!remoteLabelIds.contains(l.id)) {
+          try {
+            final payload = _mapLabelToRemoteMap(l, currentUserId);
+            await client.from('labels').upsert(payload).timeout(const Duration(seconds: 10));
+            remoteLabelIds.add(l.id);
+          } catch (e) {
+            debugPrint('SyncEngine: Error upserting root label ${l.id}: $e');
+          }
+        }
+      }
+
+      for (final l in childLabels) {
+        if (!remoteLabelIds.contains(l.id)) {
+          try {
+            final payload = _mapLabelToRemoteMap(l, currentUserId);
+            await client.from('labels').upsert(payload).timeout(const Duration(seconds: 10));
+            remoteLabelIds.add(l.id);
+          } catch (e) {
+            debugPrint('SyncEngine: Error upserting child label ${l.id}: $e');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('SyncEngine: Labels reconciliation notice: $e');
+    }
+
+    // 3. Reconcile Recurrence Rules before tasks
+    try {
+      final remoteRecurrenceRows = await client
+          .from('recurrence_rules')
+          .select('id')
+          .eq('user_id', currentUserId)
+          .timeout(const Duration(seconds: 10));
+      final Set<String> remoteRecurrenceIds = {
+        for (final r in (remoteRecurrenceRows as List<dynamic>))
+          (r['id'] as String),
+      };
+
+      final localRules = await (db.select(db.recurrenceRules)
+            ..where((tbl) => tbl.userId.equals(currentUserId)))
+          .get();
+
+      for (final r in localRules) {
+        if (!remoteRecurrenceIds.contains(r.id)) {
+          try {
+            await client.from('recurrence_rules').upsert({
+              'id': r.id,
+              'user_id': currentUserId,
+              'type': r.type,
+              'days_of_week': r.daysOfWeek,
+              'interval_days': r.intervalDays,
+              'interval_months': r.intervalMonths,
+              'start_date': r.startDate.toIso8601String(),
+              'end_date': r.endDate?.toIso8601String(),
+              'max_occurrences': r.maxOccurrences,
+              'created_at': r.createdAt.toIso8601String(),
+              'updated_at': r.updatedAt.toIso8601String(),
+              'version': r.version,
+              'is_deleted': r.isDeleted,
+            }).timeout(const Duration(seconds: 10));
+            remoteRecurrenceIds.add(r.id);
+          } catch (e) {
+            debugPrint('SyncEngine: Error upserting recurrence rule ${r.id}: $e');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('SyncEngine: Recurrence rules reconciliation notice: $e');
+    }
+
+    // 4. Reconcile Tasks: find local tasks for this user not yet on Supabase
+    try {
+      final remoteTaskRows = await client
+          .from('tasks')
+          .select('id')
+          .eq('user_id', currentUserId)
+          .timeout(const Duration(seconds: 10));
+      final Set<String> remoteTaskIds = {
+        for (final r in (remoteTaskRows as List<dynamic>)) (r['id'] as String),
+      };
+
+      final localTasks = await (db.select(db.tasks)
+            ..where((tbl) => tbl.userId.equals(currentUserId)))
+          .get();
+
+      for (final t in localTasks) {
+        if (!remoteTaskIds.contains(t.id)) {
+          try {
+            final payload = _mapTaskToRemoteMap(t, currentUserId);
+            await client.from('tasks').upsert(payload).timeout(const Duration(seconds: 10));
+            remoteTaskIds.add(t.id);
+          } catch (e) {
+            debugPrint(
+              'SyncEngine: Error upserting task ${t.id} (${t.title}): $e',
+            );
+            // If FK failed because label_id or recurrence_rule_id is invalid on server, retry with null
+            try {
+              final fallbackPayload = _mapTaskToRemoteMap(t, currentUserId);
+              fallbackPayload['label_id'] = null;
+              fallbackPayload['recurrence_rule_id'] = null;
+              await client.from('tasks').upsert(fallbackPayload).timeout(const Duration(seconds: 10));
+              remoteTaskIds.add(t.id);
+            } catch (_) {}
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('SyncEngine: Tasks reconciliation notice: $e');
+    }
+
+    // 5. Reconcile KPI Definitions
+    try {
+      final remoteKpiRows = await client
+          .from('kpi_definitions')
+          .select('id')
+          .eq('user_id', currentUserId)
+          .timeout(const Duration(seconds: 10));
+      final Set<String> remoteKpiIds = {
+        for (final r in (remoteKpiRows as List<dynamic>)) (r['id'] as String),
+      };
+
+      final localKpis = await (db.select(db.kpiDefinitions)
+            ..where((tbl) => tbl.userId.equals(currentUserId)))
+          .get();
+
+      for (final k in localKpis) {
+        if (!remoteKpiIds.contains(k.id)) {
+          try {
+            final payload = _mapKpiToRemoteMap(k, currentUserId);
+            await client.from('kpi_definitions').upsert(payload).timeout(const Duration(seconds: 10));
+            remoteKpiIds.add(k.id);
+          } catch (e) {
+            debugPrint(
+              'SyncEngine: Error upserting KPI ${k.id} (${k.name}): $e',
+            );
+            try {
+              final fallbackPayload = _mapKpiToRemoteMap(k, currentUserId);
+              fallbackPayload['label_id'] = null;
+              await client.from('kpi_definitions').upsert(fallbackPayload).timeout(const Duration(seconds: 10));
+              remoteKpiIds.add(k.id);
+            } catch (_) {}
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('SyncEngine: KPI reconciliation notice: $e');
+    }
+
+    // 6. Reconcile Task Occurrences
+    try {
+      final remoteOccRows = await client
+          .from('task_occurrences')
+          .select('id')
+          .eq('user_id', currentUserId)
+          .timeout(const Duration(seconds: 10));
+      final Set<String> remoteOccIds = {
+        for (final r in (remoteOccRows as List<dynamic>)) (r['id'] as String),
+      };
+
+      final localOccs = await (db.select(db.taskOccurrences)
+            ..where((tbl) => tbl.userId.equals(currentUserId)))
+          .get();
+
+      for (final occ in localOccs) {
+        if (!remoteOccIds.contains(occ.id)) {
+          try {
+            await client.from('task_occurrences').upsert({
+              'id': occ.id,
+              'user_id': currentUserId,
+              'task_id': occ.taskId,
+              'occurrence_date': occ.occurrenceDate.toIso8601String(),
+              'status': occ.status,
+              'completed_at': occ.completedAt?.toIso8601String(),
+              'created_at': occ.createdAt.toIso8601String(),
+              'updated_at': occ.updatedAt.toIso8601String(),
+              'version': occ.version,
+              'is_deleted': occ.isDeleted,
+            }).timeout(const Duration(seconds: 10));
+            remoteOccIds.add(occ.id);
+          } catch (e) {
+            debugPrint('SyncEngine: Error upserting task occurrence ${occ.id}: $e');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('SyncEngine: Task occurrences reconciliation notice: $e');
+    }
+
+    // 7. Reconcile Completion Events
+    try {
+      final remoteCompRows = await client
+          .from('completion_events')
+          .select('id')
+          .eq('user_id', currentUserId)
+          .timeout(const Duration(seconds: 10));
+      final Set<String> remoteCompIds = {
+        for (final r in (remoteCompRows as List<dynamic>)) (r['id'] as String),
+      };
+
+      final localComps = await (db.select(db.completionEvents)
+            ..where((tbl) => tbl.userId.equals(currentUserId)))
+          .get();
+
+      for (final comp in localComps) {
+        if (!remoteCompIds.contains(comp.id)) {
+          try {
+            await client.from('completion_events').upsert({
+              'id': comp.id,
+              'user_id': currentUserId,
+              'task_id': comp.taskId,
+              'occurrence_id': comp.occurrenceId,
+              'completed_at': comp.completedAt.toIso8601String(),
+              'notes': comp.notes,
+              'created_at': comp.createdAt.toIso8601String(),
+              'is_deleted': comp.isDeleted,
+            }).timeout(const Duration(seconds: 10));
+            remoteCompIds.add(comp.id);
+          } catch (e) {
+            debugPrint('SyncEngine: Error upserting completion event ${comp.id}: $e');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('SyncEngine: Completion events reconciliation notice: $e');
+    }
+
+    // 8. Reconcile Timer Sessions
+    try {
+      final remoteTimerRows = await client
+          .from('timer_sessions')
+          .select('id')
+          .eq('user_id', currentUserId)
+          .timeout(const Duration(seconds: 10));
+      final Set<String> remoteTimerIds = {
+        for (final r in (remoteTimerRows as List<dynamic>)) (r['id'] as String),
+      };
+
+      final localTimers = await (db.select(db.timerSessions)
+            ..where((tbl) => tbl.userId.equals(currentUserId)))
+          .get();
+
+      for (final timer in localTimers) {
+        if (!remoteTimerIds.contains(timer.id)) {
+          try {
+            await client.from('timer_sessions').upsert({
+              'id': timer.id,
+              'user_id': currentUserId,
+              'task_id': timer.taskId,
+              'occurrence_id': timer.occurrenceId,
+              'started_at': timer.startedAt.toIso8601String(),
+              'paused_at': timer.pausedAt?.toIso8601String(),
+              'ended_at': timer.endedAt?.toIso8601String(),
+              'elapsed_seconds': timer.elapsedSeconds,
+              'status': timer.status,
+              'created_at': timer.createdAt.toIso8601String(),
+              'updated_at': timer.updatedAt.toIso8601String(),
+              'version': timer.version,
+              'is_deleted': timer.isDeleted,
+            }).timeout(const Duration(seconds: 10));
+            remoteTimerIds.add(timer.id);
+          } catch (e) {
+            debugPrint('SyncEngine: Error upserting timer session ${timer.id}: $e');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('SyncEngine: Timer sessions reconciliation notice: $e');
+    }
+
+    // 9. Reconcile Notification Settings
+    try {
+      final remoteNotifRows = await client
+          .from('notification_settings')
+          .select('id')
+          .eq('user_id', currentUserId)
+          .timeout(const Duration(seconds: 10));
+      final Set<String> remoteNotifIds = {
+        for (final r in (remoteNotifRows as List<dynamic>)) (r['id'] as String),
+      };
+
+      final localNotifs = await (db.select(db.notificationSettingsTable)
+            ..where((tbl) => tbl.userId.equals(currentUserId)))
+          .get();
+
+      for (final n in localNotifs) {
+        if (!remoteNotifIds.contains(n.id)) {
+          try {
+            await client.from('notification_settings').upsert({
+              'id': n.id,
+              'user_id': currentUserId,
+              'hourly_reminders_enabled': n.hourlyRemindersEnabled,
+              'active_hours_start': n.activeHoursStart,
+              'active_hours_end': n.activeHoursEnd,
+              'active_days': n.activeDays,
+              'quiet_hours_enabled': n.quietHoursEnabled,
+              'quiet_start': n.quietStart,
+              'quiet_end': n.quietEnd,
+              'daily_report_enabled': n.dailyReportEnabled,
+              'daily_report_time': n.dailyReportTime,
+              'motivation_enabled': n.motivationEnabled,
+              'created_at': n.createdAt.toIso8601String(),
+              'updated_at': n.updatedAt.toIso8601String(),
+              'version': n.version,
+              'is_deleted': n.isDeleted,
+            }).timeout(const Duration(seconds: 10));
+            remoteNotifIds.add(n.id);
+          } catch (e) {
+            debugPrint('SyncEngine: Error upserting notification settings ${n.id}: $e');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('SyncEngine: Notification settings reconciliation notice: $e');
+    }
+  }
+
   // ===========================================================================
   // PULL REMOTE CHANGES
   // ===========================================================================
-  Future<void> _pullRemoteChanges() async {
+  Future<void> _pullRemoteChanges({bool forceFullSync = false}) async {
     final userId = _supabase.currentUserId;
     final client = _supabase.client;
     if (userId == null || client == null) return;
 
-    final lastSyncIso = _lastSyncTime?.toIso8601String() ??
-        DateTime.fromMillisecondsSinceEpoch(0).toIso8601String();
+    final lastSyncIso = _lastSyncTime != null && !forceFullSync
+        ? _lastSyncTime!
+            .subtract(const Duration(minutes: 2))
+            .toIso8601String()
+        : null;
 
     const remoteTables = [
       'labels',
@@ -452,11 +932,16 @@ class SyncEngine {
             ? query.eq('id', userId)
             : query.eq('user_id', userId);
 
-        final response = remoteTable == 'completion_events'
-            ? await filtered.gt('created_at', lastSyncIso)
-            : await filtered.gt('updated_at', lastSyncIso);
+        final dynamic response;
+        if (lastSyncIso == null) {
+          response = await filtered.timeout(const Duration(seconds: 15));
+        } else {
+          response = remoteTable == 'completion_events'
+              ? await filtered.gt('created_at', lastSyncIso).timeout(const Duration(seconds: 15))
+              : await filtered.gt('updated_at', lastSyncIso).timeout(const Duration(seconds: 15));
+        }
 
-        final List<dynamic> rows = response;
+        final List<dynamic> rows = response is List<dynamic> ? response : [];
 
         for (final row in rows) {
           if (row is! Map<String, dynamic>) continue;
@@ -477,10 +962,7 @@ class SyncEngine {
               remoteData: row,
             );
 
-            if (resolution.isRemoteWinner) {
-              await _upsertLocalRecord(localTable, row);
-            } else if (resolution.shouldPreserveBoth) {
-              // Append-only table: both records preserved
+            if (resolution.isRemoteWinner || resolution.shouldPreserveBoth) {
               await _upsertLocalRecord(localTable, row);
             } else if (resolution.isLocalWinner) {
               // Local record is newer: enqueue it to update server
@@ -507,8 +989,9 @@ class SyncEngine {
     String id,
   ) async {
     try {
+      final actualTable = _mapToLocalTableName(tableName);
       final rows = await db.customSelect(
-        'SELECT * FROM $tableName WHERE id = ? LIMIT 1',
+        'SELECT * FROM $actualTable WHERE id = ? LIMIT 1',
         variables: [Variable.withString(id)],
         readsFrom: {},
       ).getSingleOrNull();
@@ -524,7 +1007,8 @@ class SyncEngine {
     Map<String, dynamic> map,
   ) async {
     try {
-      switch (localTable) {
+      final normalized = _mapToLocalTableName(localTable);
+      switch (normalized) {
         case 'labels':
           await db.into(db.labels).insert(
             LabelsCompanion(
@@ -965,14 +1449,18 @@ class SyncEngine {
   }
 
   String _mapToRemoteTableName(String local) {
-    if (local == 'notification_settings_table') return 'notification_settings';
-    if (local == 'user_profiles') return 'users';
+    if (local == 'notification_settings_table' || local == 'notification_settings') {
+      return 'notification_settings';
+    }
+    if (local == 'user_profiles' || local == 'users') return 'users';
     return local;
   }
 
   String _mapToLocalTableName(String remote) {
-    if (remote == 'notification_settings') return 'notification_settings_table';
-    if (remote == 'users') return 'user_profiles';
+    if (remote == 'notification_settings' || remote == 'notification_settings_table') {
+      return 'notification_settings_table';
+    }
+    if (remote == 'users' || remote == 'user_profiles') return 'user_profiles';
     return remote;
   }
 
@@ -987,9 +1475,41 @@ class SyncEngine {
     final Map<String, dynamic> output = {};
     for (final entry in input.entries) {
       final key = _camelToSnake(entry.key);
-      output[key] = entry.value;
+      var val = entry.value;
+
+      // Handle integer Unix epochs from SQLite for timestamp columns
+      if (val is int) {
+        if (key.endsWith('_at') || key.endsWith('_date')) {
+          final isSeconds = val < 10000000000;
+          val = DateTime.fromMillisecondsSinceEpoch(
+            isSeconds ? val * 1000 : val,
+            isUtc: true,
+          ).toIso8601String();
+        } else if (_isBooleanColumn(key)) {
+          val = val != 0;
+        }
+      } else if (val is String && _isBooleanColumn(key)) {
+        final s = val.trim().toLowerCase();
+        if (s == 'true' || s == '1') {
+          val = true;
+        } else if (s == 'false' || s == '0') {
+          val = false;
+        }
+      }
+
+      output[key] = val;
     }
     return output;
+  }
+
+  bool _isBooleanColumn(String key) {
+    return key == 'is_deleted' ||
+        key == 'is_archived' ||
+        key == 'has_time_tracking' ||
+        key == 'hourly_reminders_enabled' ||
+        key == 'quiet_hours_enabled' ||
+        key == 'daily_report_enabled' ||
+        key == 'motivation_enabled';
   }
 
   String _camelToSnake(String input) {
@@ -1058,5 +1578,72 @@ class SyncEngine {
       return DateTime.tryParse(val.trim());
     }
     return null;
+  }
+
+  Map<String, dynamic> _mapTaskToRemoteMap(Task t, String authUserId) {
+    return {
+      'id': t.id,
+      'user_id': authUserId,
+      'label_id': t.labelId,
+      'title': t.title,
+      'description': t.description,
+      'icon_name': t.iconName,
+      'image_path': t.imagePath,
+      'url': t.url,
+      'category': t.category,
+      'status': t.status,
+      'priority': t.priority,
+      'has_time_tracking': t.hasTimeTracking,
+      'estimated_minutes': t.estimatedMinutes,
+      'recurrence_rule_id': t.recurrenceRuleId,
+      'scheduled_date': t.scheduledDate?.toIso8601String(),
+      'due_date': t.dueDate?.toIso8601String(),
+      'is_archived': t.isArchived,
+      'created_at': t.createdAt.toIso8601String(),
+      'updated_at': t.updatedAt.toIso8601String(),
+      'version': t.version,
+      'is_deleted': t.isDeleted,
+    };
+  }
+
+  Map<String, dynamic> _mapLabelToRemoteMap(Label l, String authUserId) {
+    return {
+      'id': l.id,
+      'user_id': authUserId,
+      'parent_id': l.parentId,
+      'name': l.name,
+      'icon_name': l.iconName,
+      'color': l.color,
+      'sort_order': l.sortOrder,
+      'is_archived': l.isArchived,
+      'created_at': l.createdAt.toIso8601String(),
+      'updated_at': l.updatedAt.toIso8601String(),
+      'version': l.version,
+      'is_deleted': l.isDeleted,
+    };
+  }
+
+  Map<String, dynamic> _mapKpiToRemoteMap(KpiDefinition k, String authUserId) {
+    return {
+      'id': k.id,
+      'user_id': authUserId,
+      'label_id': k.labelId,
+      'name': k.name,
+      'description': k.description,
+      'kpi_type': k.kpiType,
+      'target_value': k.targetValue,
+      'current_value': k.currentValue,
+      'long_term_target': k.longTermTarget,
+      'unit': k.unit,
+      'platform': k.platform,
+      'metric_category': k.metricCategory,
+      'period': k.period,
+      'start_date': k.startDate.toIso8601String(),
+      'end_date': k.endDate?.toIso8601String(),
+      'created_at': k.createdAt.toIso8601String(),
+      'updated_at': k.updatedAt.toIso8601String(),
+      'version': k.version,
+      'is_deleted': k.isDeleted,
+    };
   }
 }

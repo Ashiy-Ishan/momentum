@@ -5,6 +5,7 @@ import '../../domain/enums/enums.dart';
 import '../../domain/models/models.dart' as domain;
 import '../local/daos/timer_dao.dart';
 import '../local/database.dart' as db;
+import '../sync/sync_engine.dart';
 
 /// Contract for task time-tracking operations and session logging.
 abstract class TimerRepository {
@@ -45,11 +46,13 @@ abstract class TimerRepository {
 class TimerRepositoryImpl implements TimerRepository {
   final db.AppDatabase database;
   final TimerDao timerDao;
+  final SyncEngine? syncEngine;
   static const Uuid _uuid = Uuid();
 
   TimerRepositoryImpl({
     required this.database,
     required this.timerDao,
+    this.syncEngine,
   });
 
   @override
@@ -86,6 +89,14 @@ class TimerRepositoryImpl implements TimerRepository {
     );
 
     await timerDao.insertSession(_mapSessionToCompanion(session));
+
+    await syncEngine?.enqueueOperation(
+      tableName: 'timer_sessions',
+      recordId: session.id,
+      operation: SyncOperation.insert,
+      payload: session.toMap(),
+    );
+
     return session;
   }
 
@@ -100,6 +111,7 @@ class TimerRepositoryImpl implements TimerRepository {
       final diff = now.difference(row.startedAt).inSeconds;
       final addedSeconds = diff > 0 ? diff : 0;
       final totalSeconds = row.elapsedSeconds + addedSeconds;
+      final newVersion = row.version + 1;
 
       await (database.update(database.timerSessions)
             ..where((tbl) => tbl.id.equals(sessionId)))
@@ -108,8 +120,23 @@ class TimerRepositoryImpl implements TimerRepository {
           status: Value(TimerSessionStatus.paused.name),
           pausedAt: Value(now),
           elapsedSeconds: Value(totalSeconds),
+          version: Value(newVersion),
           updatedAt: Value(now),
         ),
+      );
+
+      await syncEngine?.enqueueOperation(
+        tableName: 'timer_sessions',
+        recordId: sessionId,
+        operation: SyncOperation.update,
+        payload: {
+          'id': sessionId,
+          'status': TimerSessionStatus.paused.name,
+          'paused_at': now.toIso8601String(),
+          'elapsed_seconds': totalSeconds,
+          'version': newVersion,
+          'updated_at': now.toIso8601String(),
+        },
       );
     }
   }
@@ -122,6 +149,8 @@ class TimerRepositoryImpl implements TimerRepository {
 
     if (row != null && row.status == TimerSessionStatus.paused.name) {
       final now = DateTime.now();
+      final newVersion = row.version + 1;
+
       await (database.update(database.timerSessions)
             ..where((tbl) => tbl.id.equals(sessionId)))
           .write(
@@ -129,8 +158,23 @@ class TimerRepositoryImpl implements TimerRepository {
           status: Value(TimerSessionStatus.running.name),
           startedAt: Value(now),
           pausedAt: const Value(null),
+          version: Value(newVersion),
           updatedAt: Value(now),
         ),
+      );
+
+      await syncEngine?.enqueueOperation(
+        tableName: 'timer_sessions',
+        recordId: sessionId,
+        operation: SyncOperation.update,
+        payload: {
+          'id': sessionId,
+          'status': TimerSessionStatus.running.name,
+          'started_at': now.toIso8601String(),
+          'paused_at': null,
+          'version': newVersion,
+          'updated_at': now.toIso8601String(),
+        },
       );
     }
   }
@@ -149,6 +193,7 @@ class TimerRepositoryImpl implements TimerRepository {
         final diff = now.difference(row.startedAt).inSeconds;
         totalSeconds += diff > 0 ? diff : 0;
       }
+      final newVersion = row.version + 1;
 
       await (database.update(database.timerSessions)
             ..where((tbl) => tbl.id.equals(sessionId)))
@@ -157,8 +202,23 @@ class TimerRepositoryImpl implements TimerRepository {
           status: Value(TimerSessionStatus.completed.name),
           endedAt: Value(now),
           elapsedSeconds: Value(totalSeconds),
+          version: Value(newVersion),
           updatedAt: Value(now),
         ),
+      );
+
+      await syncEngine?.enqueueOperation(
+        tableName: 'timer_sessions',
+        recordId: sessionId,
+        operation: SyncOperation.update,
+        payload: {
+          'id': sessionId,
+          'status': TimerSessionStatus.completed.name,
+          'ended_at': now.toIso8601String(),
+          'elapsed_seconds': totalSeconds,
+          'version': newVersion,
+          'updated_at': now.toIso8601String(),
+        },
       );
     }
   }

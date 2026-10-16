@@ -65,9 +65,11 @@ class LabelsDao extends DatabaseAccessor<AppDatabase> with _$LabelsDaoMixin {
 
   /// Soft deletes a label by setting isDeleted = true.
   Future<void> softDeleteLabel(String id) async {
+    final existing = await (select(labels)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
     await (update(labels)..where((tbl) => tbl.id.equals(id))).write(
       LabelsCompanion(
         isDeleted: const Value(true),
+        version: Value((existing?.version ?? 0) + 1),
         updatedAt: Value(DateTime.now()),
       ),
     );
@@ -75,9 +77,11 @@ class LabelsDao extends DatabaseAccessor<AppDatabase> with _$LabelsDaoMixin {
 
   /// Archives or unarchives a label.
   Future<void> archiveLabel(String id, bool archived) async {
+    final existing = await (select(labels)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
     await (update(labels)..where((tbl) => tbl.id.equals(id))).write(
       LabelsCompanion(
         isArchived: Value(archived),
+        version: Value((existing?.version ?? 0) + 1),
         updatedAt: Value(DateTime.now()),
       ),
     );

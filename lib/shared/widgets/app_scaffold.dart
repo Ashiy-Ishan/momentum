@@ -351,24 +351,19 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, AppColors.tertiary],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: isDark
+                  ? AppColors.surfaceVariantDark
+                  : AppColors.surfaceVariantLight,
               borderRadius: AppRadius.borderMd,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withAlpha(80),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              border: Border.all(
+                color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                width: 1.0,
+              ),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.bolt_rounded,
-              color: Colors.white,
-              size: 26,
+              color: isDark ? AppColors.primaryLight : AppColors.primaryDark,
+              size: 24,
             ),
           ),
           AppSpacing.hGapSm,
@@ -619,8 +614,11 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
                 elevation: 0,
                 backgroundColor: Colors.transparent,
                 type: BottomNavigationBarType.fixed,
-                selectedItemColor: const Color(0xFFA78BFA),
-                unselectedItemColor: const Color(0xFF7E7A91),
+                selectedItemColor:
+                    isDark ? AppColors.primaryLight : AppColors.primaryDark,
+                unselectedItemColor: isDark
+                    ? AppColors.textTertiaryDark
+                    : AppColors.textTertiaryLight,
                 selectedFontSize: 11,
                 unselectedFontSize: 11,
                 selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),

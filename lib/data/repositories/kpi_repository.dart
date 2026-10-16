@@ -81,19 +81,27 @@ class KpiRepositoryImpl implements KpiRepository {
 
   @override
   Future<void> updateKpi(domain.KpiDefinition kpi) async {
-    await kpiDao.updateKpi(_mapKpiToCompanion(kpi));
+    final updated = kpi.copyWith(
+      version: kpi.version + 1,
+      updatedAt: DateTime.now(),
+    );
+    await kpiDao.updateKpi(_mapKpiToCompanion(updated));
 
     await syncEngine?.enqueueOperation(
       tableName: 'kpi_definitions',
-      recordId: kpi.id,
+      recordId: updated.id,
       operation: SyncOperation.update,
-      payload: kpi.toMap(),
+      payload: updated.toMap(),
     );
   }
 
   @override
   Future<void> updateCurrentValue(String id, double newValue) async {
     await kpiDao.updateCurrentValue(id, newValue);
+
+    final row = await (database.select(database.kpiDefinitions)
+          ..where((tbl) => tbl.id.equals(id)))
+        .getSingleOrNull();
 
     await syncEngine?.enqueueOperation(
       tableName: 'kpi_definitions',
@@ -102,7 +110,8 @@ class KpiRepositoryImpl implements KpiRepository {
       payload: {
         'id': id,
         'current_value': newValue,
-        'updated_at': DateTime.now().toIso8601String(),
+        if (row != null) 'version': row.version,
+        'updated_at': (row?.updatedAt ?? DateTime.now()).toIso8601String(),
       },
     );
   }
@@ -122,7 +131,8 @@ class KpiRepositoryImpl implements KpiRepository {
         payload: {
           'id': id,
           'current_value': row.currentValue,
-          'updated_at': DateTime.now().toIso8601String(),
+          'version': row.version,
+          'updated_at': row.updatedAt.toIso8601String(),
         },
       );
     }
@@ -132,6 +142,10 @@ class KpiRepositoryImpl implements KpiRepository {
   Future<void> deleteKpi(String id) async {
     await kpiDao.softDeleteKpi(id);
 
+    final row = await (database.select(database.kpiDefinitions)
+          ..where((tbl) => tbl.id.equals(id)))
+        .getSingleOrNull();
+
     await syncEngine?.enqueueOperation(
       tableName: 'kpi_definitions',
       recordId: id,
@@ -139,7 +153,8 @@ class KpiRepositoryImpl implements KpiRepository {
       payload: {
         'id': id,
         'is_deleted': true,
-        'updated_at': DateTime.now().toIso8601String(),
+        if (row != null) 'version': row.version,
+        'updated_at': (row?.updatedAt ?? DateTime.now()).toIso8601String(),
       },
     );
   }
@@ -155,6 +170,12 @@ class KpiRepositoryImpl implements KpiRepository {
     for (final kpi in defaults) {
       if (!existingIds.contains(kpi.id)) {
         await kpiDao.insertKpi(_mapKpiToCompanion(kpi));
+        await syncEngine?.enqueueOperation(
+          tableName: 'kpi_definitions',
+          recordId: kpi.id,
+          operation: SyncOperation.insert,
+          payload: kpi.toMap(),
+        );
       }
     }
   }
