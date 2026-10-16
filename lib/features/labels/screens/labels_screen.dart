@@ -29,9 +29,11 @@ class _LabelsScreenState extends ConsumerState<LabelsScreen> {
     if (hex == null || hex.isEmpty) return fallback;
     final clean = hex.replaceAll('#', '');
     if (clean.length == 6) {
-      return Color(int.parse('FF$clean', radix: 16));
+      final val = int.tryParse('FF$clean', radix: 16);
+      if (val != null) return Color(val);
     } else if (clean.length == 8) {
-      return Color(int.parse(clean, radix: 16));
+      final val = int.tryParse(clean, radix: 16);
+      if (val != null) return Color(val);
     }
     return fallback;
   }
@@ -52,6 +54,8 @@ class _LabelsScreenState extends ConsumerState<LabelsScreen> {
         existingLabel?.parentId ?? defaultParentId;
 
     final isEditing = existingLabel != null;
+
+    String? nameError;
 
     await showDialog<void>(
       context: context,
@@ -77,10 +81,16 @@ class _LabelsScreenState extends ConsumerState<LabelsScreen> {
                     decoration: InputDecoration(
                       labelText: 'Label Name *',
                       hintText: 'e.g. YouTube, Programming, Fitness',
+                      errorText: nameError,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                     ),
+                    onChanged: (_) {
+                      if (nameError != null) {
+                        setDialogState(() => nameError = null);
+                      }
+                    },
                   ),
                   AppSpacing.vGapMd,
 
@@ -172,7 +182,10 @@ class _LabelsScreenState extends ConsumerState<LabelsScreen> {
               FilledButton(
                 onPressed: () async {
                   final name = nameController.text.trim();
-                  if (name.isEmpty) return;
+                  if (name.isEmpty) {
+                    setDialogState(() => nameError = 'Label name cannot be empty');
+                    return;
+                  }
 
                   final userId = ref.read(currentUserIdProvider);
                   final now = DateTime.now();

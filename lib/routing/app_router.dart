@@ -10,6 +10,7 @@ import '../features/analytics/screens/analytics_screen.dart';
 import '../features/auth/screens/auth_gate_screen.dart';
 import '../features/calendar/screens/calendar_screen.dart';
 import '../features/dashboard/screens/dashboard_screen.dart';
+import '../features/desktop_hud/screens/desktop_hud_screen.dart';
 import '../features/labels/screens/labels_screen.dart';
 import '../features/labels/screens/parent_label_dashboard_screen.dart';
 import '../features/labels/screens/sub_label_dashboard_screen.dart';
@@ -68,6 +69,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => NoTransitionPage(
           key: state.pageKey,
           child: const AuthGateScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/hud',
+        pageBuilder: (context, state) => NoTransitionPage(
+          key: state.pageKey,
+          child: const DesktopHudScreen(),
         ),
       ),
       ShellRoute(

@@ -6,6 +6,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/validators.dart';
 import '../../../data/remote/supabase_client.dart';
 import '../../../shared/providers/database_provider.dart';
 
@@ -24,6 +25,7 @@ class AuthGateScreen extends ConsumerStatefulWidget {
 class _AuthGateScreenState extends ConsumerState<AuthGateScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
 
   int _selectedTab = 0; // 0: Sign In, 1: Create Account
@@ -35,6 +37,7 @@ class _AuthGateScreenState extends ConsumerState<AuthGateScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _nameController.dispose();
     super.dispose();
   }
@@ -46,6 +49,13 @@ class _AuthGateScreenState extends ConsumerState<AuthGateScreen> {
     if (email.isEmpty || password.isEmpty) {
       setState(() {
         _errorMessage = 'Please enter both your email address and password.';
+      });
+      return;
+    }
+
+    if (!Validators.isValidEmail(email)) {
+      setState(() {
+        _errorMessage = 'Please enter a valid email address.';
       });
       return;
     }
@@ -77,6 +87,7 @@ class _AuthGateScreenState extends ConsumerState<AuthGateScreen> {
   Future<void> _handleSignUp() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
     final name = _nameController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
@@ -86,9 +97,23 @@ class _AuthGateScreenState extends ConsumerState<AuthGateScreen> {
       return;
     }
 
+    if (!Validators.isValidEmail(email)) {
+      setState(() {
+        _errorMessage = 'Please enter a valid email address.';
+      });
+      return;
+    }
+
     if (password.length < 6) {
       setState(() {
         _errorMessage = 'Password must be at least 6 characters.';
+      });
+      return;
+    }
+
+    if (password != confirmPassword) {
+      setState(() {
+        _errorMessage = 'Passwords do not match.';
       });
       return;
     }
@@ -391,12 +416,12 @@ class _AuthGateScreenState extends ConsumerState<AuthGateScreen> {
                     TextField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
-                      textInputAction: TextInputAction.done,
+                      textInputAction: _selectedTab == 0
+                          ? TextInputAction.done
+                          : TextInputAction.next,
                       onSubmitted: (_) {
                         if (_selectedTab == 0) {
                           _handleSignIn();
-                        } else {
-                          _handleSignUp();
                         }
                       },
                       decoration: InputDecoration(
@@ -417,6 +442,22 @@ class _AuthGateScreenState extends ConsumerState<AuthGateScreen> {
                         ),
                       ),
                     ),
+                    if (_selectedTab == 1) ...[
+                      AppSpacing.vGapMd,
+                      TextField(
+                        controller: _confirmPasswordController,
+                        obscureText: _obscurePassword,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => _handleSignUp(),
+                        decoration: InputDecoration(
+                          labelText: 'Confirm Password',
+                          prefixIcon: const Icon(Icons.lock_reset_outlined),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                        ),
+                      ),
+                    ],
                     AppSpacing.vGapSm,
 
                     // Forgot Password Link (Sign In mode only)

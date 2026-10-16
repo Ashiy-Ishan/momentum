@@ -29,6 +29,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   TaskStatus? _selectedStatusFilter;
+  bool _isInitializingKpis = false;
 
   Color _colorFromHex(String? hex, Color fallback) {
     if (hex == null || hex.isEmpty) return fallback;
@@ -775,15 +776,51 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               const SizedBox(width: 12),
               FilledButton.tonal(
-                onPressed: () async {
-                  final userId = ref.read(currentUserIdProvider);
-                  final labels =
-                      ref.read(allLabelsStreamProvider).valueOrNull ?? [];
-                  await ref
-                      .read(kpiRepositoryProvider)
-                      .seedDefaultPlatformKpis(userId, labels);
-                },
-                child: const Text('Initialize'),
+                onPressed: _isInitializingKpis
+                    ? null
+                    : () async {
+                        setState(() => _isInitializingKpis = true);
+                        try {
+                          final userId = ref.read(currentUserIdProvider);
+                          final labelRepo = ref.read(labelRepositoryProvider);
+                          final kpiRepo = ref.read(kpiRepositoryProvider);
+
+                          // Ensure default labels are seeded for current user
+                          await labelRepo.seedDefaultLabels(userId);
+                          final currentLabels =
+                              await labelRepo.getAllLabels(userId);
+
+                          // Seed default platform creator KPIs
+                          await kpiRepo.seedDefaultPlatformKpis(
+                            userId,
+                            currentLabels,
+                          );
+
+                          if (context.mounted) {
+                            context.showSnackBar(
+                              'Platform creator KPIs initialized successfully!',
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            context.showSnackBar(
+                              'Failed to initialize KPIs: $e',
+                              isError: true,
+                            );
+                          }
+                        } finally {
+                          if (mounted) {
+                            setState(() => _isInitializingKpis = false);
+                          }
+                        }
+                      },
+                child: _isInitializingKpis
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Initialize'),
               ),
             ],
           ),

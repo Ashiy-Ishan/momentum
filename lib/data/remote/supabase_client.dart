@@ -215,48 +215,57 @@ class MomentumSupabaseClient {
     String? supabaseAnonKey,
     bool persist = true,
   }) async {
+    final bool urlExplicitlyProvided = supabaseUrl != null;
+    final bool keyExplicitlyProvided = supabaseAnonKey != null;
+
     String? url = supabaseUrl?.trim();
     String? anonKey = supabaseAnonKey?.trim();
 
-    // 1. Read from SharedPreferences if not supplied
-    if (url == null || url.isEmpty || anonKey == null || anonKey.isEmpty) {
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        if (url == null || url.isEmpty) {
-          final savedUrl = prefs.getString(prefSupabaseUrl)?.trim();
-          if (savedUrl != null && savedUrl.isNotEmpty) {
-            url = savedUrl;
-          }
-        }
-        if (anonKey == null || anonKey.isEmpty) {
-          final savedKey = prefs.getString(prefSupabaseAnonKey)?.trim();
-          if (savedKey != null && savedKey.isNotEmpty) {
-            anonKey = savedKey;
-          }
-        }
-      } catch (e) {
-        debugPrint(
-          'MomentumSupabaseClient: Notice reading saved credentials from SharedPreferences: $e',
-        );
-      }
-    }
+    // If caller explicitly passed empty strings, do not fall back to defaults
+    final bool explicitEmpty = (urlExplicitlyProvided && url!.isEmpty) ||
+        (keyExplicitlyProvided && anonKey!.isEmpty);
 
-    // 2. Fallback to compile-time environment variables, then AppConstants defaults
-    if (url == null || url.isEmpty) {
-      const envUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: '');
-      if (envUrl.isNotEmpty) {
-        url = envUrl.trim();
-      } else if (AppConstants.defaultSupabaseUrl.isNotEmpty) {
-        url = AppConstants.defaultSupabaseUrl.trim();
+    if (!explicitEmpty) {
+      // 1. Read from SharedPreferences if not supplied
+      if (url == null || url.isEmpty || anonKey == null || anonKey.isEmpty) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          if (url == null || url.isEmpty) {
+            final savedUrl = prefs.getString(prefSupabaseUrl)?.trim();
+            if (savedUrl != null && savedUrl.isNotEmpty) {
+              url = savedUrl;
+            }
+          }
+          if (anonKey == null || anonKey.isEmpty) {
+            final savedKey = prefs.getString(prefSupabaseAnonKey)?.trim();
+            if (savedKey != null && savedKey.isNotEmpty) {
+              anonKey = savedKey;
+            }
+          }
+        } catch (e) {
+          debugPrint(
+            'MomentumSupabaseClient: Notice reading saved credentials from SharedPreferences: $e',
+          );
+        }
       }
-    }
-    if (anonKey == null || anonKey.isEmpty) {
-      const envKey =
-          String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
-      if (envKey.isNotEmpty) {
-        anonKey = envKey.trim();
-      } else if (AppConstants.defaultSupabaseAnonKey.isNotEmpty) {
-        anonKey = AppConstants.defaultSupabaseAnonKey.trim();
+
+      // 2. Fallback to compile-time environment variables, then AppConstants defaults
+      if (url == null || url.isEmpty) {
+        const envUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: '');
+        if (envUrl.isNotEmpty) {
+          url = envUrl.trim();
+        } else if (AppConstants.defaultSupabaseUrl.isNotEmpty) {
+          url = AppConstants.defaultSupabaseUrl.trim();
+        }
+      }
+      if (anonKey == null || anonKey.isEmpty) {
+        const envKey =
+            String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
+        if (envKey.isNotEmpty) {
+          anonKey = envKey.trim();
+        } else if (AppConstants.defaultSupabaseAnonKey.isNotEmpty) {
+          anonKey = AppConstants.defaultSupabaseAnonKey.trim();
+        }
       }
     }
 

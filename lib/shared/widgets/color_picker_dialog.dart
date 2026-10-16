@@ -57,9 +57,11 @@ class _ColorPickerDialogState extends State<ColorPickerDialog> {
   Color _colorFromHex(String hex) {
     final clean = hex.replaceAll('#', '');
     if (clean.length == 6) {
-      return Color(int.parse('FF$clean', radix: 16));
+      final val = int.tryParse('FF$clean', radix: 16);
+      if (val != null) return Color(val);
     } else if (clean.length == 8) {
-      return Color(int.parse(clean, radix: 16));
+      final val = int.tryParse(clean, radix: 16);
+      if (val != null) return Color(val);
     }
     return AppColors.primary;
   }

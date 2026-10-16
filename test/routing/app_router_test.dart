@@ -9,6 +9,7 @@ import 'package:momentum/features/analytics/screens/analytics_screen.dart';
 import 'package:momentum/features/auth/screens/auth_gate_screen.dart';
 import 'package:momentum/features/calendar/screens/calendar_screen.dart';
 import 'package:momentum/features/dashboard/screens/dashboard_screen.dart';
+import 'package:momentum/features/desktop_hud/screens/desktop_hud_screen.dart';
 import 'package:momentum/features/labels/screens/labels_screen.dart';
 import 'package:momentum/features/labels/screens/parent_label_dashboard_screen.dart';
 import 'package:momentum/features/labels/screens/sub_label_dashboard_screen.dart';
@@ -349,6 +350,17 @@ void main() {
       expect(find.text('Sign In'), findsWidgets);
       expect(find.text('Create Account'), findsOneWidget);
     });
+
+    testWidgets('19. Route /hud loads DesktopHudScreen', (tester) async {
+      await pumpApp(tester);
+
+      container.read(appRouterProvider).go('/hud');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(DesktopHudScreen), findsOneWidget);
+      expect(find.text('MOMENTUM HUD'), findsOneWidget);
+    });
   });
 
   group('Auth Gate Redirection & UI Tests', () {
@@ -413,6 +425,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Display Name (Optional)'), findsOneWidget);
+      expect(find.text('Confirm Password'), findsOneWidget);
       expect(find.widgetWithText(FilledButton, 'Create Account'), findsOneWidget);
 
       authContainer.dispose();

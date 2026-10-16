@@ -39,9 +39,11 @@ class _SubLabelDashboardScreenState
     if (hex == null || hex.isEmpty) return fallback;
     final clean = hex.replaceAll('#', '');
     if (clean.length == 6) {
-      return Color(int.parse('FF$clean', radix: 16));
+      final val = int.tryParse('FF$clean', radix: 16);
+      if (val != null) return Color(val);
     } else if (clean.length == 8) {
-      return Color(int.parse(clean, radix: 16));
+      final val = int.tryParse(clean, radix: 16);
+      if (val != null) return Color(val);
     }
     return fallback;
   }
@@ -56,6 +58,9 @@ class _SubLabelDashboardScreenState
     String selectedCategory = 'video_generation';
     KpiType selectedType = KpiType.count;
     KpiPeriod selectedPeriod = KpiPeriod.weekly;
+
+    String? nameError;
+    String? targetError;
 
     await showDialog<void>(
       context: context,
@@ -76,10 +81,16 @@ class _SubLabelDashboardScreenState
                       decoration: InputDecoration(
                         labelText: 'KPI Goal Name *',
                         hintText: 'e.g. Weekly Video Uploads, Subscribers',
+                        errorText: nameError,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                       ),
+                      onChanged: (_) {
+                        if (nameError != null) {
+                          setDialogState(() => nameError = null);
+                        }
+                      },
                     ),
                     AppSpacing.vGapMd,
                     Row(
@@ -214,11 +225,17 @@ class _SubLabelDashboardScreenState
                             decoration: InputDecoration(
                               labelText: 'Cadence Target *',
                               hintText: 'e.g. 2',
+                              errorText: targetError,
                               border: OutlineInputBorder(
                                 borderRadius:
                                     BorderRadius.circular(AppRadius.md),
                               ),
                             ),
+                            onChanged: (_) {
+                              if (targetError != null) {
+                                setDialogState(() => targetError = null);
+                              }
+                            },
                           ),
                         ),
                         AppSpacing.hGapSm,
@@ -356,7 +373,16 @@ class _SubLabelDashboardScreenState
                   final longTarget = double.tryParse(longTermCtrl.text.trim());
                   final unit = unitCtrl.text.trim();
 
-                  if (name.isEmpty || target <= 0) return;
+                  bool hasError = false;
+                  if (name.isEmpty) {
+                    setDialogState(() => nameError = 'Goal name is required');
+                    hasError = true;
+                  }
+                  if (target <= 0) {
+                    setDialogState(() => targetError = 'Cadence target must be > 0');
+                    hasError = true;
+                  }
+                  if (hasError) return;
 
                   final userId = ref.read(currentUserIdProvider);
                   final now = DateTime.now();

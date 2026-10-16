@@ -13,14 +13,10 @@ import '../../../core/theme/theme.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../data/remote/supabase_client.dart';
 import '../../../data/sync/sync_engine.dart';
-import '../../../domain/enums/enums.dart';
 import '../../../domain/models/models.dart';
 import '../../../shared/providers/database_provider.dart';
-import '../../analytics/providers/analytics_providers.dart';
 import '../../labels/providers/label_providers.dart';
-import '../../linux_wallpaper/renderers/wallpaper_svg_renderer.dart';
 import '../../linux_wallpaper/services/linux_wallpaper_service.dart';
-import '../../motivation/providers/motivation_providers.dart';
 import '../../tasks/providers/task_providers.dart';
 import '../providers/connected_accounts_provider.dart';
 import '../providers/settings_providers.dart';
@@ -38,9 +34,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   // Linux Wallpaper State
   late final LinuxWallpaperService _wallpaperService;
   bool _isLinuxSupported = false;
-  bool _wallpaperEnabled = false;
-  bool _wallpaperAutoUpdate = true;
-  bool _wallpaperApplying = false;
 
   // Supabase Auth & Config State
   final TextEditingController _supabaseUrlController = TextEditingController();
@@ -68,7 +61,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     super.initState();
     _wallpaperService = LinuxWallpaperService();
     _isLinuxSupported = Platform.isLinux;
-    _initWallpaperState();
     _loadSavedSupabaseCredentials();
   }
 
@@ -94,19 +86,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  Future<void> _initWallpaperState() async {
-    if (_isLinuxSupported) {
-      final enabled = await _wallpaperService.isEnabled();
-      final auto = await _wallpaperService.isAutoUpdateEnabled();
-      if (mounted) {
-        setState(() {
-          _wallpaperEnabled = enabled;
-          _wallpaperAutoUpdate = auto;
-        });
-      }
-    }
-  }
-
   @override
   void dispose() {
     _wallpaperService.dispose();
@@ -119,58 +98,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     super.dispose();
   }
 
-  Future<void> _applyWallpaperNow() async {
-    setState(() => _wallpaperApplying = true);
-    final stats =
-        ref.read(dashboardStatsProvider).valueOrNull ?? const DashboardStats();
-    final quote = ref.read(currentQuoteProvider).valueOrNull;
-    final allLabels = ref.read(allLabelsStreamProvider).valueOrNull ?? [];
-    final allTasks = ref.read(allTasksStreamProvider).valueOrNull ?? [];
-
-    final parentLabels = allLabels.where((l) => l.parentId == null);
-    final parentMap = <String, ({int completed, int total})>{};
-
-    for (final p in parentLabels) {
-      final childrenIds = allLabels
-          .where((l) => l.parentId == p.id)
-          .map((l) => l.id)
-          .toSet();
-      final pTasks = allTasks.where(
-        (t) => t.labelId == p.id || (t.labelId != null && childrenIds.contains(t.labelId)),
-      );
-      final total = pTasks.length;
-      final completed =
-          pTasks.where((t) => t.status == TaskStatus.done).length;
-      parentMap[p.name] = (completed: completed, total: total);
-    }
-
-    final data = WallpaperData(
-      date: DateTime.now(),
-      completedTasks: stats.completedTasks,
-      totalTasks: stats.scheduledTasks,
-      currentStreak: stats.streakDays,
-      motivationalQuote: quote?.text ?? 'Consistency is the DNA of mastery.',
-      quoteAuthor: quote?.author ?? 'Robin Sharma',
-      parentLabelProgress: parentMap,
-      isDark: true,
-    );
-
-    final success = await _wallpaperService.updateWallpaper(data);
-    if (mounted) {
-      setState(() => _wallpaperApplying = false);
-      context.showSnackBar(
-        success
-            ? 'Dynamic wallpaper applied successfully!'
-            : 'Could not apply wallpaper on current desktop environment.',
-        isError: !success,
-      );
-    }
-  }
-
   Future<void> _restoreOriginalWallpaper() async {
     final success = await _wallpaperService.restoreOriginalWallpaper();
     if (mounted) {
-      setState(() => _wallpaperEnabled = false);
       context.showSnackBar(
         success
             ? 'Original wallpaper restored.'
@@ -365,6 +295,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final themeMode = ref.watch(themeModeProvider);
     final notifSettings = ref.watch(notificationSettingsProvider);
     final notifNotifier = ref.read(notificationSettingsProvider.notifier);
@@ -523,10 +454,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           // Section 3: Connected Creator & Social Accounts
           _buildConnectedAccountsSection(context),
 
-          // Section 4: Linux Desktop Dynamic Wallpaper
+          // Section 4: Interactive Desktop HUD (Conky Mode)
           _buildSectionHeader(
-            'Linux Desktop Wallpaper Dashboard',
-            Icons.desktop_windows_outlined,
+            'Interactive Desktop HUD (Conky Mode)',
+            Icons.dashboard_customize_outlined,
           ),
           Card(
             elevation: 0,
@@ -545,84 +476,57 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: _isLinuxSupported
-                              ? AppColors.statusDone.withValues(alpha: 0.15)
-                              : Colors.grey.withValues(alpha: 0.15),
+                          color: AppColors.secondary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(AppRadius.sm),
-                        ),
-                        child: Text(
-                          _isLinuxSupported
-                              ? 'Linux Environment: ${_wallpaperService.environment.name.toUpperCase()}'
-                              : 'Linux Desktop Not Detected',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: _isLinuxSupported
-                                ? AppColors.statusDone
-                                : Colors.grey,
+                          border: Border.all(
+                            color: AppColors.secondary.withValues(alpha: 0.3),
                           ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.bolt_rounded,
+                                size: 14, color: AppColors.secondary),
+                            SizedBox(width: 4),
+                            Text(
+                              'Cross-Platform Conky HUD Ready',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.secondary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                   AppSpacing.vGapSm,
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Enable Wallpaper Dashboard'),
-                    subtitle: const Text(
-                      'Renders your tasks and streak directly onto your Linux desktop background',
+                  Text(
+                    'Experience an interactive Conky-style HUD widget directly over your wallpaper. '
+                    'Includes a live digital clock, daily streak counter, real-time KPI targets, and '
+                    'interactive tasks that you can check off and add directly on the desktop overlay.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight,
                     ),
-                    value: _wallpaperEnabled,
-                    onChanged: _isLinuxSupported
-                        ? (val) async {
-                            setState(() => _wallpaperEnabled = val);
-                            await _wallpaperService.setEnabled(val);
-                            if (val) {
-                              await _applyWallpaperNow();
-                            }
-                          }
-                        : null,
-                  ),
-                  const Divider(height: 1),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Auto Update on Task Change'),
-                    subtitle: const Text(
-                      'Automatically re-renders wallpaper when completing or adding tasks',
-                    ),
-                    value: _wallpaperAutoUpdate,
-                    onChanged: _wallpaperEnabled
-                        ? (val) async {
-                            setState(() => _wallpaperAutoUpdate = val);
-                            await _wallpaperService.setAutoUpdateEnabled(val);
-                          }
-                        : null,
                   ),
                   AppSpacing.vGapMd,
                   Row(
                     children: [
                       FilledButton.icon(
-                        icon: _wallpaperApplying
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.wallpaper, size: 18),
-                        label: const Text('Apply Wallpaper Now'),
-                        onPressed: (_isLinuxSupported && !_wallpaperApplying)
-                            ? _applyWallpaperNow
-                            : null,
+                        icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                        label: const Text('Launch Interactive Desktop HUD'),
+                        onPressed: () => context.push('/hud'),
                       ),
-                      AppSpacing.hGapSm,
-                      OutlinedButton(
-                        onPressed:
-                            _isLinuxSupported ? _restoreOriginalWallpaper : null,
-                        child: const Text('Restore Original'),
-                      ),
+                      if (_isLinuxSupported) ...[
+                        AppSpacing.hGapSm,
+                        OutlinedButton(
+                          onPressed: _restoreOriginalWallpaper,
+                          child: const Text('Restore Original Wallpaper'),
+                        ),
+                      ],
                     ],
                   ),
                 ],

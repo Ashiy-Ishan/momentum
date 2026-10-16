@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
@@ -140,23 +141,44 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
   }
 
   Future<void> _pickScheduledDate() async {
+    final now = DateTime.now();
+    final first = DateTime(now.year - 5);
+    final last = DateTime(now.year + 20);
+    final initial = _scheduledDate ?? now;
+    final safeInitial = initial.isBefore(first)
+        ? first
+        : (initial.isAfter(last) ? last : initial);
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: _scheduledDate ?? DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2035),
+      initialDate: safeInitial,
+      firstDate: first,
+      lastDate: last,
     );
     if (picked != null) {
-      setState(() => _scheduledDate = picked);
+      setState(() {
+        _scheduledDate = picked;
+        if (_dueDate != null && _dueDate!.isBefore(picked)) {
+          _dueDate = picked;
+        }
+      });
     }
   }
 
   Future<void> _pickDueDate() async {
+    final now = DateTime.now();
+    final first = _scheduledDate ?? DateTime(now.year - 5);
+    final last = DateTime(now.year + 20);
+    final initial = _dueDate ?? (_scheduledDate ?? now);
+    final safeInitial = initial.isBefore(first)
+        ? first
+        : (initial.isAfter(last) ? last : initial);
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: _dueDate ?? (_scheduledDate ?? DateTime.now()),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2035),
+      initialDate: safeInitial,
+      firstDate: first,
+      lastDate: last,
     );
     if (picked != null) {
       setState(() => _dueDate = picked);
@@ -175,6 +197,16 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
 
   Future<void> _saveTask() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_scheduledDate != null &&
+        _dueDate != null &&
+        _dueDate!.isBefore(_scheduledDate!)) {
+      context.showSnackBar(
+        'Due date cannot be before scheduled date',
+        isError: true,
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -345,12 +377,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
-              validator: (val) {
-                if (val == null || val.trim().isEmpty) {
-                  return 'Task title is required';
-                }
-                return null;
-              },
+              validator: Validators.validateTitle,
             ),
             AppSpacing.vGapMd,
 
@@ -687,6 +714,10 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                             child: TextFormField(
                               controller: _durationHoursController,
                               keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(4),
+                              ],
                               decoration: InputDecoration(
                                 labelText: 'Est. Hours',
                                 prefixIcon: const Icon(Icons.hourglass_empty),
@@ -702,6 +733,19 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                             child: TextFormField(
                               controller: _durationMinutesController,
                               keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(2),
+                              ],
+                              validator: (val) {
+                                if (val != null && val.trim().isNotEmpty) {
+                                  final m = int.tryParse(val.trim());
+                                  if (m == null || m > 59) {
+                                    return '0-59';
+                                  }
+                                }
+                                return null;
+                              },
                               decoration: InputDecoration(
                                 labelText: 'Est. Minutes',
                                 prefixIcon: const Icon(Icons.timer_outlined),

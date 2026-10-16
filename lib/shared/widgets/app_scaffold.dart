@@ -363,6 +363,11 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
               ],
             ),
           ),
+          IconButton(
+            icon: const Icon(Icons.dashboard_customize_outlined, size: 20),
+            tooltip: 'Desktop HUD (Conky Mode)',
+            onPressed: () => context.push('/hud'),
+          ),
         ],
       ),
     );
