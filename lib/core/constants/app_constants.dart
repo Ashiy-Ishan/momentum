@@ -18,5 +18,6 @@ abstract class AppConstants {
   // Supabase Backend Defaults (Embedded, SQL-injection free, zero manual settings entry)
   static const String defaultSupabaseUrl =
       'https://aexjbjdknoknfqgevktl.supabase.co';
-  static const String defaultSupabaseAnonKey = '';
+  static const String defaultSupabaseAnonKey =
+      'sb_publishable_qOZAl_wFWSMN6fG8XCE-WQ_jmKio-mZ';
 }

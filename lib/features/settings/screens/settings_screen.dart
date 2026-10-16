@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/extensions/context_extensions.dart';
 import '../../../core/services/platform_sync_service.dart';
 import '../../../core/theme/theme.dart';
@@ -73,8 +74,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _loadSavedSupabaseCredentials() async {
     final creds = await MomentumSupabaseClient.instance.getSavedCredentials();
-    final url = creds['url'];
-    final key = creds['anonKey'];
+    final url = creds['url'] ??
+        (AppConstants.defaultSupabaseUrl.isNotEmpty
+            ? AppConstants.defaultSupabaseUrl
+            : null);
+    final key = creds['anonKey'] ??
+        (AppConstants.defaultSupabaseAnonKey.isNotEmpty
+            ? AppConstants.defaultSupabaseAnonKey
+            : null);
     if (mounted) {
       setState(() {
         if (url != null && url.isNotEmpty) {
