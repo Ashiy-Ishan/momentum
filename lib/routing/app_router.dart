@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/remote/supabase_client.dart';
 import '../domain/models/models.dart';
 import '../features/analytics/screens/analytics_screen.dart';
+import '../features/auth/screens/auth_gate_screen.dart';
 import '../features/calendar/screens/calendar_screen.dart';
 import '../features/dashboard/screens/dashboard_screen.dart';
 import '../features/labels/screens/labels_screen.dart';
@@ -16,10 +20,56 @@ import '../features/tasks/screens/task_form_screen.dart';
 import '../features/tasks/screens/today_tasks_screen.dart';
 import '../shared/widgets/app_scaffold.dart';
 
+/// Stream listener helper that notifies [GoRouter] when auth state changes.
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
+
+/// Provider controlling whether the authentication gate redirects unauthenticated users to `/auth`.
+final authGateEnabledProvider = StateProvider<bool>((ref) => true);
+
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final supabase = ref.watch(supabaseClientProvider);
+  final refreshNotifier = GoRouterRefreshStream(supabase.authStateChanges);
+  ref.onDispose(refreshNotifier.dispose);
+
   return GoRouter(
     initialLocation: '/',
+    refreshListenable: refreshNotifier,
+    redirect: (context, state) {
+      final gateEnabled = ref.read(authGateEnabledProvider);
+      if (!gateEnabled) return null;
+
+      final isAuth = supabase.isAuthenticated;
+      final isAuthRoute = state.uri.path == '/auth';
+
+      if (!isAuth && !isAuthRoute) {
+        return '/auth';
+      }
+      if (isAuth && isAuthRoute) {
+        return '/';
+      }
+      return null;
+    },
     routes: [
+      GoRoute(
+        path: '/auth',
+        pageBuilder: (context, state) => NoTransitionPage(
+          key: state.pageKey,
+          child: const AuthGateScreen(),
+        ),
+      ),
       ShellRoute(
         builder: (context, state, child) {
           return AppScaffold(

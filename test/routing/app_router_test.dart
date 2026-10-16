@@ -6,6 +6,7 @@ import 'package:momentum/app.dart';
 import 'package:momentum/data/local/database.dart';
 import 'package:momentum/data/sync/sync_engine.dart';
 import 'package:momentum/features/analytics/screens/analytics_screen.dart';
+import 'package:momentum/features/auth/screens/auth_gate_screen.dart';
 import 'package:momentum/features/calendar/screens/calendar_screen.dart';
 import 'package:momentum/features/dashboard/screens/dashboard_screen.dart';
 import 'package:momentum/features/labels/screens/labels_screen.dart';
@@ -36,6 +37,7 @@ void main() {
         syncStatusStreamProvider.overrideWith(
           (ref) => Stream.value(SyncEngineStatus.idle),
         ),
+        authGateEnabledProvider.overrideWith((ref) => false),
       ],
     );
   });
@@ -334,5 +336,88 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(DashboardScreen), findsOneWidget);
     });
+
+    testWidgets('18. Route /auth loads AuthGateScreen', (tester) async {
+      await pumpApp(tester);
+
+      container.read(appRouterProvider).go('/auth');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(AuthGateScreen), findsOneWidget);
+      expect(find.text('SIGN IN'), findsNothing); // Text is 'Sign In'
+      expect(find.text('Sign In'), findsWidgets);
+      expect(find.text('Create Account'), findsOneWidget);
+    });
+  });
+
+  group('Auth Gate Redirection & UI Tests', () {
+    testWidgets('Redirects to /auth on launch when authGate is active and user is unauthenticated',
+        (tester) async {
+      final authDb = AppDatabase.forTesting(NativeDatabase.memory());
+      final authContainer = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(authDb),
+          syncStatusStreamProvider.overrideWith(
+            (ref) => Stream.value(SyncEngineStatus.idle),
+          ),
+          authGateEnabledProvider.overrideWith((ref) => true),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: authContainer,
+          child: const MomentumApp(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(AuthGateScreen), findsOneWidget);
+      expect(find.text('Accelerate Your Creative & Developer Flow'), findsOneWidget);
+      expect(find.text('SQL Injection-Free • Parameterized • Cloud Synced'), findsOneWidget);
+
+      authContainer.dispose();
+      await authDb.close();
+    });
+
+    testWidgets('AuthGateScreen toggles between Sign In and Create Account tabs',
+        (tester) async {
+      final authDb = AppDatabase.forTesting(NativeDatabase.memory());
+      final authContainer = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(authDb),
+          syncStatusStreamProvider.overrideWith(
+            (ref) => Stream.value(SyncEngineStatus.idle),
+          ),
+          authGateEnabledProvider.overrideWith((ref) => true),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: authContainer,
+          child: const MomentumApp(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Display Name (Optional)'), findsNothing);
+      expect(find.widgetWithText(FilledButton, 'Sign In'), findsOneWidget);
+
+      // Switch to Create Account
+      await tester.tap(find.text('Create Account'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Display Name (Optional)'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Create Account'), findsOneWidget);
+
+      authContainer.dispose();
+      await authDb.close();
+    });
   });
 }
+

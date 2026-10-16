@@ -14,4 +14,9 @@ abstract class AppConstants {
   // Responsive Breakpoints
   static const double desktopBreakpoint = 1024.0;
   static const double tabletBreakpoint = 600.0;
+
+  // Supabase Backend Defaults (Embedded, SQL-injection free, zero manual settings entry)
+  static const String defaultSupabaseUrl =
+      'https://aexjbjdknoknfqgevktl.supabase.co';
+  static const String defaultSupabaseAnonKey = '';
 }

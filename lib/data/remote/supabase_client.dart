@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../../core/errors/errors.dart';
 
 /// Riverpod provider exposing the application's [MomentumSupabaseClient] instance.
@@ -240,15 +241,23 @@ class MomentumSupabaseClient {
       }
     }
 
-    // 2. Fallback to compile-time environment variables
+    // 2. Fallback to compile-time environment variables, then AppConstants defaults
     if (url == null || url.isEmpty) {
       const envUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: '');
-      if (envUrl.isNotEmpty) url = envUrl.trim();
+      if (envUrl.isNotEmpty) {
+        url = envUrl.trim();
+      } else if (AppConstants.defaultSupabaseUrl.isNotEmpty) {
+        url = AppConstants.defaultSupabaseUrl.trim();
+      }
     }
     if (anonKey == null || anonKey.isEmpty) {
       const envKey =
           String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
-      if (envKey.isNotEmpty) anonKey = envKey.trim();
+      if (envKey.isNotEmpty) {
+        anonKey = envKey.trim();
+      } else if (AppConstants.defaultSupabaseAnonKey.isNotEmpty) {
+        anonKey = AppConstants.defaultSupabaseAnonKey.trim();
+      }
     }
 
     if (url == null || url.isEmpty || anonKey == null || anonKey.isEmpty) {
