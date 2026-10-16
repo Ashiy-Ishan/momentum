@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +12,8 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../data/sync/sync_engine.dart';
+import '../../features/desktop_hud/services/conky_service.dart';
+import '../../features/desktop_hud/services/desktop_hud_launcher.dart';
 import '../../features/notifications/providers/notification_history_provider.dart';
 import '../../features/settings/providers/settings_providers.dart';
 import 'active_timer_banner.dart';
@@ -305,6 +310,33 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
     );
   }
 
+  Future<void> _handleHudOption(String value) async {
+    if (value == 'standalone') {
+      final success = await DesktopHudLauncher.launchStandaloneHud();
+      if (!mounted) return;
+      if (!success) {
+        unawaited(context.push('/hud'));
+      } else {
+        context.showSnackBar(
+          'Desktop HUD launched! Remains on desktop when app minimizes.',
+        );
+      }
+    } else if (value == 'conky') {
+      final started = await ConkyService.startConky();
+      if (!mounted) return;
+      context.showSnackBar(
+        started
+            ? 'Native Conky daemon active on desktop background!'
+            : 'Could not start Conky. Ensure /usr/bin/conky is installed.',
+        isError: !started,
+      );
+    } else {
+      if (mounted) {
+        unawaited(context.push('/hud'));
+      }
+    }
+  }
+
   Widget _buildSidebarHeader(bool isDark) {
     return Container(
       padding: const EdgeInsets.fromLTRB(
@@ -363,10 +395,43 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
               ],
             ),
           ),
-          IconButton(
+          PopupMenuButton<String>(
             icon: const Icon(Icons.dashboard_customize_outlined, size: 20),
             tooltip: 'Desktop HUD (Conky Mode)',
-            onPressed: () => context.push('/hud'),
+            onSelected: (value) => unawaited(_handleHudOption(value)),
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'standalone',
+                child: Row(
+                  children: [
+                    Icon(Icons.open_in_new_rounded, size: 18),
+                    SizedBox(width: 8),
+                    Text('Launch Desktop HUD Window'),
+                  ],
+                ),
+              ),
+              if (Platform.isLinux)
+                const PopupMenuItem(
+                  value: 'conky',
+                  child: Row(
+                    children: [
+                      Icon(Icons.desktop_windows_outlined, size: 18),
+                      SizedBox(width: 8),
+                      Text('Start Native Conky Daemon'),
+                    ],
+                  ),
+                ),
+              const PopupMenuItem(
+                value: 'preview',
+                child: Row(
+                  children: [
+                    Icon(Icons.preview_rounded, size: 18),
+                    SizedBox(width: 8),
+                    Text('Preview Inside App'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

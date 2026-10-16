@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -15,6 +16,9 @@ import '../../../data/remote/supabase_client.dart';
 import '../../../data/sync/sync_engine.dart';
 import '../../../domain/models/models.dart';
 import '../../../shared/providers/database_provider.dart';
+import '../../analytics/providers/analytics_providers.dart';
+import '../../desktop_hud/services/conky_service.dart';
+import '../../desktop_hud/services/desktop_hud_launcher.dart';
 import '../../labels/providers/label_providers.dart';
 import '../../linux_wallpaper/services/linux_wallpaper_service.dart';
 import '../../tasks/providers/task_providers.dart';
@@ -58,12 +62,85 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   int _authTabIndex = 0; // 0: Sign In, 1: Create Account
   bool _showCredentialsConfig = false;
 
+  // Desktop HUD & Conky State
+  bool _isConkyInstalled = false;
+  bool _isConkyRunning = false;
+  bool _isLaunchingHud = false;
+
   @override
   void initState() {
     super.initState();
     _wallpaperService = LinuxWallpaperService();
     _isLinuxSupported = Platform.isLinux;
+    unawaited(_checkConkyStatus());
     _loadSavedSupabaseCredentials();
+  }
+
+  Future<void> _checkConkyStatus() async {
+    if (Platform.isLinux) {
+      final installed = await ConkyService.isConkyInstalled();
+      final running = await ConkyService.isConkyRunning();
+      if (mounted) {
+        setState(() {
+          _isConkyInstalled = installed;
+          _isConkyRunning = running;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleLaunchStandaloneHud() async {
+    setState(() => _isLaunchingHud = true);
+    final success = await DesktopHudLauncher.launchStandaloneHud();
+    if (!mounted) return;
+    setState(() => _isLaunchingHud = false);
+    if (success) {
+      context.showSnackBar(
+        'Interactive Desktop HUD launched! Stays on your desktop wallpaper when app is minimized.',
+      );
+    } else {
+      context.showSnackBar('Opening in-app HUD overlay...');
+      unawaited(context.push('/hud'));
+    }
+  }
+
+  Future<void> _handleToggleConky() async {
+    if (_isConkyRunning) {
+      final stopped = await ConkyService.stopConky();
+      if (mounted) {
+        setState(() => _isConkyRunning = !stopped);
+        context.showSnackBar('Native Conky daemon stopped.');
+      }
+    } else {
+      final tasks = ref.read(todayTasksStreamProvider).valueOrNull ?? [];
+      final kpis =
+          await ref.read(kpiRepositoryProvider).getAllKpis('local-user');
+      final stats = ref.read(dashboardStatsProvider).valueOrNull ??
+          const DashboardStats();
+      await ConkyService.updateConkyData(
+        streakDays: stats.streakDays,
+        completionRate: stats.completionRate,
+        tasks: tasks,
+        kpis: kpis,
+      );
+      final started = await ConkyService.startConky();
+      if (mounted) {
+        setState(() => _isConkyRunning = started);
+        context.showSnackBar(
+          started
+              ? 'Native Conky daemon active on desktop background!'
+              : 'Could not start Conky daemon.',
+          isError: !started,
+        );
+      }
+    }
+  }
+
+  Future<void> _handleExportConkyConfig() async {
+    final file = await ConkyService.ensureConfigFileExists(overwrite: true);
+    if (mounted) {
+      context.showSnackBar('Conky configuration written to ${file.path}');
+    }
   }
 
   Future<void> _loadSavedSupabaseCredentials() async {
@@ -488,15 +565,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             color: AppColors.secondary.withValues(alpha: 0.3),
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.bolt_rounded,
+                            const Icon(Icons.bolt_rounded,
                                 size: 14, color: AppColors.secondary),
-                            SizedBox(width: 4),
+                            const SizedBox(width: 4),
                             Text(
-                              'Cross-Platform Conky HUD Ready',
-                              style: TextStyle(
+                              _isConkyInstalled
+                                  ? 'Native Conky & Desktop Overlay Ready'
+                                  : 'Cross-Platform Conky HUD Ready',
+                              style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.secondary,
@@ -505,13 +584,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ],
                         ),
                       ),
+                      if (_isConkyRunning) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.statusDone.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                            border: Border.all(
+                              color: AppColors.statusDone.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: const Text(
+                            'Conky Active',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.statusDone,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                   AppSpacing.vGapSm,
                   Text(
-                    'Experience an interactive Conky-style HUD widget directly over your wallpaper. '
-                    'Includes a live digital clock, daily streak counter, real-time KPI targets, and '
-                    'interactive tasks that you can check off and add directly on the desktop overlay.',
+                    'Experience an autonomous Conky-style HUD widget directly over your desktop wallpaper. '
+                    'Unlike normal in-app screens, it runs independently and stays visible on your desktop even when Momentum is minimized. '
+                    'Includes live digital clock, daily streak counter, real-time KPI targets, and interactive task checkboxes.',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: isDark
                           ? AppColors.textSecondaryDark
@@ -519,15 +620,57 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ),
                   AppSpacing.vGapMd,
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       FilledButton.icon(
-                        icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                        label: const Text('Launch Interactive Desktop HUD'),
+                        icon: _isLaunchingHud
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.open_in_new_rounded, size: 18),
+                        label: Text(
+                          _isLaunchingHud
+                              ? 'Launching...'
+                              : 'Launch Interactive Desktop HUD',
+                        ),
+                        onPressed: _isLaunchingHud
+                            ? null
+                            : _handleLaunchStandaloneHud,
+                      ),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.preview_rounded, size: 18),
+                        label: const Text('Preview Inside App'),
                         onPressed: () => context.push('/hud'),
                       ),
+                      if (_isLinuxSupported && _isConkyInstalled) ...[
+                        FilledButton.tonalIcon(
+                          icon: Icon(
+                            _isConkyRunning
+                                ? Icons.stop_rounded
+                                : Icons.play_arrow_rounded,
+                            size: 18,
+                          ),
+                          label: Text(
+                            _isConkyRunning
+                                ? 'Stop Native Conky'
+                                : 'Start Native Conky Daemon',
+                          ),
+                          onPressed: _handleToggleConky,
+                        ),
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.tune_rounded, size: 16),
+                          label: const Text('Export Conky Config'),
+                          onPressed: _handleExportConkyConfig,
+                        ),
+                      ],
                       if (_isLinuxSupported) ...[
-                        AppSpacing.hGapSm,
                         OutlinedButton(
                           onPressed: _restoreOriginalWallpaper,
                           child: const Text('Restore Original Wallpaper'),

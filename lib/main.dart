@@ -3,12 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'core/theme/theme.dart';
 import 'data/remote/supabase_client.dart';
+import 'features/desktop_hud/screens/desktop_hud_screen.dart';
 import 'features/notifications/services/notification_service.dart';
 import 'shared/providers/database_provider.dart';
 
-void main() async {
+void main([List<String> args = const []]) async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final isHudMode = args.contains('--hud') || args.contains('--desktop-hud');
 
   // 1. Initialize SharedPreferences for persistent settings
   await SharedPreferences.getInstance();
@@ -51,7 +55,25 @@ void main() async {
   runApp(
     UncontrolledProviderScope(
       container: container,
-      child: const MomentumApp(),
+      child: isHudMode ? const DesktopHudStandaloneApp() : const MomentumApp(),
     ),
   );
+}
+
+/// Standalone desktop overlay application for HUD (Conky mode)
+class DesktopHudStandaloneApp extends StatelessWidget {
+  const DesktopHudStandaloneApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Momentum Desktop HUD',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.darkTheme(),
+      home: const Scaffold(
+        backgroundColor: Colors.transparent,
+        body: DesktopHudScreen(isStandalone: true),
+      ),
+    );
+  }
 }

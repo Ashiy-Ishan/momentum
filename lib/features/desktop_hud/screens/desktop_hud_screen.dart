@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -29,7 +30,8 @@ enum HudPosition {
 /// and an interactive task list allowing users to check off, toggle, and add
 /// tasks in real time across Linux, macOS, Windows, and Web.
 class DesktopHudScreen extends ConsumerStatefulWidget {
-  const DesktopHudScreen({super.key});
+  final bool isStandalone;
+  const DesktopHudScreen({super.key, this.isStandalone = false});
 
   @override
   ConsumerState<DesktopHudScreen> createState() => _DesktopHudScreenState();
@@ -107,34 +109,41 @@ class _DesktopHudScreenState extends ConsumerState<DesktopHudScreen> {
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // 1. Semi-translucent interactive background layer
-          GestureDetector(
-            onTap: () {
-              if (_isQuickAdding) {
-                setState(() => _isQuickAdding = false);
-              }
-            },
-            child: Container(
-              color: Colors.black.withValues(alpha: 0.15),
+          // 1. Semi-translucent interactive background layer (only in preview/in-app mode)
+          if (!widget.isStandalone)
+            GestureDetector(
+              onTap: () {
+                if (_isQuickAdding) {
+                  setState(() => _isQuickAdding = false);
+                }
+              },
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.15),
+              ),
             ),
-          ),
 
           // 2. HUD Positioning Box
           Align(
-            alignment: _getAlignmentForPosition(_position),
+            alignment: widget.isStandalone
+                ? Alignment.topCenter
+                : _getAlignmentForPosition(_position),
             child: Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.all(widget.isStandalone ? 8.0 : 24.0),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.lg),
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                   child: Container(
-                    width: math.min(
-                      _position == HudPosition.fullOverlay ? 720.0 : 420.0,
-                      MediaQuery.of(context).size.width - 32.0,
-                    ),
+                    width: widget.isStandalone
+                        ? double.infinity
+                        : math.min(
+                            _position == HudPosition.fullOverlay ? 720.0 : 420.0,
+                            MediaQuery.of(context).size.width - 32.0,
+                          ),
                     constraints: BoxConstraints(
-                      maxHeight: MediaQuery.of(context).size.height * 0.92,
+                      maxHeight: widget.isStandalone
+                          ? double.infinity
+                          : MediaQuery.of(context).size.height * 0.92,
                     ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0F172A).withValues(alpha: _opacity),
@@ -280,10 +289,12 @@ class _DesktopHudScreenState extends ConsumerState<DesktopHudScreen> {
           IconButton(
             visualDensity: VisualDensity.compact,
             iconSize: 18,
-            tooltip: 'Exit HUD to Dashboard',
+            tooltip: widget.isStandalone ? 'Close Desktop HUD' : 'Exit HUD to Dashboard',
             icon: const Icon(Icons.close_rounded, color: Colors.white70),
             onPressed: () {
-              if (context.canPop()) {
+              if (widget.isStandalone) {
+                exit(0);
+              } else if (context.canPop()) {
                 context.pop();
               } else {
                 context.go('/');
