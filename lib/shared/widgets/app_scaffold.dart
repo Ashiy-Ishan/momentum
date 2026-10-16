@@ -590,19 +590,59 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
       ),
 
       // Bottom Navigation Bar
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: selectedBottomIndex,
-        onTap: (index) {
-          final target = primaryMobileItems[index];
-          _handleNavigate(context, target.route);
-        },
-        items: primaryMobileItems.map((item) {
-          final isSelected = _isRouteSelected(item.route, currentPath);
-          return BottomNavigationBarItem(
-            icon: Icon(isSelected ? item.activeIcon : item.icon),
-            label: item.label,
-          );
-        }).toList(),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+          height: 64,
+          decoration: BoxDecoration(
+            color: const Color(0xFF16132A),
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.28),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(32),
+            child: Theme(
+              data: theme.copyWith(
+                canvasColor: Colors.transparent,
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+              ),
+              child: BottomNavigationBar(
+                currentIndex: selectedBottomIndex,
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+                type: BottomNavigationBarType.fixed,
+                selectedItemColor: const Color(0xFFA78BFA),
+                unselectedItemColor: const Color(0xFF7E7A91),
+                selectedFontSize: 11,
+                unselectedFontSize: 11,
+                selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
+                unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
+                onTap: (index) {
+                  final target = primaryMobileItems[index];
+                  _handleNavigate(context, target.route);
+                },
+                items: primaryMobileItems.map((item) {
+                  final isSelected = _isRouteSelected(item.route, currentPath);
+                  return BottomNavigationBarItem(
+                    icon: Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: Icon(isSelected ? item.activeIcon : item.icon, size: 22),
+                    ),
+                    label: item.label,
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ),
       ),
 
       // Floating Action Button
