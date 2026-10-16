@@ -49,6 +49,23 @@ class AppDatabase extends _$AppDatabase {
       // Future migrations
     },
   );
+
+  /// Wipes all local data associated with a specific user ID.
+  Future<void> wipeUserData(String userId) async {
+    await transaction(() async {
+      await (delete(completionEvents)..where((t) => t.userId.equals(userId))).go();
+      await (delete(taskOccurrences)..where((t) => t.userId.equals(userId))).go();
+      await (delete(attachments)..where((t) => t.userId.equals(userId))).go();
+      await (delete(tasks)..where((t) => t.userId.equals(userId))).go();
+      await (delete(recurrenceRules)..where((t) => t.userId.equals(userId))).go();
+      await (delete(timerSessions)..where((t) => t.userId.equals(userId))).go();
+      await (delete(kpiDefinitions)..where((t) => t.userId.equals(userId))).go();
+      await (delete(labels)..where((t) => t.userId.equals(userId))).go();
+      await (delete(notificationSettingsTable)..where((t) => t.userId.equals(userId))).go();
+      await (delete(userProfiles)..where((t) => t.id.equals(userId))).go();
+      await delete(syncQueueItems).go();
+    });
+  }
 }
 
 LazyDatabase _openConnection() {

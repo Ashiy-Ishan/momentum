@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/local/daos/daos.dart';
 import '../../data/local/database.dart';
+import '../../data/remote/supabase_client.dart';
 import '../../data/repositories/repositories.dart';
 
 /// Central Drift database instance provider.
@@ -87,4 +88,19 @@ final timerRepositoryProvider = Provider<TimerRepository>((ref) {
 // =============================================================================
 
 /// Holds the currently active user identifier ('local-user' by default).
-final currentUserIdProvider = StateProvider<String>((ref) => 'local-user');
+/// Reactively follows the Supabase authenticated user when available.
+final currentUserIdProvider = StateProvider<String>((ref) {
+  final supabase = ref.watch(supabaseClientProvider);
+  final initialUser = supabase.currentUser?.id ?? 'local-user';
+
+  // Reactively sync whenever Supabase auth changes
+  final subscription = supabase.authStateChanges.listen((authState) {
+    final nextUserId = authState.session?.user.id ?? 'local-user';
+    if (ref.controller.state != nextUserId) {
+      ref.controller.state = nextUserId;
+    }
+  });
+
+  ref.onDispose(() => subscription.cancel());
+  return initialUser;
+});

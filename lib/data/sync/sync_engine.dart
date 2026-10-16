@@ -292,6 +292,19 @@ class SyncEngine {
       final remoteTable = _mapToRemoteTableName(item.syncTableName);
       final remotePayload = _toRemoteSnakeCase(rawPayload);
 
+      // If user is authenticated, ensure payload uses authenticated user's ID
+      // rather than offline/local 'local-user' placeholder for Supabase RLS compatibility.
+      final currentAuthUserId = _supabase.currentUserId;
+      if (currentAuthUserId != null && currentAuthUserId.isNotEmpty) {
+        if (remotePayload.containsKey('user_id') &&
+            (remotePayload['user_id'] == 'local-user' || remotePayload['user_id'] == null)) {
+          remotePayload['user_id'] = currentAuthUserId;
+        }
+        if (remoteTable == 'users' && remotePayload['id'] == 'local-user') {
+          remotePayload['id'] = currentAuthUserId;
+        }
+      }
+
       try {
         final client = _supabase.client;
         if (client == null) throw const SyncError('Supabase client unavailable');

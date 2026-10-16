@@ -30,7 +30,13 @@ void main() async {
   // 4. Run application with configured Riverpod ProviderScope
   final container = ProviderContainer();
 
-  // 5. Seed default labels & platform creator KPIs if user has none yet
+  // 5. Sync currentUserIdProvider with Supabase auth status on boot
+  final currentUser = MomentumSupabaseClient.instance.currentUser;
+  if (currentUser != null) {
+    container.read(currentUserIdProvider.notifier).state = currentUser.id;
+  }
+
+  // 6. Seed default labels & platform creator KPIs if user has none yet
   try {
     final userId = container.read(currentUserIdProvider);
     final labelRepo = container.read(labelRepositoryProvider);

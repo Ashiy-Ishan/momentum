@@ -1,7 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:momentum/data/remote/supabase_client.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   group('MomentumSupabaseClient', () {
     test('starts unconfigured when instantiated without client', () {
       final client = MomentumSupabaseClient();
@@ -31,27 +38,127 @@ void main() {
       expect(client.isConfigured, isFalse);
     });
 
-    test('auth helpers fail gracefully when unconfigured', () async {
+    test('credential persistence in SharedPreferences works as expected', () async {
       final client = MomentumSupabaseClient();
-      final signInResult = await client.signInWithEmail('test@example.com', 'password123');
-      expect(signInResult.isFailure, isTrue);
-      expect(signInResult.errorOrNull?.message, contains('Supabase is not configured'));
+      
+      // Initially empty
+      final initialCreds = await client.getSavedCredentials();
+      expect(initialCreds['url'], isNull);
+      expect(initialCreds['anonKey'], isNull);
 
-      final signUpResult = await client.signUpWithEmail('test@example.com', 'password123');
-      expect(signUpResult.isFailure, isTrue);
-      expect(signUpResult.errorOrNull?.message, contains('Supabase is not configured'));
+      // Seed SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(MomentumSupabaseClient.prefSupabaseUrl, 'https://test.supabase.co');
+      await prefs.setString(MomentumSupabaseClient.prefSupabaseAnonKey, 'test-key-123');
 
-      final resetResult = await client.resetPassword('test@example.com');
-      expect(resetResult.isFailure, isTrue);
+      final saved = await client.getSavedCredentials();
+      expect(saved['url'], equals('https://test.supabase.co'));
+      expect(saved['anonKey'], equals('test-key-123'));
+      expect(saved[MomentumSupabaseClient.prefSupabaseUrl], equals('https://test.supabase.co'));
 
-      final signOutResult = await client.signOut();
-      expect(signOutResult.isSuccess, isTrue);
+      // clearCredentials removes them
+      await client.clearCredentials();
+      final afterClear = await client.getSavedCredentials();
+      expect(afterClear['url'], isNull);
+      expect(afterClear['anonKey'], isNull);
+      expect(client.isConfigured, isFalse);
     });
 
-    test('authStateChanges emits empty stream when unconfigured', () async {
+    test('signInWithEmail validates email and password input', () async {
+      final client = MomentumSupabaseClient();
+
+      // Empty email
+      final r1 = await client.signInWithEmail('', 'password123');
+      expect(r1.isFailure, isTrue);
+      expect(r1.errorOrNull?.message, contains('cannot be empty'));
+
+      // Invalid email
+      final r2 = await client.signInWithEmail('not-an-email', 'password123');
+      expect(r2.isFailure, isTrue);
+      expect(r2.errorOrNull?.message, contains('valid email'));
+
+      // Empty password
+      final r3 = await client.signInWithEmail('test@example.com', '');
+      expect(r3.isFailure, isTrue);
+      expect(r3.errorOrNull?.message, contains('Password cannot be empty'));
+
+      // Unconfigured client
+      final r4 = await client.signInWithEmail('test@example.com', 'password123');
+      expect(r4.isFailure, isTrue);
+      expect(r4.errorOrNull?.message, contains('Supabase is not configured'));
+    });
+
+    test('signUpWithEmail validates email and password length', () async {
+      final client = MomentumSupabaseClient();
+
+      // Empty email
+      final r1 = await client.signUpWithEmail('   ', 'password123');
+      expect(r1.isFailure, isTrue);
+      expect(r1.errorOrNull?.message, contains('cannot be empty'));
+
+      // Invalid email
+      final r2 = await client.signUpWithEmail('bad-email@', 'password123');
+      expect(r2.isFailure, isTrue);
+      expect(r2.errorOrNull?.message, contains('valid email'));
+
+      // Empty password
+      final r3 = await client.signUpWithEmail('test@example.com', '');
+      expect(r3.isFailure, isTrue);
+      expect(r3.errorOrNull?.message, contains('Password cannot be empty'));
+
+      // Short password (< 6 chars)
+      final r4 = await client.signUpWithEmail('test@example.com', '12345');
+      expect(r4.isFailure, isTrue);
+      expect(r4.errorOrNull?.message, contains('at least 6 characters'));
+
+      // Unconfigured client
+      final r5 = await client.signUpWithEmail('test@example.com', 'password123');
+      expect(r5.isFailure, isTrue);
+      expect(r5.errorOrNull?.message, contains('Supabase is not configured'));
+    });
+
+    test('purgeUserData validates userId and handles unconfigured client', () async {
+      final client = MomentumSupabaseClient();
+
+      final emptyResult = await client.purgeUserData('   ');
+      expect(emptyResult.isFailure, isTrue);
+      expect(emptyResult.errorOrNull?.message, contains('User ID cannot be empty'));
+
+      final validResult = await client.purgeUserData('user-123');
+      expect(validResult.isFailure, isTrue);
+      expect(validResult.errorOrNull?.message, contains('Supabase is not configured'));
+    });
+
+    test('deleteUserAccount validates authenticated user presence and client configuration', () async {
+      final client = MomentumSupabaseClient();
+      final result = await client.deleteUserAccount();
+      expect(result.isFailure, isTrue);
+      expect(result.errorOrNull?.message, contains('Supabase is not configured'));
+    });
+
+    test('authStateChanges and userChanges stream properly when unconfigured', () async {
       final client = MomentumSupabaseClient();
       final events = await client.authStateChanges.toList();
       expect(events, isEmpty);
+
+      final user = await client.userChanges.first;
+      expect(user, isNull);
+    });
+
+    test('testConnection validates URL and anon key parameters', () async {
+      final client = MomentumSupabaseClient();
+
+      final r1 =
+          await client.testConnection(supabaseUrl: '', supabaseAnonKey: '');
+      expect(r1.isFailure, isTrue);
+      expect(r1.errorOrNull?.message, contains('cannot be empty'));
+
+      final r2 = await client.testConnection(
+        supabaseUrl: 'not_a_url',
+        supabaseAnonKey: 'some-key',
+      );
+      expect(r2.isFailure, isTrue);
+      expect(r2.errorOrNull?.message, contains('Invalid Supabase URL format'));
     });
   });
 }

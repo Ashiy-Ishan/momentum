@@ -46,8 +46,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final TextEditingController _supabaseKeyController = TextEditingController();
   final TextEditingController _authEmailController = TextEditingController();
   final TextEditingController _authPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+  final TextEditingController _displayNameController = TextEditingController();
+
   bool _isAuthLoading = false;
   bool _isKeyObscured = true;
+  bool _isPasswordObscured = true;
+  bool _isConfirmPasswordObscured = true;
+  bool _isTestingConnection = false;
+  bool _isSavingCredentials = false;
+  bool _isPurgingData = false;
+  bool _isDeletingAccount = false;
+  bool _isManualSyncing = false;
+  int _authTabIndex = 0; // 0: Sign In, 1: Create Account
+  bool _showCredentialsConfig = false;
 
   @override
   void initState() {
@@ -55,6 +68,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _wallpaperService = LinuxWallpaperService();
     _isLinuxSupported = Platform.isLinux;
     _initWallpaperState();
+    _loadSavedSupabaseCredentials();
+  }
+
+  Future<void> _loadSavedSupabaseCredentials() async {
+    final creds = await MomentumSupabaseClient.instance.getSavedCredentials();
+    final url = creds['url'];
+    final key = creds['anonKey'];
+    if (mounted) {
+      setState(() {
+        if (url != null && url.isNotEmpty) {
+          _supabaseUrlController.text = url;
+        }
+        if (key != null && key.isNotEmpty) {
+          _supabaseKeyController.text = key;
+        }
+      });
+    }
   }
 
   Future<void> _initWallpaperState() async {
@@ -77,6 +107,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _supabaseKeyController.dispose();
     _authEmailController.dispose();
     _authPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    _displayNameController.dispose();
     super.dispose();
   }
 
@@ -594,254 +626,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           // Section 4: Cloud Sync (Supabase)
           _buildSectionHeader('Cloud Sync & Storage', Icons.cloud_outlined),
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.5)),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Supabase Connection',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      // Status Badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: syncStatus == SyncEngineStatus.idle
-                              ? AppColors.statusDone.withValues(alpha: 0.15)
-                              : syncStatus == SyncEngineStatus.syncing
-                                  ? AppColors.statusDoing.withValues(alpha: 0.15)
-                                  : Colors.grey.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(AppRadius.full),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              syncStatus == SyncEngineStatus.idle
-                                  ? Icons.check_circle
-                                  : syncStatus == SyncEngineStatus.syncing
-                                      ? Icons.sync
-                                      : Icons.cloud_off,
-                              size: 13,
-                              color: syncStatus == SyncEngineStatus.idle
-                                  ? AppColors.statusDone
-                                  : theme.colorScheme.primary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              (syncStatus ?? SyncEngineStatus.offline).displayName,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: syncStatus == SyncEngineStatus.idle
-                                    ? AppColors.statusDone
-                                    : theme.colorScheme.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  AppSpacing.vGapSm,
-                  TextField(
-                    controller: _supabaseUrlController,
-                    decoration: InputDecoration(
-                      labelText: 'Supabase URL',
-                      hintText: 'https://xxx.supabase.co',
-                      prefixIcon: const Icon(Icons.link),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      isDense: true,
-                    ),
-                  ),
-                  AppSpacing.vGapSm,
-                  TextField(
-                    controller: _supabaseKeyController,
-                    obscureText: _isKeyObscured,
-                    decoration: InputDecoration(
-                      labelText: 'Supabase Anon Key',
-                      prefixIcon: const Icon(Icons.vpn_key_outlined),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _isKeyObscured
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                        ),
-                        onPressed: () =>
-                            setState(() => _isKeyObscured = !_isKeyObscured),
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      isDense: true,
-                    ),
-                  ),
-                  AppSpacing.vGapSm,
-                  Row(
-                    children: [
-                      FilledButton.tonal(
-                        onPressed: () async {
-                          final url = _supabaseUrlController.text.trim();
-                          final key = _supabaseKeyController.text.trim();
-                          if (url.isEmpty || key.isEmpty) return;
-
-                          final res = await supabase.initialize(
-                            supabaseUrl: url,
-                            supabaseAnonKey: key,
-                          );
-                          if (!context.mounted) return;
-                          context.showSnackBar(
-                            res.isSuccess
-                                ? 'Supabase configured'
-                                : 'Configuration failed',
-                            isError: !res.isSuccess,
-                          );
-                        },
-                        child: const Text('Save Credentials'),
-                      ),
-                      AppSpacing.hGapSm,
-                      FilledButton.icon(
-                        icon: const Icon(Icons.sync, size: 16),
-                        label: const Text('Sync Now'),
-                        onPressed: () async {
-                          await ref.read(syncEngineProvider).triggerSync();
-                          if (!context.mounted) return;
-                          context.showSnackBar('Sync complete');
-                        },
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  const SizedBox(height: 8),
-
-                  // Account Authentication
-                  Text(
-                    supabase.isAuthenticated
-                        ? 'Authenticated Account'
-                        : 'Sign In / Register',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  AppSpacing.vGapSm,
-                  if (supabase.isAuthenticated) ...[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          supabase.currentUser?.email ?? 'Logged in',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        OutlinedButton(
-                          onPressed: () async {
-                            await supabase.signOut();
-                            if (!context.mounted) return;
-                            setState(() {});
-                            context.showSnackBar('Signed out');
-                          },
-                          child: const Text('Sign Out'),
-                        ),
-                      ],
-                    ),
-                  ] else ...[
-                    TextField(
-                      controller: _authEmailController,
-                      decoration: InputDecoration(
-                        labelText: 'Email Address',
-                        prefixIcon: const Icon(Icons.email_outlined),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                        isDense: true,
-                      ),
-                    ),
-                    AppSpacing.vGapSm,
-                    TextField(
-                      controller: _authPasswordController,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                        isDense: true,
-                      ),
-                    ),
-                    AppSpacing.vGapSm,
-                    Row(
-                      children: [
-                        FilledButton(
-                          onPressed: _isAuthLoading
-                              ? null
-                              : () async {
-                                  final email =
-                                      _authEmailController.text.trim();
-                                  final password =
-                                      _authPasswordController.text.trim();
-                                  if (email.isEmpty || password.isEmpty) return;
-                                  setState(() => _isAuthLoading = true);
-                                  final res = await supabase.signInWithEmail(
-                                      email, password);
-                                  setState(() => _isAuthLoading = false);
-                                  if (!context.mounted) return;
-                                  context.showSnackBar(
-                                    res.isSuccess
-                                        ? 'Signed in successfully'
-                                        : 'Sign in failed: ${res.errorOrNull?.message}',
-                                    isError: !res.isSuccess,
-                                  );
-                                },
-                          child: const Text('Sign In'),
-                        ),
-                        AppSpacing.hGapSm,
-                        OutlinedButton(
-                          onPressed: _isAuthLoading
-                              ? null
-                              : () async {
-                                  final email =
-                                      _authEmailController.text.trim();
-                                  final password =
-                                      _authPasswordController.text.trim();
-                                  if (email.isEmpty || password.isEmpty) return;
-                                  setState(() => _isAuthLoading = true);
-                                  final res = await supabase.signUpWithEmail(
-                                      email, password);
-                                  setState(() => _isAuthLoading = false);
-                                  if (!context.mounted) return;
-                                  context.showSnackBar(
-                                    res.isSuccess
-                                        ? 'Sign up confirmation email sent'
-                                        : 'Sign up failed: ${res.errorOrNull?.message}',
-                                    isError: !res.isSuccess,
-                                  );
-                                },
-                          child: const Text('Create Account'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
+          _buildSupabaseSection(theme, syncStatus, supabase),
           AppSpacing.vGapLg,
 
           // Section 5: Data & Backup
@@ -1656,6 +1441,1164 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return Icons.business_center_rounded;
       default:
         return Icons.link_rounded;
+    }
+  }
+
+  // ===========================================================================
+  // CLOUD SYNC & SUPABASE HELPERS
+  // ===========================================================================
+
+  Widget _buildSupabaseSection(
+    ThemeData theme,
+    SyncEngineStatus? syncStatus,
+    MomentumSupabaseClient supabase,
+  ) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.5)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Row: Title & Status Badge
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Supabase Cloud Database',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                // Status Badge
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: supabase.isConfigured
+                        ? (syncStatus == SyncEngineStatus.syncing
+                            ? AppColors.statusDoing.withValues(alpha: 0.15)
+                            : AppColors.statusDone.withValues(alpha: 0.15))
+                        : Colors.grey.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        !supabase.isConfigured
+                            ? Icons.cloud_off
+                            : syncStatus == SyncEngineStatus.syncing
+                                ? Icons.sync
+                                : Icons.cloud_done,
+                        size: 13,
+                        color: !supabase.isConfigured
+                            ? theme.hintColor
+                            : syncStatus == SyncEngineStatus.syncing
+                                ? theme.colorScheme.primary
+                                : AppColors.statusDone,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        !supabase.isConfigured
+                            ? 'Not Configured'
+                            : (syncStatus ?? SyncEngineStatus.idle).displayName,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: !supabase.isConfigured
+                              ? theme.hintColor
+                              : syncStatus == SyncEngineStatus.syncing
+                                  ? theme.colorScheme.primary
+                                  : AppColors.statusDone,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            AppSpacing.vGapMd,
+
+            // If Supabase is not configured, show Quick Setup Tips & Credential Inputs
+            if (!supabase.isConfigured) ...[
+              _buildSupabaseSetupTips(theme),
+              AppSpacing.vGapMd,
+              _buildSupabaseCredentialsInputs(theme),
+            ] else ...[
+              // Already configured: summary & toggle to edit credentials
+              _buildConfiguredSummary(theme),
+              if (_showCredentialsConfig) ...[
+                AppSpacing.vGapMd,
+                _buildSupabaseCredentialsInputs(theme),
+              ],
+            ],
+
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 12),
+
+            // Account & Sync Section
+            if (supabase.isAuthenticated) ...[
+              _buildAuthenticatedUserProfile(
+                context,
+                supabase,
+                syncStatus,
+                theme,
+              ),
+            ] else ...[
+              _buildAuthSection(theme, supabase),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSupabaseSetupTips(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lightbulb_outline,
+                  size: 18, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Quick Supabase Setup Guide',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '1. Create a free project at supabase.com.\n'
+            '2. Open your project and navigate to Project Settings > API.\n'
+            '3. Copy the Project URL (e.g. https://xyz.supabase.co).\n'
+            '4. Copy the anon (public) key and paste both below.\n'
+            '5. Click "Test Connection" to verify, then "Save Credentials".',
+            style: theme.textTheme.bodySmall?.copyWith(height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConfiguredSummary(ThemeData theme) {
+    final url = _supabaseUrlController.text.trim();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color:
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle_outline,
+              color: AppColors.secondary, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Connected to Project',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  url.isNotEmpty ? url : 'Configured Supabase Backend',
+                  style: TextStyle(fontSize: 11, color: theme.hintColor),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+            ),
+            onPressed: () {
+              setState(() => _showCredentialsConfig = !_showCredentialsConfig);
+            },
+            child: Text(
+              _showCredentialsConfig ? 'Hide Config' : 'Edit Credentials',
+              style: const TextStyle(fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSupabaseCredentialsInputs(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _supabaseUrlController,
+          decoration: InputDecoration(
+            labelText: 'Supabase Project URL',
+            hintText: 'https://xxx.supabase.co',
+            prefixIcon: const Icon(Icons.link),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            isDense: true,
+          ),
+        ),
+        AppSpacing.vGapSm,
+        TextField(
+          controller: _supabaseKeyController,
+          obscureText: _isKeyObscured,
+          decoration: InputDecoration(
+            labelText: 'Supabase Anon (Public) Key',
+            prefixIcon: const Icon(Icons.vpn_key_outlined),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _isKeyObscured ? Icons.visibility : Icons.visibility_off,
+              ),
+              onPressed: () => setState(() => _isKeyObscured = !_isKeyObscured),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            isDense: true,
+          ),
+        ),
+        AppSpacing.vGapSm,
+        Row(
+          children: [
+            OutlinedButton.icon(
+              icon: _isTestingConnection
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.wifi_tethering, size: 16),
+              label:
+                  Text(_isTestingConnection ? 'Testing...' : 'Test Connection'),
+              onPressed: _isTestingConnection || _isSavingCredentials
+                  ? null
+                  : _testSupabaseConnection,
+            ),
+            AppSpacing.hGapSm,
+            FilledButton.icon(
+              icon: _isSavingCredentials
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.save, size: 16),
+              label:
+                  Text(_isSavingCredentials ? 'Saving...' : 'Save Credentials'),
+              onPressed: _isTestingConnection || _isSavingCredentials
+                  ? null
+                  : _saveSupabaseCredentials,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAuthSection(ThemeData theme, MomentumSupabaseClient supabase) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Account & Authentication',
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (!supabase.isConfigured) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest
+                  .withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, size: 18, color: theme.hintColor),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Configure and save your Supabase Project URL & Anon Key above to sign in or create an account.',
+                    style: TextStyle(fontSize: 12, color: theme.hintColor),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ] else ...[
+          // Clean SegmentedButton: ["Sign In", "Create Account"]
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<int>(
+              segments: const [
+                ButtonSegment<int>(
+                  value: 0,
+                  label: Text('Sign In'),
+                  icon: Icon(Icons.login, size: 16),
+                ),
+                ButtonSegment<int>(
+                  value: 1,
+                  label: Text('Create Account'),
+                  icon: Icon(Icons.person_add_alt_1, size: 16),
+                ),
+              ],
+              selected: {_authTabIndex},
+              onSelectionChanged: (newSelection) {
+                setState(() => _authTabIndex = newSelection.first);
+              },
+            ),
+          ),
+          AppSpacing.vGapMd,
+
+          if (_authTabIndex == 0) ...[
+            // SIGN IN TAB
+            TextField(
+              controller: _authEmailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                labelText: 'Email Address',
+                prefixIcon: const Icon(Icons.email_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                isDense: true,
+              ),
+            ),
+            AppSpacing.vGapSm,
+            TextField(
+              controller: _authPasswordController,
+              obscureText: _isPasswordObscured,
+              decoration: InputDecoration(
+                labelText: 'Password',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _isPasswordObscured
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () => setState(
+                    () => _isPasswordObscured = !_isPasswordObscured,
+                  ),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                isDense: true,
+              ),
+            ),
+            AppSpacing.vGapSm,
+            Row(
+              children: [
+                FilledButton.icon(
+                  onPressed: _isAuthLoading ? null : _handleSignIn,
+                  icon: _isAuthLoading
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.login, size: 16),
+                  label: Text(_isAuthLoading ? 'Signing In...' : 'Sign In'),
+                ),
+                AppSpacing.hGapSm,
+                TextButton(
+                  onPressed: _isAuthLoading ? null : _handleForgotPassword,
+                  child: const Text('Forgot Password?'),
+                ),
+              ],
+            ),
+          ] else ...[
+            // CREATE ACCOUNT TAB
+            TextField(
+              controller: _authEmailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                labelText: 'Email Address',
+                hintText: 'you@example.com',
+                prefixIcon: const Icon(Icons.email_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                isDense: true,
+              ),
+            ),
+            AppSpacing.vGapSm,
+            TextField(
+              controller: _displayNameController,
+              decoration: InputDecoration(
+                labelText: 'Full Name / Display Name (Optional)',
+                hintText: 'e.g. Alex Mercer',
+                prefixIcon: const Icon(Icons.person_outline),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                isDense: true,
+              ),
+            ),
+            AppSpacing.vGapSm,
+            TextField(
+              controller: _authPasswordController,
+              obscureText: _isPasswordObscured,
+              decoration: InputDecoration(
+                labelText: 'Password',
+                helperText: 'Minimum 6 characters',
+                prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _isPasswordObscured
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () => setState(
+                    () => _isPasswordObscured = !_isPasswordObscured,
+                  ),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                isDense: true,
+              ),
+            ),
+            AppSpacing.vGapSm,
+            TextField(
+              controller: _confirmPasswordController,
+              obscureText: _isConfirmPasswordObscured,
+              decoration: InputDecoration(
+                labelText: 'Confirm Password',
+                hintText: 'Re-enter your password',
+                prefixIcon: const Icon(Icons.lock_reset_outlined),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _isConfirmPasswordObscured
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () => setState(
+                    () => _isConfirmPasswordObscured =
+                        !_isConfirmPasswordObscured,
+                  ),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                isDense: true,
+              ),
+            ),
+            AppSpacing.vGapSm,
+            FilledButton.icon(
+              onPressed: _isAuthLoading ? null : _handleCreateAccount,
+              icon: _isAuthLoading
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.person_add_alt_1, size: 16),
+              label: Text(
+                _isAuthLoading ? 'Creating Account...' : 'Create Account',
+              ),
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
+  Widget _buildAuthenticatedUserProfile(
+    BuildContext context,
+    MomentumSupabaseClient supabase,
+    SyncEngineStatus? syncStatus,
+    ThemeData theme,
+  ) {
+    final user = supabase.currentUser;
+    final email = user?.email ?? 'Unknown Email';
+    final metadata = user?.userMetadata;
+    final displayName = (metadata?['display_name'] as String?) ??
+        (metadata?['full_name'] as String?) ??
+        'Momentum User';
+    final userId = user?.id ?? '';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Top Profile Card
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest
+                .withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: theme.dividerColor.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  // User Avatar with Auroral Jade gradient
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF0D9488), AppColors.secondary],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.secondary.withValues(alpha: 0.35),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        displayName.isNotEmpty
+                            ? displayName[0].toUpperCase()
+                            : 'U',
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                displayName,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // "Cloud Synced" badge with Auroral Jade indicator
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.secondary
+                                    .withValues(alpha: 0.12),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.full),
+                                border: Border.all(
+                                  color: AppColors.secondary
+                                      .withValues(alpha: 0.35),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 7,
+                                    height: 7,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: AppColors.secondary,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.secondary
+                                              .withValues(alpha: 0.8),
+                                          blurRadius: 4,
+                                          spreadRadius: 1,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  const Text(
+                                    'Cloud Synced',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.secondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            Icon(Icons.email_outlined,
+                                size: 14, color: theme.hintColor),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                email,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (userId.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Row(
+                            children: [
+                              Icon(Icons.fingerprint,
+                                  size: 14, color: theme.hintColor),
+                              const SizedBox(width: 5),
+                              Text(
+                                'ID: ${userId.length > 16 ? "${userId.substring(0, 16)}..." : userId}',
+                                style: TextStyle(
+                                  fontFamily: 'monospace',
+                                  fontSize: 11,
+                                  color: theme.hintColor,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              InkWell(
+                                borderRadius: BorderRadius.circular(4),
+                                onTap: () {
+                                  Clipboard.setData(ClipboardData(text: userId));
+                                  context.showSnackBar(
+                                    'User ID copied to clipboard',
+                                  );
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.all(2),
+                                  child: Icon(Icons.copy,
+                                      size: 12, color: theme.hintColor),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              // Action Buttons: Sync Now & Sign Out
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      icon: _isManualSyncing
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.sync, size: 16),
+                      label: Text(
+                        _isManualSyncing ? 'Syncing...' : 'Sync Now',
+                      ),
+                      onPressed: _isManualSyncing ? null : _handleSyncNow,
+                    ),
+                  ),
+                  AppSpacing.hGapSm,
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.logout, size: 16),
+                    label: const Text('Sign Out'),
+                    onPressed: _handleSignOut,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        AppSpacing.vGapMd,
+
+        // User Data & Privacy Section
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest
+                .withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: theme.dividerColor.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.shield_outlined,
+                      size: 16, color: theme.colorScheme.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'User Data & Privacy',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Manage your remote cloud database footprint or permanently remove your account.',
+                style:
+                    theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.orange.shade700,
+                      side: BorderSide(
+                        color: Colors.orange.shade400.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    icon: _isPurgingData
+                        ? SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.orange.shade700,
+                            ),
+                          )
+                        : const Icon(Icons.cleaning_services_outlined, size: 16),
+                    label: Text(
+                      _isPurgingData ? 'Purging...' : 'Purge My Cloud Data',
+                    ),
+                    onPressed: _isPurgingData || _isDeletingAccount
+                        ? null
+                        : () => _handlePurgeUserData(userId),
+                  ),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.redAccent,
+                      side: BorderSide(
+                        color: Colors.redAccent.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    icon: _isDeletingAccount
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.redAccent,
+                            ),
+                          )
+                        : const Icon(Icons.delete_forever, size: 16),
+                    label: Text(
+                      _isDeletingAccount ? 'Deleting...' : 'Delete My Account',
+                    ),
+                    onPressed: _isPurgingData || _isDeletingAccount
+                        ? null
+                        : () => _handleDeleteAccount(userId),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- Supabase Actions ---
+
+  Future<void> _testSupabaseConnection() async {
+    final url = _supabaseUrlController.text.trim();
+    final key = _supabaseKeyController.text.trim();
+    if (url.isEmpty || key.isEmpty) {
+      context.showSnackBar(
+        'Please enter both Supabase URL and Anon Key.',
+        isError: true,
+      );
+      return;
+    }
+    setState(() => _isTestingConnection = true);
+    final supabase = ref.read(supabaseClientProvider);
+    final res = await supabase.testConnection(
+      supabaseUrl: url,
+      supabaseAnonKey: key,
+    );
+    if (!mounted) return;
+    setState(() => _isTestingConnection = false);
+
+    if (res.isSuccess) {
+      context.showSnackBar('Connection successful! Reachable & valid Supabase project.');
+    } else {
+      context.showSnackBar(
+        'Connection test failed: ${res.errorOrNull?.message}',
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _saveSupabaseCredentials() async {
+    final url = _supabaseUrlController.text.trim();
+    final key = _supabaseKeyController.text.trim();
+    if (url.isEmpty || key.isEmpty) {
+      context.showSnackBar(
+        'Please enter both Supabase URL and Anon Key.',
+        isError: true,
+      );
+      return;
+    }
+    setState(() => _isSavingCredentials = true);
+    final supabase = ref.read(supabaseClientProvider);
+    final res = await supabase.initialize(
+      supabaseUrl: url,
+      supabaseAnonKey: key,
+      persist: true,
+    );
+    if (!mounted) return;
+    setState(() => _isSavingCredentials = false);
+
+    if (res.isSuccess) {
+      context.showSnackBar('Supabase credentials saved & connected!');
+      if (supabase.isAuthenticated) {
+        ref.read(currentUserIdProvider.notifier).state =
+            supabase.currentUserId ?? 'local-user';
+        await ref.read(syncEngineProvider).triggerSync();
+      }
+    } else {
+      context.showSnackBar(
+        'Failed to connect: ${res.errorOrNull?.message}',
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _handleSignIn() async {
+    final email = _authEmailController.text.trim();
+    final password = _authPasswordController.text;
+
+    if (email.isEmpty) {
+      context.showSnackBar('Please enter your email address.', isError: true);
+      return;
+    }
+    if (password.isEmpty) {
+      context.showSnackBar('Please enter your password.', isError: true);
+      return;
+    }
+
+    setState(() => _isAuthLoading = true);
+    final supabase = ref.read(supabaseClientProvider);
+    final res = await supabase.signInWithEmail(email, password);
+    if (!mounted) return;
+    setState(() => _isAuthLoading = false);
+
+    if (res.isSuccess) {
+      final uid = supabase.currentUserId ?? 'local-user';
+      ref.read(currentUserIdProvider.notifier).state = uid;
+      context.showSnackBar('Signed in successfully as $email');
+      await ref.read(syncEngineProvider).triggerSync();
+    } else {
+      context.showSnackBar(
+        res.errorOrNull?.message ?? 'Sign in failed.',
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _handleCreateAccount() async {
+    final email = _authEmailController.text.trim();
+    final password = _authPasswordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+    final displayName = _displayNameController.text.trim();
+
+    if (email.isEmpty) {
+      context.showSnackBar('Please enter your email address.', isError: true);
+      return;
+    }
+    final emailRegExp = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+    if (!emailRegExp.hasMatch(email)) {
+      context.showSnackBar('Please enter a valid email address.', isError: true);
+      return;
+    }
+    if (password.isEmpty) {
+      context.showSnackBar('Please enter a password.', isError: true);
+      return;
+    }
+    if (password.length < 6) {
+      context.showSnackBar(
+        'Password must be at least 6 characters long.',
+        isError: true,
+      );
+      return;
+    }
+    if (password != confirmPassword) {
+      context.showSnackBar(
+        'Passwords do not match. Please verify and re-enter.',
+        isError: true,
+      );
+      return;
+    }
+
+    setState(() => _isAuthLoading = true);
+    final supabase = ref.read(supabaseClientProvider);
+    final res = await supabase.signUpWithEmail(
+      email,
+      password,
+      displayName: displayName.isNotEmpty ? displayName : null,
+    );
+    if (!mounted) return;
+    setState(() => _isAuthLoading = false);
+
+    if (res.isSuccess) {
+      final signUpResult = res.valueOrNull;
+      if (signUpResult != null && signUpResult.sessionCreated) {
+        final uid = supabase.currentUserId ?? 'local-user';
+        ref.read(currentUserIdProvider.notifier).state = uid;
+        context.showSnackBar('Account created & logged in as $email!');
+        await ref.read(syncEngineProvider).triggerSync();
+      } else {
+        context.showSnackBar(
+          'Account created! Please check your email to confirm your account, then sign in.',
+        );
+      }
+    } else {
+      context.showSnackBar(
+        res.errorOrNull?.message ?? 'Sign up failed.',
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _handleSignOut() async {
+    final supabase = ref.read(supabaseClientProvider);
+    await supabase.signOut();
+    ref.read(currentUserIdProvider.notifier).state = 'local-user';
+    if (!mounted) return;
+    setState(() {});
+    context.showSnackBar('Signed out successfully.');
+  }
+
+  Future<void> _handleSyncNow() async {
+    setState(() => _isManualSyncing = true);
+    await ref.read(syncEngineProvider).triggerSync();
+    if (!mounted) return;
+    setState(() => _isManualSyncing = false);
+    context.showSnackBar('Sync complete');
+  }
+
+  Future<void> _handleForgotPassword() async {
+    final email = _authEmailController.text.trim();
+    if (email.isEmpty) {
+      context.showSnackBar(
+        'Please enter your email address first.',
+        isError: true,
+      );
+      return;
+    }
+    final supabase = ref.read(supabaseClientProvider);
+    final res = await supabase.resetPassword(email);
+    if (!mounted) return;
+    if (res.isSuccess) {
+      context.showSnackBar('Password reset email sent to $email');
+    } else {
+      context.showSnackBar(
+        res.errorOrNull?.message ?? 'Failed to send password reset email.',
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _handlePurgeUserData(String userId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Purge Cloud Data?'),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to wipe all your data from Supabase cloud storage?\n\n'
+          'All tasks, labels, focus areas, timer logs, and KPIs stored remotely will be permanently removed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.orange.shade800,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Purge Cloud Data'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isPurgingData = true);
+    final supabase = ref.read(supabaseClientProvider);
+    final res = await supabase.purgeUserData(userId);
+    if (!mounted) return;
+    setState(() => _isPurgingData = false);
+
+    if (res.isSuccess) {
+      context.showSnackBar('Cloud data purged successfully from Supabase.');
+    } else {
+      context.showSnackBar(
+        'Failed to purge cloud data: ${res.errorOrNull?.message}',
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _handleDeleteAccount(String userId) async {
+    final deleteCtrl = TextEditingController();
+    bool canDelete = false;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.dangerous_outlined, color: Colors.redAccent),
+                  SizedBox(width: 8),
+                  Text('Delete Account Permanently'),
+                ],
+              ),
+              content: SizedBox(
+                width: 440,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'This action cannot be undone. All your remote data will be purged, your account will be removed, and local data on this device will be wiped.',
+                      style: TextStyle(height: 1.4),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'To confirm deletion, type "DELETE" below:',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: deleteCtrl,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: 'DELETE',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                        isDense: true,
+                      ),
+                      onChanged: (text) {
+                        setModalState(() {
+                          canDelete = text.trim() == 'DELETE';
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: canDelete ? () => Navigator.of(ctx).pop(true) : null,
+                  child: const Text('Delete My Account'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    deleteCtrl.dispose();
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isDeletingAccount = true);
+    final supabase = ref.read(supabaseClientProvider);
+    final res = await supabase.deleteUserAccount();
+    if (!mounted) return;
+
+    if (res.isSuccess) {
+      // Wipe local data for this user
+      await ref.read(appDatabaseProvider).wipeUserData(userId);
+      if (!mounted) return;
+      ref.read(currentUserIdProvider.notifier).state = 'local-user';
+      setState(() => _isDeletingAccount = false);
+      context.showSnackBar('Account deleted and local data cleared.');
+    } else {
+      setState(() => _isDeletingAccount = false);
+      context.showSnackBar(
+        'Account deletion failed: ${res.errorOrNull?.message}',
+        isError: true,
+      );
     }
   }
 }
