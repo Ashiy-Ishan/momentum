@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -19,7 +20,8 @@ import '../../tasks/providers/task_providers.dart';
 import '../../tasks/widgets/task_card.dart';
 
 /// Central dashboard screen displaying modern user greeting header,
-/// side-by-side hero gradient action cards, multi-gradient daily momentum card,
+/// interactive sync & system error alert banner, side-by-side hero gradient action cards,
+/// multi-metric daily momentum card with circular ring + gradient progress,
 /// live creator cadence & KPI cards, pastel category squircle focus areas,
 /// and today's task list.
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -32,6 +34,8 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   TaskStatus? _selectedStatusFilter;
   bool _isInitializingKpis = false;
+  bool _isErrorDismissed = false;
+  bool _isErrorExpanded = false;
 
   @override
   void initState() {
@@ -55,7 +59,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     } catch (_) {}
   }
 
-  Color _getCategoryPastelColor(String name, bool isDark) {
+  Color _colorFromHex(String? hex, Color fallback) {
+    if (hex == null || hex.isEmpty) return fallback;
+    final clean = hex.replaceAll('#', '');
+    if (clean.length == 6) {
+      return Color(int.parse('FF$clean', radix: 16));
+    } else if (clean.length == 8) {
+      return Color(int.parse(clean, radix: 16));
+    }
+    return fallback;
+  }
+
+  Color _getCategoryPastelColor(String name, Color accent, bool isDark) {
     final lower = name.toLowerCase();
     if (lower.contains('youtube')) {
       return isDark ? const Color(0xFF381F2B) : const Color(0xFFFEE2E2);
@@ -68,10 +83,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     } else if (lower.contains('career') || lower.contains('work')) {
       return isDark ? const Color(0xFF3B2F18) : const Color(0xFFFEF3C7);
     }
-    return isDark ? const Color(0xFF24223A) : const Color(0xFFF1F0F8);
+
+    // Blend from accent color for custom user-created labels
+    return isDark
+        ? Color.alphaBlend(accent.withValues(alpha: 0.16), const Color(0xFF201D33))
+        : Color.alphaBlend(accent.withValues(alpha: 0.10), Colors.white);
   }
 
-  Color _getCategoryAccentColor(String name) {
+  Color _getCategoryAccentColor(String name, String? hexColor) {
+    if (hexColor != null && hexColor.isNotEmpty) {
+      return _colorFromHex(hexColor, AppColors.primary);
+    }
     final lower = name.toLowerCase();
     if (lower.contains('youtube')) {
       return const Color(0xFFEF4444);
@@ -101,14 +123,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final allKpisAsync = ref.watch(allKpisStreamProvider);
     final syncStatus = ref.watch(syncStatusStreamProvider).valueOrNull ??
         ref.watch(syncStatusProvider);
+    final syncError = ref.watch(syncLastErrorProvider);
 
     final now = DateTime.now();
     final formattedDate = DateFormat('EEEE, MMMM d').format(now);
+
+    final showSyncError = (syncStatus == SyncEngineStatus.error ||
+            (syncError != null && syncError.isNotEmpty)) &&
+        !_isErrorDismissed;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: RefreshIndicator(
         onRefresh: () async {
+          setState(() {
+            _isErrorDismissed = false;
+          });
           ref.read(refreshQuoteProvider)();
           await ref.read(syncEngineProvider).triggerSync();
         },
@@ -125,14 +155,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               syncStatus: syncStatus ?? SyncEngineStatus.offline,
             ),
 
-            const SizedBox(height: 18),
+            const SizedBox(height: 14),
 
-            // 2. Hero Feature Cards: "Create New Task" (Purple gradient) & "Start Focus Session" (Amber gradient)
+            // 2. Interactive Sync & Operational Error Banner (shows errors on screen when they happen)
+            if (showSyncError) ...[
+              _buildSyncErrorBanner(
+                context,
+                error: syncError,
+                isDark: isDark,
+              ),
+              const SizedBox(height: 14),
+            ],
+
+            // 3. Hero Feature Cards: "Create New Task" (Purple gradient) & "Start Focus Session" (Amber gradient)
             _buildHeroActionCards(context),
 
             const SizedBox(height: 18),
 
-            // 3. Daily Progress Summary Card (Multi-gradient progress bar & streak)
+            // 4. Daily Progress Summary Card (Circular Indicator + Multi-gradient bar + Streak)
             statsAsync.when(
               data: (stats) => _buildProgressSummaryCard(context, stats, isDark),
               loading: () => const Center(
@@ -149,7 +189,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
             const SizedBox(height: 14),
 
-            // 4. Motivational Quote Card
+            // 5. Motivational Quote Card
             quoteAsync.when(
               data: (quote) => quote != null
                   ? _buildQuoteCard(context, quote, isDark)
@@ -160,14 +200,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
             const SizedBox(height: 18),
 
-            // 5. Creator Output & Platform Cadence (Live APIs & KPIs)
+            // 6. Creator Output & Platform Cadence (Live APIs & KPIs)
             allKpisAsync.when(
               data: (kpis) => _buildPlatformOutputSection(context, kpis, isDark),
               loading: () => const SizedBox.shrink(),
               error: (_, _) => const SizedBox.shrink(),
             ),
 
-            // 6. Focus Areas ("Browse Categories")
+            // 7. Focus Areas ("Browse Categories")
             _buildFocusAreasSection(
               context,
               isDark: isDark,
@@ -178,7 +218,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
             const SizedBox(height: 24),
 
-            // 7. Today's Tasks Section
+            // 8. Today's Tasks Section
             _buildTodayTasksSection(
               context,
               isDark: isDark,
@@ -401,7 +441,137 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   // ===========================================================================
-  // 2. HERO ACTION CARDS
+  // 2. ERROR BANNER (shows errors on screen when they happen)
+  // ===========================================================================
+  Widget _buildSyncErrorBanner(
+    BuildContext context, {
+    required String? error,
+    required bool isDark,
+  }) {
+    final cleanError = error?.isNotEmpty == true
+        ? error!
+        : 'An error occurred during cloud synchronization. Check your internet connection or Supabase settings.';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF3F1D1D) : const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.error.withValues(alpha: isDark ? 0.45 : 0.3),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withValues(alpha: isDark ? 0.2 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.error_outline_rounded,
+                  color: AppColors.error,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Sync / System Notice',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                    color: AppColors.error,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.copy_rounded, size: 16),
+                tooltip: 'Copy error message',
+                visualDensity: VisualDensity.compact,
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: cleanError));
+                  context.showSnackBar('Error message copied to clipboard');
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded, size: 16),
+                tooltip: 'Dismiss notice',
+                visualDensity: VisualDensity.compact,
+                onPressed: () {
+                  setState(() => _isErrorDismissed = true);
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            cleanError,
+            style: TextStyle(
+              fontSize: 12,
+              fontFamily: 'monospace',
+              color: isDark ? Colors.white70 : const Color(0xFF991B1B),
+              height: 1.3,
+            ),
+            maxLines: _isErrorExpanded ? null : 3,
+            overflow: _isErrorExpanded ? null : TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (cleanError.length > 80)
+                TextButton(
+                  style:
+                      TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                  onPressed: () =>
+                      setState(() => _isErrorExpanded = !_isErrorExpanded),
+                  child: Text(
+                    _isErrorExpanded ? 'Show Less' : 'Show Details',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              const SizedBox(width: 8),
+              FilledButton.tonalIcon(
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  backgroundColor: AppColors.error.withValues(alpha: 0.18),
+                  foregroundColor: AppColors.error,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.refresh_rounded, size: 14),
+                label: const Text(
+                  'Retry Sync',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                onPressed: () async {
+                  context.showSnackBar('Retrying synchronization...');
+                  await ref.read(syncEngineProvider).triggerSync();
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // 3. HERO ACTION CARDS
   // ===========================================================================
   Widget _buildHeroActionCards(BuildContext context) {
     return Row(
@@ -443,7 +613,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   // ===========================================================================
-  // 3. DAILY PROGRESS SUMMARY CARD
+  // 4. DAILY PROGRESS SUMMARY CARD (Circular Ring + Multi-gradient + Streak)
   // ===========================================================================
   Widget _buildProgressSummaryCard(
     BuildContext context,
@@ -475,56 +645,95 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Row
+          // Header Row with Circular Indicator + Title & Streak
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF472B6).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.trending_up_rounded,
-                      size: 20,
-                      color: Color(0xFFF472B6),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Daily Momentum',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                ],
-              ),
-              // Streak Pill
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+              // Circular Progress Ring (preserves previous version function)
+              SizedBox(
+                width: 58,
+                height: 58,
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    const Text('🔥', style: TextStyle(fontSize: 12)),
-                    const SizedBox(width: 4),
+                    CircularProgressIndicator(
+                      value: stats.scheduledTasks > 0
+                          ? stats.completionRate.clamp(0.0, 1.0)
+                          : 0.0,
+                      strokeWidth: 5.5,
+                      backgroundColor: isDark
+                          ? const Color(0xFF27243B)
+                          : const Color(0xFFF0EDF7),
+                      color: percentage == 100
+                          ? AppColors.statusDone
+                          : const Color(0xFF7C3AED),
+                    ),
                     Text(
-                      '${stats.streakDays}d streak',
+                      '$percentage%',
                       style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFF59E0B),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+
+              // Title and Summary Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Daily Momentum',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        // Streak Pill
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF59E0B)
+                                .withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xFFF59E0B)
+                                  .withValues(alpha: 0.35),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('🔥',
+                                  style: TextStyle(fontSize: 12)),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${stats.streakDays}d streak',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFFF59E0B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      '${stats.completedTasks} completed of ${stats.scheduledTasks} planned',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.textSecondaryLight,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -533,51 +742,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ],
           ),
 
-          const SizedBox(height: 16),
-
-          // Completion status & percentage
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${stats.completedTasks} of ${stats.scheduledTasks} tasks done',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: isDark
-                      ? AppColors.textSecondaryDark
-                      : AppColors.textSecondaryLight,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF7C3AED), Color(0xFFA78BFA)],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '$percentage% Done',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
 
           // Multi-gradient segmented progress bar
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Container(
-              height: 10,
+              height: 8,
               width: double.infinity,
-              color:
-                  isDark ? const Color(0xFF27243B) : const Color(0xFFF0EDF7),
+              color: isDark ? const Color(0xFF27243B) : const Color(0xFFF0EDF7),
               child: FractionallySizedBox(
                 alignment: Alignment.centerLeft,
                 widthFactor: stats.scheduledTasks > 0
@@ -693,7 +866,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   // ===========================================================================
-  // 4. MOTIVATIONAL QUOTE CARD
+  // 5. MOTIVATIONAL QUOTE CARD
   // ===========================================================================
   Widget _buildQuoteCard(
     BuildContext context,
@@ -765,7 +938,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   // ===========================================================================
-  // 5. CREATOR OUTPUT & PLATFORM CADENCE
+  // 6. CREATOR OUTPUT & PLATFORM CADENCE
   // ===========================================================================
   Widget _buildPlatformOutputSection(
     BuildContext context,
@@ -1209,7 +1382,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   // ===========================================================================
-  // 6. FOCUS AREAS ("Browse Categories")
+  // 7. FOCUS AREAS ("Browse Categories")
   // ===========================================================================
   Widget _buildFocusAreasSection(
     BuildContext context, {
@@ -1318,8 +1491,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     required bool isDark,
   }) {
     final theme = Theme.of(context);
-    final pastelBg = _getCategoryPastelColor(label.name, isDark);
-    final accentColor = _getCategoryAccentColor(label.name);
+    final accentColor = _getCategoryAccentColor(label.name, label.color);
+    final pastelBg = _getCategoryPastelColor(label.name, accentColor, isDark);
 
     return Container(
       width: 175,
@@ -1328,7 +1501,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         color: pastelBg,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: accentColor.withValues(alpha: isDark ? 0.3 : 0.2),
+          color: accentColor.withValues(alpha: isDark ? 0.35 : 0.22),
           width: 1.2,
         ),
         boxShadow: [
@@ -1357,7 +1530,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: isDark ? 0.15 : 0.8),
+                        color:
+                            Colors.white.withValues(alpha: isDark ? 0.15 : 0.8),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -1469,7 +1643,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   // ===========================================================================
-  // 7. TODAY'S TASKS SECTION
+  // 8. TODAY'S TASKS SECTION
   // ===========================================================================
   Widget _buildTodayTasksSection(
     BuildContext context, {

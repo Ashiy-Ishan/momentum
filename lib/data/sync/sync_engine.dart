@@ -53,6 +53,19 @@ final syncStatusProvider = Provider<SyncEngineStatus>((ref) {
   return engine.currentStatus;
 });
 
+/// Stream provider for listening to sync engine error messages.
+final syncErrorStreamProvider = StreamProvider<String?>((ref) {
+  final engine = ref.watch(syncEngineProvider);
+  return engine.syncErrorStream;
+});
+
+/// Current sync engine error message, if any.
+final syncLastErrorProvider = Provider<String?>((ref) {
+  final engine = ref.watch(syncEngineProvider);
+  final errorAsync = ref.watch(syncErrorStreamProvider);
+  return errorAsync.valueOrNull ?? engine.lastError;
+});
+
 /// Status of the local-first synchronization engine.
 enum SyncEngineStatus {
   idle,
@@ -111,6 +124,8 @@ class SyncEngine {
 
   final StreamController<SyncEngineStatus> _statusController =
       StreamController<SyncEngineStatus>.broadcast();
+  final StreamController<String?> _errorController =
+      StreamController<String?>.broadcast();
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   StreamSubscription<dynamic>? _authSubscription;
@@ -123,6 +138,9 @@ class SyncEngine {
 
   /// Stream of status changes for reactive UI updates.
   Stream<SyncEngineStatus> get syncStatusStream => _statusController.stream;
+
+  /// Stream of sync errors for reactive UI error presentation.
+  Stream<String?> get syncErrorStream => _errorController.stream;
 
   /// Last recorded synchronization error message, if any.
   String? get lastError => _lastError;
@@ -251,6 +269,7 @@ class SyncEngine {
     _connectivitySubscription?.cancel();
     _authSubscription?.cancel();
     _statusController.close();
+    _errorController.close();
   }
 
   /// Enqueues a local data operation into SQLite `SyncQueueItems`.
@@ -321,7 +340,7 @@ class SyncEngine {
     } catch (e, st) {
       _lastError = e.toString();
       debugPrint('SyncEngine: Sync failed: $e\n$st');
-      _updateStatus(SyncEngineStatus.error);
+      _updateStatus(SyncEngineStatus.error, error: e.toString());
       return Result.failure(
         SyncError('Sync cycle failed: $e', stackTrace: st),
       );
@@ -918,8 +937,19 @@ class SyncEngine {
   // ===========================================================================
   // HELPERS
   // ===========================================================================
-  void _updateStatus(SyncEngineStatus newStatus) {
+  void _updateStatus(SyncEngineStatus newStatus, {String? error}) {
     _status = newStatus;
+    if (error != null) {
+      _lastError = error;
+      if (!_errorController.isClosed) {
+        _errorController.add(_lastError);
+      }
+    } else if (newStatus == SyncEngineStatus.idle) {
+      _lastError = null;
+      if (!_errorController.isClosed) {
+        _errorController.add(null);
+      }
+    }
     _emitStatus(newStatus);
   }
 
