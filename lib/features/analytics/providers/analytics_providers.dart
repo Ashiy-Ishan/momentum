@@ -223,6 +223,268 @@ final allKpisStreamProvider = StreamProvider<List<KpiDefinition>>((ref) {
 });
 
 // =============================================================================
+// Total / Aggregate KPI Metrics
+// =============================================================================
+
+/// Represents a single categorized metric item in the aggregate overview.
+class AggregateMetricItem {
+  final String id;
+  final String platform;
+  final String name;
+  final double currentValue;
+  final double targetValue;
+  final double? longTermTarget;
+  final String unit;
+  final String metricCategory;
+  final KpiPeriod period;
+
+  const AggregateMetricItem({
+    required this.id,
+    required this.platform,
+    required this.name,
+    required this.currentValue,
+    required this.targetValue,
+    this.longTermTarget,
+    required this.unit,
+    required this.metricCategory,
+    required this.period,
+  });
+
+  bool get isAchieved => targetValue > 0 && currentValue >= targetValue;
+  double get shortTermProgress =>
+      targetValue > 0 ? (currentValue / targetValue).clamp(0.0, 1.0) : 0.0;
+  double get longTermProgress =>
+      (longTermTarget != null && longTermTarget! > 0)
+          ? (currentValue / longTermTarget!).clamp(0.0, 1.0)
+          : 0.0;
+}
+
+/// Comprehensive total KPI and creator cadence metrics aggregated across platforms.
+class TotalKpiMetrics {
+  final int totalKpisCount;
+  final int achievedCount;
+  final double overallCompletionRate; // 0.0 to 1.0
+
+  // Weekly & Short-Term Output Totals
+  final double totalVideosCurrent;
+  final double totalVideosTarget;
+  final double? totalVideosLongTerm;
+
+  final double totalShortsCurrent;
+  final double totalShortsTarget;
+  final double? totalShortsLongTerm;
+
+  final double totalPostsCurrent;
+  final double totalPostsTarget;
+  final double? totalPostsLongTerm;
+
+  final double totalArticlesCurrent;
+  final double totalArticlesTarget;
+  final double? totalArticlesLongTerm;
+
+  final double totalCommitsCurrent;
+  final double totalCommitsTarget;
+  final double? totalCommitsLongTerm;
+
+  // Combined Audience / Subscriber / Community Reach (Long-Term vs Short-Term)
+  final double totalAudienceCurrent;
+  final double totalAudienceShortTermTarget;
+  final double totalAudienceLongTermTarget;
+
+  final List<AggregateMetricItem> outputMetrics;
+  final List<AggregateMetricItem> audienceMetrics;
+  final List<AggregateMetricItem> allMetrics;
+
+  const TotalKpiMetrics({
+    this.totalKpisCount = 0,
+    this.achievedCount = 0,
+    this.overallCompletionRate = 0.0,
+    this.totalVideosCurrent = 0.0,
+    this.totalVideosTarget = 0.0,
+    this.totalVideosLongTerm,
+    this.totalShortsCurrent = 0.0,
+    this.totalShortsTarget = 0.0,
+    this.totalShortsLongTerm,
+    this.totalPostsCurrent = 0.0,
+    this.totalPostsTarget = 0.0,
+    this.totalPostsLongTerm,
+    this.totalArticlesCurrent = 0.0,
+    this.totalArticlesTarget = 0.0,
+    this.totalArticlesLongTerm,
+    this.totalCommitsCurrent = 0.0,
+    this.totalCommitsTarget = 0.0,
+    this.totalCommitsLongTerm,
+    this.totalAudienceCurrent = 0.0,
+    this.totalAudienceShortTermTarget = 0.0,
+    this.totalAudienceLongTermTarget = 0.0,
+    this.outputMetrics = const [],
+    this.audienceMetrics = const [],
+    this.allMetrics = const [],
+  });
+
+  /// Short-term audience progress (clamped 0..1).
+  double get audienceShortTermProgress => totalAudienceShortTermTarget > 0
+      ? (totalAudienceCurrent / totalAudienceShortTermTarget).clamp(0.0, 1.0)
+      : 0.0;
+
+  /// Long-term audience milestone progress (clamped 0..1).
+  double get audienceLongTermProgress => totalAudienceLongTermTarget > 0
+      ? (totalAudienceCurrent / totalAudienceLongTermTarget).clamp(0.0, 1.0)
+      : 0.0;
+}
+
+/// Computes comprehensive aggregate KPI output and audience reach across all platforms.
+final totalKpiMetricsProvider = Provider<AsyncValue<TotalKpiMetrics>>((ref) {
+  final allKpisAsync = ref.watch(allKpisStreamProvider);
+
+  return allKpisAsync.whenData((kpis) {
+    if (kpis.isEmpty) return const TotalKpiMetrics();
+
+    final totalCount = kpis.length;
+    int achievedCount = 0;
+    double progressSum = 0.0;
+
+    double videosCurrent = 0.0;
+    double videosTarget = 0.0;
+    double? videosLongTerm;
+
+    double shortsCurrent = 0.0;
+    double shortsTarget = 0.0;
+    double? shortsLongTerm;
+
+    double postsCurrent = 0.0;
+    double postsTarget = 0.0;
+    double? postsLongTerm;
+
+    double articlesCurrent = 0.0;
+    double articlesTarget = 0.0;
+    double? articlesLongTerm;
+
+    double commitsCurrent = 0.0;
+    double commitsTarget = 0.0;
+    double? commitsLongTerm;
+
+    double audienceCurrent = 0.0;
+    double audienceShortTarget = 0.0;
+    double audienceLongTarget = 0.0;
+
+    final outputItems = <AggregateMetricItem>[];
+    final audienceItems = <AggregateMetricItem>[];
+    final allItems = <AggregateMetricItem>[];
+
+    for (final kpi in kpis) {
+      final isAchieved =
+          kpi.targetValue > 0 && kpi.currentValue >= kpi.targetValue;
+      if (isAchieved) achievedCount++;
+
+      final prog = kpi.targetValue > 0
+          ? (kpi.currentValue / kpi.targetValue).clamp(0.0, 1.0)
+          : 0.0;
+      progressSum += prog;
+
+      final item = AggregateMetricItem(
+        id: kpi.id,
+        platform: kpi.platform,
+        name: kpi.name,
+        currentValue: kpi.currentValue,
+        targetValue: kpi.targetValue,
+        longTermTarget: kpi.longTermTarget,
+        unit: kpi.unit,
+        metricCategory: kpi.metricCategory,
+        period: kpi.period,
+      );
+      allItems.add(item);
+
+      final cat = kpi.metricCategory.toLowerCase();
+      final unit = kpi.unit.toLowerCase();
+      final name = kpi.name.toLowerCase();
+
+      final isAudience = cat == 'subscriber_growth' ||
+          cat == 'follower_growth' ||
+          unit == 'subs' ||
+          unit == 'followers' ||
+          unit == 'readers' ||
+          unit == 'connections' ||
+          unit == 'stars';
+
+      if (isAudience) {
+        audienceCurrent += kpi.currentValue;
+        audienceShortTarget += kpi.targetValue;
+        if (kpi.longTermTarget != null) {
+          audienceLongTarget += kpi.longTermTarget!;
+        }
+        audienceItems.add(item);
+      } else {
+        outputItems.add(item);
+
+        if (unit.contains('video') ||
+            (cat == 'video_generation' && !unit.contains('short'))) {
+          videosCurrent += kpi.currentValue;
+          videosTarget += kpi.targetValue;
+          if (kpi.longTermTarget != null) {
+            videosLongTerm = (videosLongTerm ?? 0) + kpi.longTermTarget!;
+          }
+        } else if (unit.contains('short')) {
+          shortsCurrent += kpi.currentValue;
+          shortsTarget += kpi.targetValue;
+          if (kpi.longTermTarget != null) {
+            shortsLongTerm = (shortsLongTerm ?? 0) + kpi.longTermTarget!;
+          }
+        } else if (cat == 'post_publication' || unit.contains('post')) {
+          postsCurrent += kpi.currentValue;
+          postsTarget += kpi.targetValue;
+          if (kpi.longTermTarget != null) {
+            postsLongTerm = (postsLongTerm ?? 0) + kpi.longTermTarget!;
+          }
+        } else if (cat == 'blog_publication' || unit.contains('article')) {
+          articlesCurrent += kpi.currentValue;
+          articlesTarget += kpi.targetValue;
+          if (kpi.longTermTarget != null) {
+            articlesLongTerm = (articlesLongTerm ?? 0) + kpi.longTermTarget!;
+          }
+        } else if (unit.contains('commit') || name.contains('commit')) {
+          commitsCurrent += kpi.currentValue;
+          commitsTarget += kpi.targetValue;
+          if (kpi.longTermTarget != null) {
+            commitsLongTerm = (commitsLongTerm ?? 0) + kpi.longTermTarget!;
+          }
+        }
+      }
+    }
+
+    final avgRate = totalCount > 0 ? (progressSum / totalCount) : 0.0;
+
+    return TotalKpiMetrics(
+      totalKpisCount: totalCount,
+      achievedCount: achievedCount,
+      overallCompletionRate: avgRate,
+      totalVideosCurrent: videosCurrent,
+      totalVideosTarget: videosTarget,
+      totalVideosLongTerm: videosLongTerm,
+      totalShortsCurrent: shortsCurrent,
+      totalShortsTarget: shortsTarget,
+      totalShortsLongTerm: shortsLongTerm,
+      totalPostsCurrent: postsCurrent,
+      totalPostsTarget: postsTarget,
+      totalPostsLongTerm: postsLongTerm,
+      totalArticlesCurrent: articlesCurrent,
+      totalArticlesTarget: articlesTarget,
+      totalArticlesLongTerm: articlesLongTerm,
+      totalCommitsCurrent: commitsCurrent,
+      totalCommitsTarget: commitsTarget,
+      totalCommitsLongTerm: commitsLongTerm,
+      totalAudienceCurrent: audienceCurrent,
+      totalAudienceShortTermTarget: audienceShortTarget,
+      totalAudienceLongTermTarget: audienceLongTarget,
+      outputMetrics: outputItems,
+      audienceMetrics: audienceItems,
+      allMetrics: allItems,
+    );
+  });
+});
+
+
+// =============================================================================
 // Parent & Sub-Label Consolidated Metrics
 // =============================================================================
 

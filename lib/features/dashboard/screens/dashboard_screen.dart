@@ -15,6 +15,7 @@ import '../../analytics/providers/analytics_providers.dart';
 import '../../labels/providers/label_providers.dart';
 import '../../motivation/domain/motivation_quote.dart';
 import '../../motivation/providers/motivation_providers.dart';
+import '../../notifications/providers/notification_history_provider.dart';
 import '../../settings/providers/connected_accounts_provider.dart';
 import '../../tasks/providers/task_providers.dart';
 import '../../tasks/widgets/task_card.dart';
@@ -22,7 +23,7 @@ import '../../tasks/widgets/task_card.dart';
 /// Central dashboard screen displaying modern user greeting header,
 /// interactive sync & system error alert banner, side-by-side hero gradient action cards,
 /// multi-metric daily momentum card with circular ring + gradient progress,
-/// live creator cadence & KPI cards, pastel category squircle focus areas,
+/// total KPI executive overview & creator cadence, pastel category squircle focus areas,
 /// and today's task list.
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -33,6 +34,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   TaskStatus? _selectedStatusFilter;
+  String _kpiViewMode = 'all'; // 'all', 'output', 'audience'
   bool _isInitializingKpis = false;
   bool _isErrorDismissed = false;
   bool _isErrorExpanded = false;
@@ -121,6 +123,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final rootLabelsAsync = ref.watch(rootLabelsStreamProvider);
     final allLabels = ref.watch(allLabelsStreamProvider).valueOrNull ?? [];
     final allKpisAsync = ref.watch(allKpisStreamProvider);
+    final totalKpisAsync = ref.watch(totalKpiMetricsProvider);
+    final unreadCount = ref.watch(unreadNotificationCountProvider);
     final syncStatus = ref.watch(syncStatusStreamProvider).valueOrNull ??
         ref.watch(syncStatusProvider);
     final syncError = ref.watch(syncLastErrorProvider);
@@ -153,6 +157,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               userName: userName,
               formattedDate: formattedDate,
               syncStatus: syncStatus ?? SyncEngineStatus.offline,
+              unreadCount: unreadCount,
             ),
 
             const SizedBox(height: 14),
@@ -200,9 +205,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
             const SizedBox(height: 18),
 
-            // 6. Creator Output & Platform Cadence (Live APIs & KPIs)
+            // 6. Creator Output & Total KPIs Overview (Live APIs & Metric Scorecard)
             allKpisAsync.when(
-              data: (kpis) => _buildPlatformOutputSection(context, kpis, isDark),
+              data: (kpis) {
+                final totals =
+                    totalKpisAsync.valueOrNull ?? const TotalKpiMetrics();
+                return _buildTotalKpisAndCadenceSection(
+                  context,
+                  kpis: kpis,
+                  totals: totals,
+                  isDark: isDark,
+                );
+              },
               loading: () => const SizedBox.shrink(),
               error: (_, _) => const SizedBox.shrink(),
             ),
@@ -247,6 +261,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     required String userName,
     required String formattedDate,
     required SyncEngineStatus syncStatus,
+    int unreadCount = 0,
   }) {
     final theme = Theme.of(context);
     final initial =
@@ -333,12 +348,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         const SizedBox(width: 8),
         _buildCircularSyncButton(context, syncStatus, isDark),
         const SizedBox(width: 8),
-        _buildCircularIconButton(
-          context,
-          icon: Icons.notifications_none_rounded,
-          tooltip: 'Notifications',
-          isDark: isDark,
-          onTap: () => context.push('/notifications'),
+        Badge(
+          isLabelVisible: unreadCount > 0,
+          label: Text(
+            '$unreadCount',
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: const Color(0xFFEF4444),
+          child: _buildCircularIconButton(
+            context,
+            icon: Icons.notifications_none_rounded,
+            tooltip: unreadCount > 0
+                ? 'Notifications ($unreadCount new)'
+                : 'Notifications',
+            isDark: isDark,
+            onTap: () => context.push('/notifications'),
+          ),
         ),
         const SizedBox(width: 8),
         _buildCircularIconButton(
@@ -938,120 +967,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   // ===========================================================================
-  // 6. CREATOR OUTPUT & PLATFORM CADENCE
+  // 6. CREATOR OUTPUT & TOTAL KPIS CADENCE
   // ===========================================================================
-  Widget _buildPlatformOutputSection(
-    BuildContext context,
-    List<KpiDefinition> kpis,
-    bool isDark,
-  ) {
-    final theme = Theme.of(context);
-
+  Widget _buildTotalKpisAndCadenceSection(
+    BuildContext context, {
+    required List<KpiDefinition> kpis,
+    required TotalKpiMetrics totals,
+    required bool isDark,
+  }) {
     if (kpis.isEmpty) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 18),
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.cardDark : Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: const Color(0xFF7C3AED).withValues(alpha: 0.35),
-            width: 1.2,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF7C3AED).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(
-                Icons.bolt_rounded,
-                color: Color(0xFF7C3AED),
-                size: 26,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Creator Cadence & Live APIs',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Track YouTube videos, GitHub commits, Instagram reach, and career targets with live sync.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: isDark
-                          ? AppColors.textSecondaryDark
-                          : AppColors.textSecondaryLight,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            FilledButton.tonal(
-              style: FilledButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              onPressed: _isInitializingKpis
-                  ? null
-                  : () async {
-                      setState(() => _isInitializingKpis = true);
-                      try {
-                        final userId = ref.read(currentUserIdProvider);
-                        final labelRepo = ref.read(labelRepositoryProvider);
-                        final kpiRepo = ref.read(kpiRepositoryProvider);
-
-                        await labelRepo.seedDefaultLabels(userId);
-                        final currentLabels =
-                            await labelRepo.getAllLabels(userId);
-
-                        await kpiRepo.seedDefaultPlatformKpis(
-                          userId,
-                          currentLabels,
-                        );
-
-                        if (context.mounted) {
-                          context.showSnackBar(
-                            'Platform creator KPIs initialized successfully!',
-                          );
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          context.showSnackBar(
-                            'Failed to initialize KPIs: $e',
-                            isError: true,
-                          );
-                        }
-                      } finally {
-                        if (mounted) {
-                          setState(() => _isInitializingKpis = false);
-                        }
-                      }
-                    },
-              child: _isInitializingKpis
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Initialize'),
-            ),
-          ],
-        ),
-      );
+      return _buildEmptyKpiPrompt(context, isDark: isDark);
     }
 
+    final theme = Theme.of(context);
     final connectedAccounts = ref.watch(connectedAccountsProvider);
     final activeAccounts =
         connectedAccounts.where((a) => a.isConnected).toList();
@@ -1059,16 +987,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 1. Header with Velocity Badge
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
               children: [
-                const Icon(Icons.bolt_rounded,
+                const Icon(Icons.insights_rounded,
                     size: 20, color: Color(0xFFF59E0B)),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 Text(
-                  'Creator Cadence & Live APIs',
+                  'Creator Cadence & Total KPIs',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.2,
@@ -1111,274 +1040,1159 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ],
         ),
+
+        const SizedBox(height: 10),
+
+        // 2. Executive Total KPI Overview Card
+        _buildTotalKpiScorecardCard(context, totals: totals, isDark: isDark),
+
+        const SizedBox(height: 14),
+
+        // 3. Quick Output Logging Action Bar
+        _buildQuickLogOutputBar(context, isDark: isDark),
+
         if (activeAccounts.isNotEmpty) ...[
-          const SizedBox(height: 6),
-          SizedBox(
-            height: 34,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: activeAccounts.length,
-              itemBuilder: (context, idx) {
-                final acc = activeAccounts[idx];
-                final color = AppColors.forPlatform(acc.platform);
-                return InkWell(
-                  onTap: () => context.push('/settings'),
-                  borderRadius: BorderRadius.circular(18),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: color.withValues(alpha: 0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (acc.avatarUrl != null && acc.avatarUrl!.isNotEmpty)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              acc.avatarUrl!,
-                              width: 16,
-                              height: 16,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Icon(_platformIcon(acc.platform),
-                                      size: 14, color: color),
-                            ),
-                          )
-                        else
-                          Icon(_platformIcon(acc.platform),
-                              size: 14, color: color),
-                        const SizedBox(width: 6),
-                        Text(
-                          acc.handle,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: color,
-                          ),
-                        ),
-                        if (acc.metricCount != null) ...[
-                          const SizedBox(width: 5),
-                          Text(
-                            '• ${_formatMetric(acc.metricCount!)} ${acc.metricUnit}'
-                            '${acc.publicRepos != null ? " • ${acc.publicRepos} repos" : ""}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: isDark
-                                  ? AppColors.textSecondaryDark
-                                  : AppColors.textSecondaryLight,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                );
-              },
+          const SizedBox(height: 12),
+          _buildConnectedAccountsStrip(context, activeAccounts, isDark: isDark),
+        ],
+
+        const SizedBox(height: 14),
+
+        // 4. Individual Platform KPI Breakdown Carousel Header
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Platform Targets Breakdown',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
+              ),
+            ),
+            Text(
+              '${kpis.length} tracked',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white54 : Colors.black45,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _buildIndividualKpiCarousel(context, kpis: kpis, isDark: isDark),
+        const SizedBox(height: 18),
+      ],
+    );
+  }
+
+  Widget _buildEmptyKpiPrompt(BuildContext context, {required bool isDark}) {
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.cardDark : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: const Color(0xFF7C3AED).withValues(alpha: 0.35),
+          width: 1.2,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF7C3AED).withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(
+              Icons.bolt_rounded,
+              color: Color(0xFF7C3AED),
+              size: 26,
             ),
           ),
-        ],
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 140,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: kpis.length,
-            itemBuilder: (context, index) {
-              final kpi = kpis[index];
-              final platformColor = AppColors.forPlatform(kpi.platform);
-              final progress = kpi.targetValue > 0
-                  ? (kpi.currentValue / kpi.targetValue).clamp(0.0, 1.0)
-                  : 0.0;
-              final isMet =
-                  kpi.targetValue > 0 && kpi.currentValue >= kpi.targetValue;
-              final isMilestone = kpi.metricCategory == 'subscriber_growth' ||
-                  kpi.metricCategory == 'follower_growth';
-
-              return Container(
-                width: 230,
-                margin: const EdgeInsets.only(right: 12, top: 4, bottom: 4),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.cardDark : Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(
-                    color: isMet
-                        ? AppColors.statusDone.withValues(alpha: 0.5)
-                        : (isDark
-                            ? AppColors.borderDark
-                            : AppColors.borderLight.withValues(alpha: 0.8)),
-                    width: isMet ? 1.4 : 1.0,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Creator Cadence & Total KPIs',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color:
-                          Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
-                      blurRadius: 12,
-                      offset: const Offset(0, 3),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Track total video output, weekly posts, blog publishing, and subscriber & follower milestones across platforms.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          FilledButton.tonal(
+            style: FilledButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            onPressed: _isInitializingKpis
+                ? null
+                : () async {
+                    setState(() => _isInitializingKpis = true);
+                    try {
+                      final userId = ref.read(currentUserIdProvider);
+                      final labelRepo = ref.read(labelRepositoryProvider);
+                      final kpiRepo = ref.read(kpiRepositoryProvider);
+
+                      await labelRepo.seedDefaultLabels(userId);
+                      final currentLabels =
+                          await labelRepo.getAllLabels(userId);
+
+                      await kpiRepo.seedDefaultPlatformKpis(
+                        userId,
+                        currentLabels,
+                      );
+
+                      if (context.mounted) {
+                        context.showSnackBar(
+                          'Platform creator KPIs initialized successfully!',
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        context.showSnackBar(
+                          'Failed to initialize KPIs: $e',
+                          isError: true,
+                        );
+                      }
+                    } finally {
+                      if (mounted) {
+                        setState(() => _isInitializingKpis = false);
+                      }
+                    }
+                  },
+            child: _isInitializingKpis
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Initialize'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // EXECUTIVE TOTAL KPI SCORECARD
+  // ===========================================================================
+  Widget _buildTotalKpiScorecardCard(
+    BuildContext context, {
+    required TotalKpiMetrics totals,
+    required bool isDark,
+  }) {
+    final theme = Theme.of(context);
+    final velocityPercent = (totals.overallCompletionRate * 100).toInt();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.cardDark : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark
+              ? AppColors.borderDark
+              : AppColors.borderLight.withValues(alpha: 0.9),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Velocity & On-Track Summary Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Executive KPI Scorecard',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${totals.achievedCount} of ${totals.totalKpisCount} targets met • $velocityPercent% overall velocity',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: isDark
+                          ? AppColors.textSecondaryDark
+                          : AppColors.textSecondaryLight,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.secondary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.secondary.withValues(alpha: 0.35),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.bolt,
+                        size: 14, color: AppColors.secondary),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$velocityPercent% Active',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.secondary,
+                      ),
                     ),
                   ],
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(5),
-                              decoration: BoxDecoration(
-                                color: platformColor.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                _platformIcon(kpi.platform),
-                                size: 14,
-                                color: platformColor,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              kpi.platform.toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                color: platformColor,
-                                letterSpacing: 0.6,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            InkWell(
-                              onTap: () => _showEditKpiDialog(context, kpi),
-                              borderRadius: BorderRadius.circular(6),
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: (isDark
-                                          ? AppColors.surfaceVariantDark
-                                          : AppColors.surfaceVariantLight)
-                                      .withValues(alpha: 0.6),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Icon(Icons.edit_outlined,
-                                    size: 13,
-                                    color: isDark
-                                        ? AppColors.textSecondaryDark
-                                        : AppColors.textSecondaryLight),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            InkWell(
-                              onTap: () async {
-                                await ref
-                                    .read(kpiRepositoryProvider)
-                                    .incrementCurrentValue(kpi.id, 1.0);
-                              },
-                              borderRadius: BorderRadius.circular(6),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: platformColor.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.add,
-                                        size: 12, color: platformColor),
-                                    Text(
-                                      '1',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: platformColor,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // Total Velocity Progress Indicator
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: totals.overallCompletionRate.clamp(0.0, 1.0),
+              minHeight: 6,
+              backgroundColor: isDark
+                  ? const Color(0xFF1E283D)
+                  : const Color(0xFFF1F5F9),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF10B981), // Auroral Jade
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // Category Mode Filter Selector
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildKpiFilterChip(
+                  label: 'All Totals',
+                  selected: _kpiViewMode == 'all',
+                  onTap: () => setState(() => _kpiViewMode = 'all'),
+                  isDark: isDark,
+                ),
+                const SizedBox(width: 8),
+                _buildKpiFilterChip(
+                  label: 'Video & Content',
+                  selected: _kpiViewMode == 'output',
+                  onTap: () => setState(() => _kpiViewMode = 'output'),
+                  isDark: isDark,
+                ),
+                const SizedBox(width: 8),
+                _buildKpiFilterChip(
+                  label: 'Audience Reach',
+                  selected: _kpiViewMode == 'audience',
+                  onTap: () => setState(() => _kpiViewMode = 'audience'),
+                  isDark: isDark,
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // 4 Executive Hero Metrics
+          if (_kpiViewMode == 'all' || _kpiViewMode == 'output') ...[
+            Row(
+              children: [
+                // 1. Weekly Video Generation Total
+                Expanded(
+                  child: _buildMetricTile(
+                    title: 'Video Output',
+                    primaryValue:
+                        '${totals.totalVideosCurrent.toInt()} / ${totals.totalVideosTarget.toInt()} videos',
+                    subValue:
+                        '${totals.totalShortsCurrent.toInt()}/${totals.totalShortsTarget.toInt()} shorts',
+                    milestone: totals.totalVideosLongTerm != null
+                        ? 'Goal: ${totals.totalVideosLongTerm!.toInt()}'
+                        : null,
+                    progress: totals.totalVideosTarget > 0
+                        ? (totals.totalVideosCurrent /
+                                totals.totalVideosTarget)
+                            .clamp(0.0, 1.0)
+                        : 0.0,
+                    accentColor: const Color(0xFFFF0033),
+                    icon: Icons.play_circle_filled_rounded,
+                    isDark: isDark,
+                    onQuickAdd: () => _incrementKpiByCategory(
+                      'video_generation',
+                      'videos',
+                      1.0,
                     ),
-                    Text(
-                      kpi.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 10),
+
+                // 2. Weekly Post Publication Total
+                Expanded(
+                  child: _buildMetricTile(
+                    title: 'Weekly Posts',
+                    primaryValue:
+                        '${totals.totalPostsCurrent.toInt()} / ${totals.totalPostsTarget.toInt()} posts',
+                    subValue: 'Instagram & LinkedIn',
+                    milestone: totals.totalPostsLongTerm != null
+                        ? 'Goal: ${totals.totalPostsLongTerm!.toInt()}'
+                        : null,
+                    progress: totals.totalPostsTarget > 0
+                        ? (totals.totalPostsCurrent /
+                                totals.totalPostsTarget)
+                            .clamp(0.0, 1.0)
+                        : 0.0,
+                    accentColor: const Color(0xFFE1306C),
+                    icon: Icons.camera_alt_rounded,
+                    isDark: isDark,
+                    onQuickAdd: () => _incrementKpiByCategory(
+                      'post_publication',
+                      'posts',
+                      1.0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
+
+          if (_kpiViewMode == 'all' || _kpiViewMode == 'output') ...[
+            // 3. Blog & Articles Total
+            _buildMetricTile(
+              title: 'Blog Publishing & Code Velocity',
+              primaryValue:
+                  '${totals.totalArticlesCurrent.toInt()} / ${totals.totalArticlesTarget.toInt()} articles published',
+              subValue:
+                  '${totals.totalCommitsCurrent.toInt()} weekly commits & pull requests shipped',
+              milestone: totals.totalArticlesLongTerm != null
+                  ? 'Goal: ${totals.totalArticlesLongTerm!.toInt()} articles'
+                  : null,
+              progress: totals.totalArticlesTarget > 0
+                  ? (totals.totalArticlesCurrent / totals.totalArticlesTarget)
+                      .clamp(0.0, 1.0)
+                  : 0.0,
+              accentColor: const Color(0xFFF97316),
+              icon: Icons.article_rounded,
+              isDark: isDark,
+              onQuickAdd: () => _incrementKpiByCategory(
+                'blog_publication',
+                'articles',
+                1.0,
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+
+          if (_kpiViewMode == 'all' || _kpiViewMode == 'audience') ...[
+            // 4. Combined Audience & Community Reach
+            _buildAudienceMetricCard(
+              totals: totals,
+              isDark: isDark,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKpiFilterChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected
+              ? const Color(0xFF7C3AED)
+              : (isDark
+                  ? AppColors.surfaceVariantDark.withValues(alpha: 0.6)
+                  : AppColors.surfaceVariantLight),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected
+                ? const Color(0xFF7C3AED)
+                : (isDark
+                    ? AppColors.borderDark
+                    : AppColors.borderLight.withValues(alpha: 0.8)),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: selected
+                ? Colors.white
+                : (isDark
+                    ? AppColors.textPrimaryDark
+                    : AppColors.textPrimaryLight),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetricTile({
+    required String title,
+    required String primaryValue,
+    required String subValue,
+    required String? milestone,
+    required double progress,
+    required Color accentColor,
+    required IconData icon,
+    required bool isDark,
+    required VoidCallback onQuickAdd,
+  }) {
+    final isMet = progress >= 1.0;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Color.alphaBlend(
+                accentColor.withValues(alpha: 0.08),
+                const Color(0xFF101625),
+              )
+            : Color.alphaBlend(
+                accentColor.withValues(alpha: 0.05),
+                Colors.white,
+              ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isMet
+              ? AppColors.statusDone.withValues(alpha: 0.5)
+              : accentColor.withValues(alpha: isDark ? 0.35 : 0.25),
+          width: isMet ? 1.4 : 1.0,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(icon, size: 14, color: accentColor),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: accentColor,
+                    ),
+                  ),
+                ],
+              ),
+              InkWell(
+                onTap: onQuickAdd,
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add, size: 11, color: accentColor),
+                      Text(
+                        '1',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: accentColor,
+                        ),
                       ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            primaryValue,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Text(
+                  subValue,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
+                  ),
+                ),
+              ),
+              if (milestone != null) ...[
+                const SizedBox(width: 4),
+                Text(
+                  milestone,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: isDark
+                        ? AppColors.primaryLight
+                        : AppColors.primaryDark,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 4,
+              backgroundColor: isDark
+                  ? const Color(0xFF1E283D)
+                  : const Color(0xFFF1F5F9),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isMet ? AppColors.statusDone : accentColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAudienceMetricCard({
+    required TotalKpiMetrics totals,
+    required bool isDark,
+  }) {
+    const audienceColor = Color(0xFF06B6D4); // Electric Cyan
+    final longTermPercent = (totals.audienceLongTermProgress * 100).toInt();
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Color.alphaBlend(
+                audienceColor.withValues(alpha: 0.08),
+                const Color(0xFF101625),
+              )
+            : Color.alphaBlend(
+                audienceColor.withValues(alpha: 0.05),
+                Colors.white,
+              ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: audienceColor.withValues(alpha: isDark ? 0.35 : 0.25),
+          width: 1.0,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: audienceColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            isMilestone
-                                ? '${_formatMetric(kpi.currentValue)} / ${_formatMetric(kpi.targetValue)} ${kpi.unit}'
-                                : '${kpi.currentValue.toInt()} / ${kpi.targetValue.toInt()} ${kpi.unit}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: isDark
-                                  ? AppColors.textSecondaryDark
-                                  : AppColors.textSecondaryLight,
-                            ),
-                          ),
-                        ),
-                        if (kpi.hasLongTermTarget) ...[
-                          const SizedBox(width: 4),
-                          Text(
-                            'Goal: ${_formatMetric(kpi.longTermTarget!)}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: isDark
-                                  ? AppColors.primaryLight
-                                  : AppColors.primaryDark,
-                            ),
-                          ),
-                        ],
-                      ],
+                    child: const Icon(
+                      Icons.groups_rounded,
+                      size: 15,
+                      color: audienceColor,
                     ),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: 4,
-                        backgroundColor: isDark
-                            ? AppColors.surfaceVariantDark
-                            : AppColors.surfaceVariantLight,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          isMet ? AppColors.statusDone : platformColor,
-                        ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'TOTAL AUDIENCE & COMMUNITY REACH',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: audienceColor,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                'Milestone: ${_formatMetric(totals.totalAudienceLongTermTarget)} ($longTermPercent%)',
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF10B981),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${_formatMetric(totals.totalAudienceCurrent)} Subscribers & Followers',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                'Target: ${_formatMetric(totals.totalAudienceShortTermTarget)}',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: totals.audienceShortTermProgress,
+              minHeight: 5,
+              backgroundColor: isDark
+                  ? const Color(0xFF1E283D)
+                  : const Color(0xFFF1F5F9),
+              valueColor: const AlwaysStoppedAnimation<Color>(audienceColor),
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Platform Breakdown Pill Wrap
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: totals.audienceMetrics.map((item) {
+              final color = AppColors.forPlatform(item.platform);
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: color.withValues(alpha: 0.3),
+                    width: 0.8,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(_platformIcon(item.platform), size: 11, color: color),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${item.platform.toUpperCase()}: ${_formatMetric(item.currentValue)} ${item.unit}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: color,
                       ),
                     ),
                   ],
                 ),
               );
-            },
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // QUICK-LOG OUTPUT BAR
+  // ===========================================================================
+  Widget _buildQuickLogOutputBar(BuildContext context, {required bool isDark}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppColors.surfaceVariantDark.withValues(alpha: 0.5)
+            : AppColors.surfaceVariantLight.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark
+              ? AppColors.borderDark
+              : AppColors.borderLight.withValues(alpha: 0.8),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.flash_on_rounded,
+              size: 16, color: Color(0xFFF59E0B)),
+          const SizedBox(width: 8),
+          const Text(
+            'Quick Log:',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildQuickLogButton(
+                    label: '+1 Video',
+                    color: const Color(0xFFFF0033),
+                    onTap: () => _incrementKpiByCategory(
+                      'video_generation',
+                      'videos',
+                      1.0,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  _buildQuickLogButton(
+                    label: '+1 Short',
+                    color: const Color(0xFFFF0033),
+                    onTap: () => _incrementKpiByCategory(
+                      'video_generation',
+                      'shorts',
+                      1.0,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  _buildQuickLogButton(
+                    label: '+1 Post',
+                    color: const Color(0xFFE1306C),
+                    onTap: () => _incrementKpiByCategory(
+                      'post_publication',
+                      'posts',
+                      1.0,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  _buildQuickLogButton(
+                    label: '+1 Article',
+                    color: const Color(0xFFF97316),
+                    onTap: () => _incrementKpiByCategory(
+                      'blog_publication',
+                      'articles',
+                      1.0,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  _buildQuickLogButton(
+                    label: '+1 Commit',
+                    color: const Color(0xFF2EA043),
+                    onTap: () => _incrementKpiByCategory(
+                      'output',
+                      'commits',
+                      1.0,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickLogButton({
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: color.withValues(alpha: 0.35),
+            width: 1,
           ),
         ),
-        const SizedBox(height: 18),
-      ],
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ),
     );
+  }
+
+  Widget _buildConnectedAccountsStrip(
+    BuildContext context,
+    List<ConnectedAccount> activeAccounts, {
+    required bool isDark,
+  }) {
+    return SizedBox(
+      height: 34,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: activeAccounts.length,
+        itemBuilder: (context, idx) {
+          final acc = activeAccounts[idx];
+          final color = AppColors.forPlatform(acc.platform);
+          return InkWell(
+            onTap: () => context.push('/settings'),
+            borderRadius: BorderRadius.circular(18),
+            child: Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: color.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (acc.avatarUrl != null && acc.avatarUrl!.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        acc.avatarUrl!,
+                        width: 16,
+                        height: 16,
+                        errorBuilder: (context, error, stackTrace) =>
+                            Icon(_platformIcon(acc.platform),
+                                size: 14, color: color),
+                      ),
+                    )
+                  else
+                    Icon(_platformIcon(acc.platform), size: 14, color: color),
+                  const SizedBox(width: 6),
+                  Text(
+                    acc.handle,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                  if (acc.metricCount != null) ...[
+                    const SizedBox(width: 5),
+                    Text(
+                      '• ${_formatMetric(acc.metricCount!)} ${acc.metricUnit}'
+                      '${acc.publicRepos != null ? " • ${acc.publicRepos} repos" : ""}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.textSecondaryLight,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildIndividualKpiCarousel(
+    BuildContext context, {
+    required List<KpiDefinition> kpis,
+    required bool isDark,
+  }) {
+    return SizedBox(
+      height: 140,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: kpis.length,
+        itemBuilder: (context, index) {
+          final kpi = kpis[index];
+          final platformColor = AppColors.forPlatform(kpi.platform);
+          final progress = kpi.targetValue > 0
+              ? (kpi.currentValue / kpi.targetValue).clamp(0.0, 1.0)
+              : 0.0;
+          final isMet =
+              kpi.targetValue > 0 && kpi.currentValue >= kpi.targetValue;
+          final isMilestone = kpi.metricCategory == 'subscriber_growth' ||
+              kpi.metricCategory == 'follower_growth';
+
+          return Container(
+            width: 230,
+            margin: const EdgeInsets.only(right: 12, top: 4, bottom: 4),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.cardDark : Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: isMet
+                    ? AppColors.statusDone.withValues(alpha: 0.5)
+                    : (isDark
+                        ? AppColors.borderDark
+                        : AppColors.borderLight.withValues(alpha: 0.8)),
+                width: isMet ? 1.4 : 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: platformColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            _platformIcon(kpi.platform),
+                            size: 14,
+                            color: platformColor,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          kpi.platform.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: platformColor,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        InkWell(
+                          onTap: () => _showEditKpiDialog(context, kpi),
+                          borderRadius: BorderRadius.circular(6),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: (isDark
+                                      ? AppColors.surfaceVariantDark
+                                      : AppColors.surfaceVariantLight)
+                                  .withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Icon(Icons.edit_outlined,
+                                size: 13,
+                                color: isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondaryLight),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        InkWell(
+                          onTap: () async {
+                            await ref
+                                .read(kpiRepositoryProvider)
+                                .incrementCurrentValue(kpi.id, 1.0);
+                          },
+                          borderRadius: BorderRadius.circular(6),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: platformColor.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.add,
+                                    size: 12, color: platformColor),
+                                Text(
+                                  '1',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: platformColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                Text(
+                  kpi.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        isMilestone
+                            ? '${_formatMetric(kpi.currentValue)} / ${_formatMetric(kpi.targetValue)} ${kpi.unit}'
+                            : '${kpi.currentValue.toInt()} / ${kpi.targetValue.toInt()} ${kpi.unit}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondaryLight,
+                        ),
+                      ),
+                    ),
+                    if (kpi.hasLongTermTarget) ...[
+                      const SizedBox(width: 4),
+                      Text(
+                        'Goal: ${_formatMetric(kpi.longTermTarget!)}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? AppColors.primaryLight
+                              : AppColors.primaryDark,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 4,
+                    backgroundColor: isDark
+                        ? AppColors.surfaceVariantDark
+                        : AppColors.surfaceVariantLight,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isMet ? AppColors.statusDone : platformColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _incrementKpiByCategory(
+      String category, String unitKeyword, double delta) async {
+    final kpis = ref.read(allKpisStreamProvider).valueOrNull ?? [];
+    if (kpis.isEmpty) return;
+
+    KpiDefinition? target;
+    for (final k in kpis) {
+      if (k.metricCategory.toLowerCase() == category.toLowerCase() &&
+          k.unit.toLowerCase().contains(unitKeyword.toLowerCase())) {
+        target = k;
+        break;
+      }
+    }
+    target ??= kpis.cast<KpiDefinition?>().firstWhere(
+          (k) => k?.metricCategory.toLowerCase() == category.toLowerCase(),
+          orElse: () => null,
+        );
+    target ??= kpis.cast<KpiDefinition?>().firstWhere(
+          (k) =>
+              k?.unit.toLowerCase().contains(unitKeyword.toLowerCase()) ??
+              false,
+          orElse: () => null,
+        );
+    target ??= kpis.first;
+
+    await ref
+        .read(kpiRepositoryProvider)
+        .incrementCurrentValue(target.id, delta);
+    if (mounted) {
+      context.showSnackBar(
+        'Logged +${delta.toInt()} ${target.unit} for ${target.name}!',
+      );
+    }
   }
 
   // ===========================================================================
@@ -1857,34 +2671,75 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Future<void> _showEditKpiDialog(
       BuildContext context, KpiDefinition kpi) async {
-    final textCtrl = TextEditingController(
+    final currentCtrl = TextEditingController(
       text: kpi.currentValue.toInt().toString(),
+    );
+    final targetCtrl = TextEditingController(
+      text: kpi.targetValue.toInt().toString(),
+    );
+    final longTermCtrl = TextEditingController(
+      text: kpi.longTermTarget?.toInt().toString() ?? '',
     );
 
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Update ${kpi.name}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Enter your updated current count (${kpi.unit}):',
-              style: const TextStyle(fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: textCtrl,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              autofocus: true,
-              decoration: InputDecoration(
-                suffixText: kpi.unit,
-                border: const OutlineInputBorder(),
+        title: Text('Edit ${kpi.name}'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Current Value (${kpi.unit}):',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
               ),
-            ),
-          ],
+              const SizedBox(height: 6),
+              TextField(
+                controller: currentCtrl,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  suffixText: kpi.unit,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Period Target (${kpi.period.displayName}):',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: targetCtrl,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  suffixText: kpi.unit,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Long-Term Milestone Goal:',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: longTermCtrl,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  hintText: 'e.g. 10000',
+                  suffixText: kpi.unit,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -1893,15 +2748,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           FilledButton(
             onPressed: () async {
-              final val = double.tryParse(textCtrl.text.trim());
-              if (val != null) {
-                await ref
-                    .read(kpiRepositoryProvider)
-                    .updateCurrentValue(kpi.id, val);
-              }
+              final currentVal = double.tryParse(currentCtrl.text.trim()) ??
+                  kpi.currentValue;
+              final targetVal = double.tryParse(targetCtrl.text.trim()) ??
+                  kpi.targetValue;
+              final longTermVal =
+                  double.tryParse(longTermCtrl.text.trim()) ?? kpi.longTermTarget;
+
+              final updated = kpi.copyWith(
+                currentValue: currentVal,
+                targetValue: targetVal,
+                longTermTarget: longTermVal,
+                updatedAt: DateTime.now(),
+              );
+
+              await ref.read(kpiRepositoryProvider).updateKpi(updated);
               if (ctx.mounted) Navigator.of(ctx).pop();
             },
-            child: const Text('Save'),
+            child: const Text('Save Changes'),
           ),
         ],
       ),
