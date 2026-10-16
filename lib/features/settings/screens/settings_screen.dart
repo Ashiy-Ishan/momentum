@@ -45,7 +45,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final TextEditingController _displayNameController = TextEditingController();
 
   bool _isAuthLoading = false;
+  bool _isUrlObscured = true;
   bool _isKeyObscured = true;
+  bool _showPlainUrlInSummary = false;
   bool _isPasswordObscured = true;
   bool _isConfirmPasswordObscured = true;
   bool _isTestingConnection = false;
@@ -310,7 +312,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
-          // Section 1: Appearance
+          // Section 1: User Account & Authentication (Placed at the top)
+          _buildAccountSection(context, theme, supabase, syncStatus),
+          AppSpacing.vGapLg,
+
+          // Section 2: Appearance
           _buildSectionHeader('Appearance', Icons.palette_outlined),
           Card(
             elevation: 0,
@@ -1356,8 +1362,58 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   // ===========================================================================
-  // CLOUD SYNC & SUPABASE HELPERS
+  // USER ACCOUNT & SUPABASE HELPERS
   // ===========================================================================
+
+  Widget _buildAccountSection(
+    BuildContext context,
+    ThemeData theme,
+    MomentumSupabaseClient supabase,
+    SyncEngineStatus? syncStatus,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('User Account', Icons.account_circle_outlined),
+        Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            side: BorderSide(color: theme.dividerColor.withValues(alpha: 0.5)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: supabase.isAuthenticated
+                ? _buildAuthenticatedUserProfile(
+                    context,
+                    supabase,
+                    syncStatus,
+                    theme,
+                  )
+                : _buildAuthSection(theme, supabase),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _maskUrl(String url) {
+    if (url.isEmpty) return 'Configured Cloud Database';
+    final uri = Uri.tryParse(url);
+    if (uri != null && uri.host.isNotEmpty) {
+      final hostParts = uri.host.split('.');
+      if (hostParts.length >= 2) {
+        final subdomain = hostParts.first;
+        final maskedPrefix =
+            subdomain.length > 4 ? subdomain.substring(0, 3) : '';
+        final maskedSub = '$maskedPrefix••••••••';
+        final remaining = hostParts.sublist(1).join('.');
+        final port = uri.hasPort ? ':${uri.port}' : '';
+        return '${uri.scheme}://$maskedSub.$remaining$port';
+      }
+    }
+    return url.length > 8 ? '${url.substring(0, 8)}••••••••' : '••••••••';
+  }
 
   Widget _buildSupabaseSection(
     ThemeData theme,
@@ -1422,10 +1478,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: !supabase.isConfigured
-                              ? theme.hintColor
-                              : syncStatus == SyncEngineStatus.syncing
-                                  ? theme.colorScheme.primary
-                                  : AppColors.statusDone,
+                            ? theme.hintColor
+                            : syncStatus == SyncEngineStatus.syncing
+                                ? theme.colorScheme.primary
+                                : AppColors.statusDone,
                         ),
                       ),
                     ],
@@ -1447,22 +1503,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 AppSpacing.vGapMd,
                 _buildSupabaseCredentialsInputs(theme),
               ],
-            ],
-
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 12),
-
-            // Account & Sync Section
-            if (supabase.isAuthenticated) ...[
-              _buildAuthenticatedUserProfile(
-                context,
-                supabase,
-                syncStatus,
-                theme,
-              ),
-            ] else ...[
-              _buildAuthSection(theme, supabase),
             ],
           ],
         ),
@@ -1534,10 +1574,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   'Connected to Project',
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 ),
-                Text(
-                  url.isNotEmpty ? url : 'Configured Supabase Backend',
-                  style: TextStyle(fontSize: 11, color: theme.hintColor),
-                  overflow: TextOverflow.ellipsis,
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        _showPlainUrlInSummary
+                            ? (url.isNotEmpty
+                                ? url
+                                : 'Configured Supabase Backend')
+                            : _maskUrl(url),
+                        style: TextStyle(fontSize: 11, color: theme.hintColor),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(4),
+                      onTap: () {
+                        setState(() {
+                          _showPlainUrlInSummary = !_showPlainUrlInSummary;
+                        });
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(2),
+                        child: Icon(
+                          _showPlainUrlInSummary
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                          size: 13,
+                          color: theme.hintColor,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1566,10 +1635,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       children: [
         TextField(
           controller: _supabaseUrlController,
+          obscureText: _isUrlObscured,
           decoration: InputDecoration(
             labelText: 'Supabase Project URL',
             hintText: 'https://xxx.supabase.co',
             prefixIcon: const Icon(Icons.link),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _isUrlObscured ? Icons.visibility : Icons.visibility_off,
+              ),
+              onPressed: () => setState(() => _isUrlObscured = !_isUrlObscured),
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
