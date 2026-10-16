@@ -47,39 +47,58 @@ class AppDatabase extends _$AppDatabase {
     },
     onUpgrade: (Migrator m, int from, int to) async {
       if (from < 2) {
-        await m.addColumn(kpiDefinitions, kpiDefinitions.currentValue);
-        await m.addColumn(kpiDefinitions, kpiDefinitions.longTermTarget);
-        await m.addColumn(kpiDefinitions, kpiDefinitions.unit);
-        await m.addColumn(kpiDefinitions, kpiDefinitions.platform);
-        await m.addColumn(kpiDefinitions, kpiDefinitions.metricCategory);
+        try {
+          final result = await customSelect('PRAGMA table_info(kpi_definitions)').get();
+          final existingColumns = result.map((row) => row.read<String>('name')).toSet();
+
+          if (!existingColumns.contains('current_value')) {
+            await m.addColumn(kpiDefinitions, kpiDefinitions.currentValue);
+          }
+          if (!existingColumns.contains('long_term_target')) {
+            await m.addColumn(kpiDefinitions, kpiDefinitions.longTermTarget);
+          }
+          if (!existingColumns.contains('unit')) {
+            await m.addColumn(kpiDefinitions, kpiDefinitions.unit);
+          }
+          if (!existingColumns.contains('platform')) {
+            await m.addColumn(kpiDefinitions, kpiDefinitions.platform);
+          }
+          if (!existingColumns.contains('metric_category')) {
+            await m.addColumn(kpiDefinitions, kpiDefinitions.metricCategory);
+          }
+        } catch (_) {}
       }
     },
     beforeOpen: (details) async {
-      // Defensive migration to ensure existing databases have the new columns
       try {
-        await customStatement(
-          'ALTER TABLE kpi_definitions ADD COLUMN current_value REAL NOT NULL DEFAULT 0.0',
-        );
-      } catch (_) {}
-      try {
-        await customStatement(
-          'ALTER TABLE kpi_definitions ADD COLUMN long_term_target REAL',
-        );
-      } catch (_) {}
-      try {
-        await customStatement(
-          'ALTER TABLE kpi_definitions ADD COLUMN unit TEXT NOT NULL DEFAULT "count"',
-        );
-      } catch (_) {}
-      try {
-        await customStatement(
-          'ALTER TABLE kpi_definitions ADD COLUMN platform TEXT NOT NULL DEFAULT "general"',
-        );
-      } catch (_) {}
-      try {
-        await customStatement(
-          'ALTER TABLE kpi_definitions ADD COLUMN metric_category TEXT NOT NULL DEFAULT "output"',
-        );
+        final result = await customSelect('PRAGMA table_info(kpi_definitions)').get();
+        final existingColumns = result.map((row) => row.read<String>('name')).toSet();
+
+        if (!existingColumns.contains('current_value')) {
+          await customStatement(
+            'ALTER TABLE kpi_definitions ADD COLUMN current_value REAL NOT NULL DEFAULT 0.0',
+          );
+        }
+        if (!existingColumns.contains('long_term_target')) {
+          await customStatement(
+            'ALTER TABLE kpi_definitions ADD COLUMN long_term_target REAL',
+          );
+        }
+        if (!existingColumns.contains('unit')) {
+          await customStatement(
+            'ALTER TABLE kpi_definitions ADD COLUMN unit TEXT NOT NULL DEFAULT "count"',
+          );
+        }
+        if (!existingColumns.contains('platform')) {
+          await customStatement(
+            'ALTER TABLE kpi_definitions ADD COLUMN platform TEXT NOT NULL DEFAULT "general"',
+          );
+        }
+        if (!existingColumns.contains('metric_category')) {
+          await customStatement(
+            'ALTER TABLE kpi_definitions ADD COLUMN metric_category TEXT NOT NULL DEFAULT "output"',
+          );
+        }
       } catch (_) {}
     },
   );
