@@ -1,9 +1,11 @@
 import 'package:drift/drift.dart';
 
 import '../../core/constants/default_labels.dart';
+import '../../domain/enums/enums.dart';
 import '../../domain/models/models.dart' as domain;
 import '../local/daos/labels_dao.dart';
 import '../local/database.dart' as db;
+import '../sync/sync_engine.dart';
 
 /// Contract for category/label data operations and hierarchy management.
 abstract class LabelRepository {
@@ -45,10 +47,12 @@ abstract class LabelRepository {
 class LabelRepositoryImpl implements LabelRepository {
   final db.AppDatabase database;
   final LabelsDao labelsDao;
+  final SyncEngine? syncEngine;
 
   LabelRepositoryImpl({
     required this.database,
     required this.labelsDao,
+    this.syncEngine,
   });
 
   @override
@@ -72,21 +76,57 @@ class LabelRepositoryImpl implements LabelRepository {
   @override
   Future<void> createLabel(domain.Label label) async {
     await labelsDao.insertLabel(_mapLabelToCompanion(label));
+
+    await syncEngine?.enqueueOperation(
+      tableName: 'labels',
+      recordId: label.id,
+      operation: SyncOperation.insert,
+      payload: label.toMap(),
+    );
   }
 
   @override
   Future<void> updateLabel(domain.Label label) async {
     await labelsDao.updateLabel(_mapLabelToCompanion(label));
+
+    await syncEngine?.enqueueOperation(
+      tableName: 'labels',
+      recordId: label.id,
+      operation: SyncOperation.update,
+      payload: label.toMap(),
+    );
   }
 
   @override
   Future<void> archiveLabel(String id, bool archive) async {
     await labelsDao.archiveLabel(id, archive);
+
+    await syncEngine?.enqueueOperation(
+      tableName: 'labels',
+      recordId: id,
+      operation: SyncOperation.update,
+      payload: {
+        'id': id,
+        'is_archived': archive,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+    );
   }
 
   @override
   Future<void> deleteLabel(String id) async {
     await labelsDao.softDeleteLabel(id);
+
+    await syncEngine?.enqueueOperation(
+      tableName: 'labels',
+      recordId: id,
+      operation: SyncOperation.delete,
+      payload: {
+        'id': id,
+        'is_deleted': true,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+    );
   }
 
   @override

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_icons.dart';
 import '../../../core/theme/theme.dart';
 import '../../../core/utils/date_utils.dart';
+import '../../../domain/models/models.dart';
 import '../../analytics/providers/analytics_providers.dart';
 import '../../tasks/providers/task_providers.dart';
 import '../../tasks/widgets/task_card.dart';
@@ -29,6 +30,7 @@ class ParentLabelDashboardScreen extends ConsumerStatefulWidget {
 class _ParentLabelDashboardScreenState
     extends ConsumerState<ParentLabelDashboardScreen> {
   int _touchedPieIndex = -1;
+  String? _selectedFilterId; // null = all platform tasks, or parent.id, or specific child.id
 
   Color _colorFromHex(String? hex, Color fallback) {
     if (hex == null || hex.isEmpty) return fallback;
@@ -60,8 +62,28 @@ class _ParentLabelDashboardScreenState
           final parent = summary.parentLabel;
           final parentColor =
               _colorFromHex(parent.color, theme.colorScheme.primary);
+          final childMap = {
+            for (final cm in summary.childMetrics) cm.label.id: cm.label,
+          };
+          final childIds = childMap.keys.toSet();
+          final platformTasks = allTasks
+              .where((t) =>
+                  t.labelId == parent.id ||
+                  (t.labelId != null && childIds.contains(t.labelId)))
+              .toList();
           final directTasks =
               allTasks.where((t) => t.labelId == parent.id).toList();
+
+          final List<Task> displayedTasks;
+          if (_selectedFilterId == null) {
+            displayedTasks = platformTasks;
+          } else if (_selectedFilterId == parent.id) {
+            displayedTasks = directTasks;
+          } else {
+            displayedTasks = platformTasks
+                .where((t) => t.labelId == _selectedFilterId)
+                .toList();
+          }
 
           return CustomScrollView(
             slivers: [
@@ -241,14 +263,14 @@ class _ParentLabelDashboardScreenState
                         AppSpacing.vGapLg,
                       ],
 
-                      // Direct Tasks for this Parent Label
+                      // Platform & Sub-Project Tasks
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Direct Focus Tasks (${directTasks.length})',
+                              'Focus Tasks (${platformTasks.length})',
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -259,15 +281,60 @@ class _ParentLabelDashboardScreenState
                               onPressed: () {
                                 context.push(
                                   '/tasks/new',
-                                  extra: {'parentLabelId': parent.id},
+                                  extra: {
+                                    'parentLabelId': parent.id,
+                                    if (_selectedFilterId != null &&
+                                        _selectedFilterId != parent.id)
+                                      'subLabelId': _selectedFilterId,
+                                  },
                                 );
                               },
                             ),
                           ],
                         ),
                       ),
+                      if (summary.childMetrics.isNotEmpty) ...[
+                        AppSpacing.vGapXs,
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Row(
+                            children: [
+                              FilterChip(
+                                label: Text('All (${platformTasks.length})'),
+                                selected: _selectedFilterId == null,
+                                onSelected: (_) {
+                                  setState(() => _selectedFilterId = null);
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                              FilterChip(
+                                label: Text('Direct (${directTasks.length})'),
+                                selected: _selectedFilterId == parent.id,
+                                onSelected: (_) {
+                                  setState(() => _selectedFilterId = parent.id);
+                                },
+                              ),
+                              for (final cm in summary.childMetrics) ...[
+                                const SizedBox(width: 8),
+                                FilterChip(
+                                  label: Text(
+                                    '${cm.label.name} (${platformTasks.where((t) => t.labelId == cm.label.id).length})',
+                                  ),
+                                  selected: _selectedFilterId == cm.label.id,
+                                  onSelected: (_) {
+                                    setState(
+                                      () => _selectedFilterId = cm.label.id,
+                                    );
+                                  },
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                       AppSpacing.vGapSm,
-                      if (directTasks.isEmpty)
+                      if (displayedTasks.isEmpty)
                         Padding(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 8),
@@ -275,13 +342,15 @@ class _ParentLabelDashboardScreenState
                             elevation: 0,
                             color: theme.colorScheme.surfaceContainerHighest
                                 .withValues(alpha: 0.3),
-                            child: const Padding(
-                              padding: EdgeInsets.all(16),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
                               child: Center(
                                 child: Text(
-                                  'No direct tasks for this parent label. Tasks can also be assigned directly to sub-labels.',
+                                  _selectedFilterId == null
+                                      ? 'No tasks logged yet for ${parent.name}. Create one to get started!'
+                                      : 'No tasks found for this selected sub-project.',
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 13),
+                                  style: const TextStyle(fontSize: 13),
                                 ),
                               ),
                             ),
@@ -291,12 +360,12 @@ class _ParentLabelDashboardScreenState
                         ListView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          itemCount: directTasks.length,
+                          itemCount: displayedTasks.length,
                           itemBuilder: (context, index) {
-                            final task = directTasks[index];
+                            final task = displayedTasks[index];
                             return TaskCard(
                               task: task,
-                              showLabel: false,
+                              showLabel: task.labelId != parent.id,
                               onEdit: () =>
                                   context.push('/tasks/edit/${task.id}'),
                             );

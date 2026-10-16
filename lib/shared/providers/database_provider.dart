@@ -4,6 +4,7 @@ import '../../data/local/daos/daos.dart';
 import '../../data/local/database.dart';
 import '../../data/remote/supabase_client.dart';
 import '../../data/repositories/repositories.dart';
+import '../../data/sync/sync_engine.dart';
 
 /// Central Drift database instance provider.
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
@@ -56,6 +57,7 @@ final taskRepositoryProvider = Provider<TaskRepository>((ref) {
     database: ref.watch(appDatabaseProvider),
     tasksDao: ref.watch(tasksDaoProvider),
     occurrencesDao: ref.watch(occurrencesDaoProvider),
+    syncEngine: ref.watch(syncEngineProvider),
   );
 });
 
@@ -64,6 +66,7 @@ final labelRepositoryProvider = Provider<LabelRepository>((ref) {
   return LabelRepositoryImpl(
     database: ref.watch(appDatabaseProvider),
     labelsDao: ref.watch(labelsDaoProvider),
+    syncEngine: ref.watch(syncEngineProvider),
   );
 });
 
@@ -72,6 +75,7 @@ final kpiRepositoryProvider = Provider<KpiRepository>((ref) {
   return KpiRepositoryImpl(
     database: ref.watch(appDatabaseProvider),
     kpiDao: ref.watch(kpiDaoProvider),
+    syncEngine: ref.watch(syncEngineProvider),
   );
 });
 

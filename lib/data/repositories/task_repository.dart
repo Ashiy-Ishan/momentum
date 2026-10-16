@@ -6,6 +6,7 @@ import '../../domain/models/models.dart' as domain;
 import '../local/daos/occurrences_dao.dart';
 import '../local/daos/tasks_dao.dart';
 import '../local/database.dart' as db;
+import '../sync/sync_engine.dart';
 
 /// Contract for task data operations and persistence.
 abstract class TaskRepository {
@@ -63,12 +64,14 @@ class TaskRepositoryImpl implements TaskRepository {
   final db.AppDatabase database;
   final TasksDao tasksDao;
   final OccurrencesDao occurrencesDao;
+  final SyncEngine? syncEngine;
   static const Uuid _uuid = Uuid();
 
   TaskRepositoryImpl({
     required this.database,
     required this.tasksDao,
     required this.occurrencesDao,
+    this.syncEngine,
   });
 
   @override
@@ -143,29 +146,84 @@ class TaskRepositoryImpl implements TaskRepository {
             ),
           );
       finalTask = task.copyWith(recurrenceRuleId: recurrence.id);
+
+      await syncEngine?.enqueueOperation(
+        tableName: 'recurrence_rules',
+        recordId: recurrence.id,
+        operation: SyncOperation.insert,
+        payload: recurrence.toMap(),
+      );
     }
 
     await tasksDao.insertTask(_mapTaskToCompanion(finalTask));
+
+    await syncEngine?.enqueueOperation(
+      tableName: 'tasks',
+      recordId: finalTask.id,
+      operation: SyncOperation.insert,
+      payload: finalTask.toMap(),
+    );
   }
 
   @override
   Future<void> updateTask(domain.Task task) async {
     await tasksDao.updateTask(_mapTaskToCompanion(task));
+
+    await syncEngine?.enqueueOperation(
+      tableName: 'tasks',
+      recordId: task.id,
+      operation: SyncOperation.update,
+      payload: task.toMap(),
+    );
   }
 
   @override
   Future<void> deleteTask(String id) async {
     await tasksDao.softDeleteTask(id);
+
+    await syncEngine?.enqueueOperation(
+      tableName: 'tasks',
+      recordId: id,
+      operation: SyncOperation.delete,
+      payload: {
+        'id': id,
+        'is_deleted': true,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+    );
   }
 
   @override
   Future<void> archiveTask(String id, bool archive) async {
     await tasksDao.archiveTask(id, archive);
+
+    await syncEngine?.enqueueOperation(
+      tableName: 'tasks',
+      recordId: id,
+      operation: SyncOperation.update,
+      payload: {
+        'id': id,
+        'is_archived': archive,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+    );
   }
 
   @override
   Future<void> setTaskStatus(String id, TaskStatus status) async {
+    final now = DateTime.now();
     await tasksDao.updateTaskStatus(id, status.name);
+
+    await syncEngine?.enqueueOperation(
+      tableName: 'tasks',
+      recordId: id,
+      operation: SyncOperation.update,
+      payload: {
+        'id': id,
+        'status': status.name,
+        'updated_at': now.toIso8601String(),
+      },
+    );
   }
 
   @override
@@ -224,10 +282,11 @@ class TaskRepositoryImpl implements TaskRepository {
       );
     }
 
+    final eventId = _uuid.v4();
     // Insert completion event log
     await occurrencesDao.insertCompletionEvent(
       db.CompletionEventsCompanion(
-        id: Value(_uuid.v4()),
+        id: Value(eventId),
         userId: Value(userId),
         taskId: Value(taskId),
         occurrenceId: Value(occurrenceId),
@@ -241,6 +300,54 @@ class TaskRepositoryImpl implements TaskRepository {
     final taskRow = await tasksDao.getTaskById(taskId);
     if (taskRow != null && taskRow.recurrenceRuleId == null) {
       await tasksDao.updateTaskStatus(taskId, TaskStatus.done.name);
+    }
+
+    // Sync occurrence and completion event to cloud
+    await syncEngine?.enqueueOperation(
+      tableName: 'task_occurrences',
+      recordId: occurrenceId,
+      operation: SyncOperation.insert,
+      payload: {
+        'id': occurrenceId,
+        'user_id': userId,
+        'task_id': taskId,
+        'occurrence_date': occurrenceDate.toIso8601String(),
+        'status': TaskStatus.done.name,
+        'completed_at': now.toIso8601String(),
+        'created_at': now.toIso8601String(),
+        'updated_at': now.toIso8601String(),
+        'version': 1,
+        'is_deleted': false,
+      },
+    );
+
+    await syncEngine?.enqueueOperation(
+      tableName: 'completion_events',
+      recordId: eventId,
+      operation: SyncOperation.insert,
+      payload: {
+        'id': eventId,
+        'user_id': userId,
+        'task_id': taskId,
+        'occurrence_id': occurrenceId,
+        'completed_at': now.toIso8601String(),
+        'notes': notes,
+        'created_at': now.toIso8601String(),
+        'is_deleted': false,
+      },
+    );
+
+    if (taskRow != null && taskRow.recurrenceRuleId == null) {
+      await syncEngine?.enqueueOperation(
+        tableName: 'tasks',
+        recordId: taskId,
+        operation: SyncOperation.update,
+        payload: {
+          'id': taskId,
+          'status': TaskStatus.done.name,
+          'updated_at': now.toIso8601String(),
+        },
+      );
     }
   }
 
@@ -288,12 +395,35 @@ class TaskRepositoryImpl implements TaskRepository {
           isDeleted: Value(true),
         ),
       );
+
+      await syncEngine?.enqueueOperation(
+        tableName: 'task_occurrences',
+        recordId: occ.id,
+        operation: SyncOperation.update,
+        payload: {
+          'id': occ.id,
+          'status': TaskStatus.pending.name,
+          'completed_at': null,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+      );
     }
 
     // If the task is non-recurring, revert task status to pending
     final taskRow = await tasksDao.getTaskById(taskId);
     if (taskRow != null && taskRow.recurrenceRuleId == null) {
       await tasksDao.updateTaskStatus(taskId, TaskStatus.pending.name);
+
+      await syncEngine?.enqueueOperation(
+        tableName: 'tasks',
+        recordId: taskId,
+        operation: SyncOperation.update,
+        payload: {
+          'id': taskId,
+          'status': TaskStatus.pending.name,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+      );
     }
   }
 

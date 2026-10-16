@@ -120,6 +120,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final quoteAsync = ref.watch(currentQuoteProvider);
     final statsAsync = ref.watch(dashboardStatsProvider);
     final todayTasksAsync = ref.watch(todayTasksStreamProvider);
+    final allTasks = ref.watch(allTasksStreamProvider).valueOrNull ?? [];
     final rootLabelsAsync = ref.watch(rootLabelsStreamProvider);
     final allLabels = ref.watch(allLabelsStreamProvider).valueOrNull ?? [];
     final allKpisAsync = ref.watch(allKpisStreamProvider);
@@ -228,6 +229,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               rootLabelsAsync: rootLabelsAsync,
               allLabels: allLabels,
               allKpis: allKpisAsync.valueOrNull ?? [],
+              allTasks: allTasks,
             ),
 
             const SizedBox(height: 24),
@@ -2204,6 +2206,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     required AsyncValue<List<Label>> rootLabelsAsync,
     required List<Label> allLabels,
     required List<KpiDefinition> allKpis,
+    required List<Task> allTasks,
   }) {
     final theme = Theme.of(context);
 
@@ -2250,8 +2253,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 itemCount: labels.length,
                 itemBuilder: (context, index) {
                   final label = labels[index];
-                  final childCount =
-                      allLabels.where((l) => l.parentId == label.id).length;
+                  final childLabels =
+                      allLabels.where((l) => l.parentId == label.id).toList();
+                  final childIds = childLabels.map((l) => l.id).toSet();
+                  final platformTasks = allTasks
+                      .where((t) =>
+                          t.labelId == label.id ||
+                          (t.labelId != null && childIds.contains(t.labelId)))
+                      .toList();
                   final matchingKpis = allKpis.where((k) {
                     if (k.labelId == label.id) return true;
                     final lname = label.name.toLowerCase();
@@ -2279,8 +2288,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   return _buildPastelCategoryCard(
                     context,
                     label: label,
-                    subLabelCount: childCount,
+                    subLabelCount: childLabels.length,
                     matchingKpis: matchingKpis,
+                    platformTasks: platformTasks,
                     isDark: isDark,
                   );
                 },
@@ -2302,6 +2312,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     required Label label,
     required int subLabelCount,
     required List<KpiDefinition> matchingKpis,
+    required List<Task> platformTasks,
     required bool isDark,
   }) {
     final theme = Theme.of(context);
@@ -2374,7 +2385,60 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    if (matchingKpis.isNotEmpty) ...[
+                    if (platformTasks.isNotEmpty) ...[
+                      () {
+                        final completedCount = platformTasks
+                            .where((t) => t.status == TaskStatus.done)
+                            .length;
+                        final totalCount = platformTasks.length;
+                        final progress =
+                            (completedCount / totalCount).clamp(0.0, 1.0);
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    '$completedCount/$totalCount tasks',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: accentColor,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${(progress * 100).toInt()}%',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(3),
+                              child: LinearProgressIndicator(
+                                value: progress,
+                                minHeight: 4,
+                                backgroundColor:
+                                    accentColor.withValues(alpha: 0.18),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(accentColor),
+                              ),
+                            ),
+                          ],
+                        );
+                      }(),
+                    ] else if (matchingKpis.isNotEmpty) ...[
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [

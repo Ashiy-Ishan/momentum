@@ -5,6 +5,7 @@ import '../../domain/enums/enums.dart';
 import '../../domain/models/models.dart' as domain;
 import '../local/daos/kpi_dao.dart';
 import '../local/database.dart' as db;
+import '../sync/sync_engine.dart';
 
 /// Contract for Key Performance Indicator (KPI) metrics tracking.
 abstract class KpiRepository {
@@ -46,10 +47,12 @@ abstract class KpiRepository {
 class KpiRepositoryImpl implements KpiRepository {
   final db.AppDatabase database;
   final KpiDao kpiDao;
+  final SyncEngine? syncEngine;
 
   KpiRepositoryImpl({
     required this.database,
     required this.kpiDao,
+    this.syncEngine,
   });
 
   @override
@@ -67,26 +70,78 @@ class KpiRepositoryImpl implements KpiRepository {
   @override
   Future<void> createKpi(domain.KpiDefinition kpi) async {
     await kpiDao.insertKpi(_mapKpiToCompanion(kpi));
+
+    await syncEngine?.enqueueOperation(
+      tableName: 'kpi_definitions',
+      recordId: kpi.id,
+      operation: SyncOperation.insert,
+      payload: kpi.toMap(),
+    );
   }
 
   @override
   Future<void> updateKpi(domain.KpiDefinition kpi) async {
     await kpiDao.updateKpi(_mapKpiToCompanion(kpi));
+
+    await syncEngine?.enqueueOperation(
+      tableName: 'kpi_definitions',
+      recordId: kpi.id,
+      operation: SyncOperation.update,
+      payload: kpi.toMap(),
+    );
   }
 
   @override
   Future<void> updateCurrentValue(String id, double newValue) async {
     await kpiDao.updateCurrentValue(id, newValue);
+
+    await syncEngine?.enqueueOperation(
+      tableName: 'kpi_definitions',
+      recordId: id,
+      operation: SyncOperation.update,
+      payload: {
+        'id': id,
+        'current_value': newValue,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+    );
   }
 
   @override
   Future<void> incrementCurrentValue(String id, double delta) async {
     await kpiDao.incrementCurrentValue(id, delta);
+
+    final row = await (database.select(database.kpiDefinitions)
+          ..where((tbl) => tbl.id.equals(id)))
+        .getSingleOrNull();
+    if (row != null) {
+      await syncEngine?.enqueueOperation(
+        tableName: 'kpi_definitions',
+        recordId: id,
+        operation: SyncOperation.update,
+        payload: {
+          'id': id,
+          'current_value': row.currentValue,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+      );
+    }
   }
 
   @override
   Future<void> deleteKpi(String id) async {
     await kpiDao.softDeleteKpi(id);
+
+    await syncEngine?.enqueueOperation(
+      tableName: 'kpi_definitions',
+      recordId: id,
+      operation: SyncOperation.delete,
+      payload: {
+        'id': id,
+        'is_deleted': true,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+    );
   }
 
   @override

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/enums/enums.dart';
 import '../../../domain/models/models.dart';
 import '../../../shared/providers/database_provider.dart';
+import '../../labels/providers/label_providers.dart';
 import '../../tasks/providers/task_providers.dart';
 
 // =============================================================================
@@ -144,6 +145,7 @@ final labelKpisProvider =
   final kpiRepo = ref.watch(kpiRepositoryProvider);
   final timerRepo = ref.watch(timerRepositoryProvider);
   final taskRepo = ref.watch(taskRepositoryProvider);
+  ref.watch(allTasksStreamProvider);
 
   return kpiRepo.watchKpisForLabel(labelId).asyncMap((kpis) async {
     final summaries = <LabelKpiSummary>[];
@@ -336,6 +338,7 @@ class TotalKpiMetrics {
 /// Computes comprehensive aggregate KPI output and audience reach across all platforms.
 final totalKpiMetricsProvider = Provider<AsyncValue<TotalKpiMetrics>>((ref) {
   final allKpisAsync = ref.watch(allKpisStreamProvider);
+  final allTasks = ref.watch(allTasksStreamProvider).valueOrNull ?? [];
 
   return allKpisAsync.whenData((kpis) {
     if (kpis.isEmpty) return const TotalKpiMetrics();
@@ -373,12 +376,32 @@ final totalKpiMetricsProvider = Provider<AsyncValue<TotalKpiMetrics>>((ref) {
     final allItems = <AggregateMetricItem>[];
 
     for (final kpi in kpis) {
+      double effectiveCurrent = kpi.currentValue;
+      if (effectiveCurrent == 0.0 && allTasks.isNotEmpty) {
+        final cat = kpi.metricCategory.toLowerCase();
+        final platform = kpi.platform.toLowerCase();
+        final matchingTasks = allTasks.where((t) {
+          if (kpi.labelId != null && t.labelId == kpi.labelId) return true;
+          final tcat = (t.category ?? '').toLowerCase();
+          if (tcat.isNotEmpty &&
+              (tcat == cat || tcat == platform || tcat.contains(cat))) {
+            return true;
+          }
+          return false;
+        });
+        final completed =
+            matchingTasks.where((t) => t.status == TaskStatus.done).length;
+        if (completed > 0) {
+          effectiveCurrent = completed.toDouble();
+        }
+      }
+
       final isAchieved =
-          kpi.targetValue > 0 && kpi.currentValue >= kpi.targetValue;
+          kpi.targetValue > 0 && effectiveCurrent >= kpi.targetValue;
       if (isAchieved) achievedCount++;
 
       final prog = kpi.targetValue > 0
-          ? (kpi.currentValue / kpi.targetValue).clamp(0.0, 1.0)
+          ? (effectiveCurrent / kpi.targetValue).clamp(0.0, 1.0)
           : 0.0;
       progressSum += prog;
 
@@ -386,7 +409,7 @@ final totalKpiMetricsProvider = Provider<AsyncValue<TotalKpiMetrics>>((ref) {
         id: kpi.id,
         platform: kpi.platform,
         name: kpi.name,
-        currentValue: kpi.currentValue,
+        currentValue: effectiveCurrent,
         targetValue: kpi.targetValue,
         longTermTarget: kpi.longTermTarget,
         unit: kpi.unit,
@@ -408,7 +431,7 @@ final totalKpiMetricsProvider = Provider<AsyncValue<TotalKpiMetrics>>((ref) {
           unit == 'stars';
 
       if (isAudience) {
-        audienceCurrent += kpi.currentValue;
+        audienceCurrent += effectiveCurrent;
         audienceShortTarget += kpi.targetValue;
         if (kpi.longTermTarget != null) {
           audienceLongTarget += kpi.longTermTarget!;
@@ -419,31 +442,31 @@ final totalKpiMetricsProvider = Provider<AsyncValue<TotalKpiMetrics>>((ref) {
 
         if (unit.contains('video') ||
             (cat == 'video_generation' && !unit.contains('short'))) {
-          videosCurrent += kpi.currentValue;
+          videosCurrent += effectiveCurrent;
           videosTarget += kpi.targetValue;
           if (kpi.longTermTarget != null) {
             videosLongTerm = (videosLongTerm ?? 0) + kpi.longTermTarget!;
           }
         } else if (unit.contains('short')) {
-          shortsCurrent += kpi.currentValue;
+          shortsCurrent += effectiveCurrent;
           shortsTarget += kpi.targetValue;
           if (kpi.longTermTarget != null) {
             shortsLongTerm = (shortsLongTerm ?? 0) + kpi.longTermTarget!;
           }
         } else if (cat == 'post_publication' || unit.contains('post')) {
-          postsCurrent += kpi.currentValue;
+          postsCurrent += effectiveCurrent;
           postsTarget += kpi.targetValue;
           if (kpi.longTermTarget != null) {
             postsLongTerm = (postsLongTerm ?? 0) + kpi.longTermTarget!;
           }
         } else if (cat == 'blog_publication' || unit.contains('article')) {
-          articlesCurrent += kpi.currentValue;
+          articlesCurrent += effectiveCurrent;
           articlesTarget += kpi.targetValue;
           if (kpi.longTermTarget != null) {
             articlesLongTerm = (articlesLongTerm ?? 0) + kpi.longTermTarget!;
           }
         } else if (unit.contains('commit') || name.contains('commit')) {
-          commitsCurrent += kpi.currentValue;
+          commitsCurrent += effectiveCurrent;
           commitsTarget += kpi.targetValue;
           if (kpi.longTermTarget != null) {
             commitsLongTerm = (commitsLongTerm ?? 0) + kpi.longTermTarget!;
@@ -528,6 +551,8 @@ class ConsolidatedLabelMetrics {
 final parentLabelSummaryProvider =
     FutureProvider.family<ConsolidatedLabelMetrics?, String>(
   (ref, parentLabelId) async {
+    ref.watch(allTasksStreamProvider);
+    ref.watch(allLabelsStreamProvider);
     final labelRepo = ref.watch(labelRepositoryProvider);
     final taskRepo = ref.watch(taskRepositoryProvider);
     final timerRepo = ref.watch(timerRepositoryProvider);
