@@ -7,7 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/extensions/context_extensions.dart';
+import '../../../core/services/platform_sync_service.dart';
 import '../../../core/theme/theme.dart';
+import '../../../core/utils/date_utils.dart';
 import '../../../data/remote/supabase_client.dart';
 import '../../../data/sync/sync_engine.dart';
 import '../../../domain/enums/enums.dart';
@@ -910,13 +912,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final accounts = ref.watch(connectedAccountsProvider);
+    final anyConnected = accounts.any((a) => a.isConnected);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(
-          'Connected Creator & Social Accounts',
-          Icons.hub_outlined,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildSectionHeader(
+              'Connected Creator & Social Accounts',
+              Icons.hub_outlined,
+            ),
+            if (anyConnected)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: TextButton.icon(
+                  onPressed: () async {
+                    context.showSnackBar('Syncing all connected accounts...');
+                    await ref
+                        .read(connectedAccountsProvider.notifier)
+                        .syncAllAccounts();
+                    if (context.mounted) {
+                      context.showSnackBar('All accounts synced successfully.');
+                    }
+                  },
+                  icon: const Icon(Icons.sync_rounded, size: 14),
+                  label: const Text('Sync All', style: TextStyle(fontSize: 12)),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ),
+          ],
         ),
         Card(
           elevation: 0,
@@ -930,7 +958,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Link your developer and creator handles to display your real profiles and audience counts across your Momentum dashboard.',
+                  'Link your developer and creator handles to automatically fetch real followers, repos, stars, and organization members across your Momentum dashboard and KPIs.',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: isDark
                         ? AppColors.textSecondaryDark
@@ -943,9 +971,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   final isConnected = acc.isConnected;
 
                   return Container(
-                    margin: const EdgeInsets.only(bottom: 8),
+                    margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
+                        horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
                       color: isDark
                           ? AppColors.surfaceVariantDark.withValues(alpha: 0.3)
@@ -960,108 +988,260 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         width: 1,
                       ),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: brandColor.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Icon(
-                            _platformIcon(acc.platform),
-                            size: 16,
-                            color: brandColor,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    acc.platformDisplayName,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
+                        Row(
+                          children: [
+                            if (acc.avatarUrl != null && acc.avatarUrl!.isNotEmpty)
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  acc.avatarUrl!,
+                                  width: 28,
+                                  height: 28,
+                                  errorBuilder: (context, error, stackTrace) => Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: brandColor.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Icon(
+                                      _platformIcon(acc.platform),
+                                      size: 16,
+                                      color: brandColor,
                                     ),
                                   ),
-                                  if (isConnected) ...[
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 6, vertical: 1),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.statusDone
-                                            .withValues(alpha: 0.15),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: const Text(
-                                        'Connected',
-                                        style: TextStyle(
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.statusDone,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                isConnected
-                                    ? '${acc.handle} • ${acc.metricCount != null ? "${acc.metricCount!.toInt()} ${acc.metricUnit}" : acc.profileUrl}'
-                                    : 'Not connected yet',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: isConnected
-                                      ? (isDark
-                                          ? AppColors.textSecondaryDark
-                                          : AppColors.textSecondaryLight)
-                                      : Colors.grey,
+                                ),
+                              )
+                            else
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: brandColor.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Icon(
+                                  _platformIcon(acc.platform),
+                                  size: 16,
+                                  color: brandColor,
                                 ),
                               ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        acc.platformDisplayName,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      if (isConnected) ...[
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.statusDone
+                                                .withValues(alpha: 0.15),
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                          ),
+                                          child: const Text(
+                                            'Connected',
+                                            style: TextStyle(
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.statusDone,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                      if (acc.hasAuthToken) ...[
+                                        const SizedBox(width: 4),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary
+                                                .withValues(alpha: 0.15),
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                          ),
+                                          child: const Text(
+                                            'Token Authorized',
+                                            style: TextStyle(
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    isConnected
+                                        ? '${acc.handle}${acc.displayName != null && acc.displayName != acc.handle ? " (${acc.displayName})" : ""}'
+                                        : 'Not connected yet',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isConnected
+                                          ? (isDark
+                                              ? AppColors.textSecondaryDark
+                                              : AppColors.textSecondaryLight)
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (isConnected) ...[
+                              if (acc.isSyncing)
+                                const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2),
+                                )
+                              else
+                                IconButton(
+                                  icon: const Icon(Icons.sync_rounded, size: 16),
+                                  tooltip: 'Sync now with API',
+                                  onPressed: () async {
+                                    context.showSnackBar(
+                                        'Syncing ${acc.platformDisplayName}...');
+                                    final res = await ref
+                                        .read(connectedAccountsProvider.notifier)
+                                        .syncAccount(acc.platform);
+                                    if (context.mounted) {
+                                      if (res.success) {
+                                        context.showSnackBar(
+                                            'Synced: ${res.metricCount?.toInt()} ${res.metricUnit}');
+                                      } else {
+                                        context.showSnackBar(
+                                            res.errorMessage ?? 'Sync failed',
+                                            isError: true);
+                                      }
+                                    }
+                                  },
+                                ),
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined, size: 16),
+                                tooltip: 'Edit details & authorization',
+                                onPressed: () =>
+                                    _showConnectAccountDialog(context, acc),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.link_off_rounded,
+                                    size: 16, color: AppColors.statusCancelled),
+                                tooltip: 'Disconnect',
+                                onPressed: () async {
+                                  await ref
+                                      .read(connectedAccountsProvider.notifier)
+                                      .disconnectAccount(acc.platform);
+                                  if (context.mounted) {
+                                    context.showSnackBar(
+                                        'Disconnected ${acc.platformDisplayName}');
+                                  }
+                                },
+                              ),
+                            ] else ...[
+                              FilledButton.tonal(
+                                onPressed: () =>
+                                    _showConnectAccountDialog(context, acc),
+                                style: FilledButton.styleFrom(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                ),
+                                child: const Text('Connect',
+                                    style: TextStyle(fontSize: 12)),
+                              ),
+                            ],
+                          ],
+                        ),
+                        if (isConnected && acc.metricCount != null) ...[
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              _buildMetricChip(
+                                icon: Icons.people_outline,
+                                label:
+                                    '${acc.metricCount!.toInt()} ${acc.metricUnit ?? "followers"}',
+                                color: brandColor,
+                              ),
+                              if (acc.publicRepos != null)
+                                _buildMetricChip(
+                                  icon: Icons.source_outlined,
+                                  label: '${acc.publicRepos} public repos',
+                                  color: AppColors.primary,
+                                ),
+                              if (acc.totalStars != null && acc.totalStars! > 0)
+                                _buildMetricChip(
+                                  icon: Icons.star_border_rounded,
+                                  label: '${acc.totalStars} stars',
+                                  color: Colors.amber,
+                                ),
+                              if (acc.membersCount != null &&
+                                  acc.membersCount! > 0)
+                                _buildMetricChip(
+                                  icon: Icons.groups_outlined,
+                                  label: '${acc.membersCount} members',
+                                  color: AppColors.secondary,
+                                ),
+                              if (acc.lastUpdatedAt != null)
+                                Text(
+                                  'Synced ${AppDateUtils.formatRelativeDate(acc.lastUpdatedAt!)}',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: isDark
+                                        ? AppColors.textSecondaryDark
+                                        : AppColors.textSecondaryLight,
+                                  ),
+                                ),
                             ],
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        if (isConnected) ...[
-                          IconButton(
-                            icon: const Icon(Icons.edit_outlined, size: 16),
-                            tooltip: 'Edit details',
-                            onPressed: () =>
-                                _showConnectAccountDialog(context, acc),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.link_off_rounded,
-                                size: 16, color: AppColors.statusCancelled),
-                            tooltip: 'Disconnect',
-                            onPressed: () async {
-                              await ref
-                                  .read(connectedAccountsProvider.notifier)
-                                  .disconnectAccount(acc.platform);
-                              if (context.mounted) {
-                                context.showSnackBar(
-                                    'Disconnected ${acc.platformDisplayName}');
-                              }
-                            },
-                          ),
-                        ] else ...[
-                          FilledButton.tonal(
-                            onPressed: () =>
-                                _showConnectAccountDialog(context, acc),
-                            style: FilledButton.styleFrom(
-                              visualDensity: VisualDensity.compact,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
+                        ],
+                        if (acc.syncError != null) ...[
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.statusCancelled
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text('Connect',
-                                style: TextStyle(fontSize: 12)),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.error_outline,
+                                    size: 13,
+                                    color: AppColors.statusCancelled),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    acc.syncError!,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.statusCancelled,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ],
@@ -1077,116 +1257,384 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  Widget _buildMetricChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _showConnectAccountDialog(
       BuildContext context, ConnectedAccount acc) async {
     final handleCtrl = TextEditingController(text: acc.handle);
     final urlCtrl = TextEditingController(text: acc.profileUrl);
+    final tokenCtrl = TextEditingController(text: acc.authToken ?? '');
     final countCtrl = TextEditingController(
       text: acc.metricCount != null ? acc.metricCount!.toInt().toString() : '',
     );
 
+    bool isTesting = false;
+    PlatformSyncResult? testResult;
+    String? testError;
+    final showTokenField = acc.platform.toLowerCase() == 'github';
+    bool hideToken = true;
+
     await showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              _platformIcon(acc.platform),
-              color: AppColors.forPlatform(acc.platform),
-              size: 20,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final isDark = Theme.of(ctx).brightness == Brightness.dark;
+          final brandColor = AppColors.forPlatform(acc.platform);
+
+          return AlertDialog(
+            title: Row(
+              children: [
+                Icon(
+                  _platformIcon(acc.platform),
+                  color: brandColor,
+                  size: 22,
+                ),
+                const SizedBox(width: 10),
+                Text('Connect ${acc.platformDisplayName}'),
+              ],
             ),
-            const SizedBox(width: 8),
-            Text('Connect ${acc.platformDisplayName}'),
-          ],
-        ),
-        content: SizedBox(
-          width: 420,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: handleCtrl,
-                decoration: InputDecoration(
-                  labelText: 'Username or Handle',
-                  hintText: acc.platform == 'github'
-                      ? 'e.g. torvalds'
-                      : (acc.platform == 'linkedin'
-                          ? 'e.g. in/satyanadella'
-                          : '@channel_handle'),
-                  prefixIcon: const Icon(Icons.alternate_email, size: 18),
+            content: SizedBox(
+              width: 460,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: brandColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        border: Border.all(
+                            color: brandColor.withValues(alpha: 0.25)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.info_outline,
+                                  size: 15, color: brandColor),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Automatic Metric Synchronization',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                  color: brandColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            acc.platform.toLowerCase() == 'github'
+                                ? '• Public Sync: No login needed! Enter your GitHub username or organization to automatically fetch followers, public repos, and members.\n• Optional Token: Add a GitHub Personal Access Token to access private repos, private teams, and avoid rate limits.'
+                                : 'Enter your handle to link your profile and track consistency across your Momentum dashboard.',
+                            style: const TextStyle(fontSize: 11, height: 1.3),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: handleCtrl,
+                      onChanged: (val) {
+                        if (urlCtrl.text.isEmpty ||
+                            urlCtrl.text.startsWith('https://github.com/')) {
+                          final clean = PlatformSyncService.extractCleanHandle(
+                              val, acc.platform);
+                          if (acc.platform.toLowerCase() == 'github') {
+                            urlCtrl.text = clean.isNotEmpty
+                                ? 'https://github.com/$clean'
+                                : '';
+                          }
+                        }
+                      },
+                      decoration: InputDecoration(
+                        labelText: 'Username or Handle',
+                        hintText: acc.platform == 'github'
+                            ? 'e.g. torvalds or my-organization'
+                            : (acc.platform == 'linkedin'
+                                ? 'e.g. in/satyanadella'
+                                : '@channel_handle'),
+                        prefixIcon:
+                            const Icon(Icons.alternate_email, size: 18),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: urlCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Profile or Website URL',
+                        hintText: 'https://...',
+                        prefixIcon: Icon(Icons.link, size: 18),
+                      ),
+                    ),
+                    if (showTokenField) ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: tokenCtrl,
+                        obscureText: hideToken,
+                        decoration: InputDecoration(
+                          labelText: 'GitHub Token / PAT (Optional)',
+                          hintText: 'ghp_...',
+                          prefixIcon: const Icon(Icons.key_outlined, size: 18),
+                          suffixIcon: IconButton(
+                            icon: Icon(hideToken
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined),
+                            onPressed: () => setDialogState(
+                                () => hideToken = !hideToken),
+                          ),
+                          helperText:
+                              'Optional: Increases rate limit from 60 to 5,000/hr & reads private org members.',
+                          helperMaxLines: 2,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: countCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText:
+                                  'Audience / ${acc.metricUnit ?? "Count"}',
+                              hintText: 'Auto-fetched via API',
+                              prefixIcon:
+                                  const Icon(Icons.people_outline, size: 18),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton.tonalIcon(
+                          onPressed: isTesting
+                              ? null
+                              : () async {
+                                  final handle = handleCtrl.text.trim();
+                                  if (handle.isEmpty) {
+                                    setDialogState(() {
+                                      testError = 'Please enter a username.';
+                                      testResult = null;
+                                    });
+                                    return;
+                                  }
+
+                                  setDialogState(() {
+                                    isTesting = true;
+                                    testError = null;
+                                    testResult = null;
+                                  });
+
+                                  final syncService =
+                                      ref.read(platformSyncServiceProvider);
+                                  final res = await syncService.syncAccount(
+                                    platform: acc.platform,
+                                    rawHandle: handle,
+                                    authToken: tokenCtrl.text.trim(),
+                                  );
+
+                                  setDialogState(() {
+                                    isTesting = false;
+                                    if (res.success) {
+                                      testResult = res;
+                                      testError = null;
+                                      if (res.metricCount != null) {
+                                        countCtrl.text = res.metricCount!
+                                            .toInt()
+                                            .toString();
+                                      }
+                                      if (acc.platform.toLowerCase() ==
+                                              'github' &&
+                                          urlCtrl.text.isEmpty) {
+                                        urlCtrl.text =
+                                            'https://github.com/${res.handle}';
+                                      }
+                                    } else {
+                                      testError = res.errorMessage;
+                                      testResult = null;
+                                    }
+                                  });
+                                },
+                          icon: isTesting
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2),
+                                )
+                              : const Icon(Icons.cloud_sync_outlined, size: 16),
+                          label: const Text('Fetch Live',
+                              style: TextStyle(fontSize: 12)),
+                        ),
+                      ],
+                    ),
+                    if (testResult != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.statusDone.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                          border: Border.all(
+                            color:
+                                AppColors.statusDone.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            if (testResult!.avatarUrl != null)
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: Image.network(
+                                  testResult!.avatarUrl!,
+                                  width: 32,
+                                  height: 32,
+                                  errorBuilder: (context, error, stackTrace) => const Icon(
+                                      Icons.check_circle,
+                                      color: AppColors.statusDone,
+                                      size: 24),
+                                ),
+                              )
+                            else
+                              const Icon(Icons.check_circle,
+                                  color: AppColors.statusDone, size: 24),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${testResult!.displayName ?? testResult!.handle} verified!',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                      color: AppColors.statusDone,
+                                    ),
+                                  ),
+                                  Text(
+                                    '• ${testResult!.metricCount?.toInt()} ${testResult!.metricUnit}'
+                                    '${testResult!.additionalStats["public_repos"] != null ? " • ${testResult!.additionalStats['public_repos']} repos" : ""}'
+                                    '${testResult!.additionalStats["stars"] != null && (testResult!.additionalStats["stars"] as num) > 0 ? " • ${testResult!.additionalStats['stars']} stars" : ""}'
+                                    '${testResult!.additionalStats["members"] != null && (testResult!.additionalStats["members"] as num) > 0 ? " • ${testResult!.additionalStats['members']} members" : ""}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: isDark
+                                          ? AppColors.textSecondaryDark
+                                          : AppColors.textSecondaryLight,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    if (testError != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.statusCancelled
+                              .withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                          border: Border.all(
+                            color: AppColors.statusCancelled
+                                .withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.warning_amber_rounded,
+                                color: AppColors.statusCancelled, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                testError!,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.statusCancelled,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: urlCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Profile or Website URL',
-                  hintText: 'https://...',
-                  prefixIcon: Icon(Icons.link, size: 18),
-                ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Cancel'),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: countCtrl,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'Current ${acc.metricUnit}',
-                  hintText: 'e.g. 1500',
-                  prefixIcon: const Icon(Icons.people_outline, size: 18),
-                ),
+              FilledButton(
+                onPressed: () async {
+                  final handle = handleCtrl.text.trim();
+                  if (handle.isEmpty) {
+                    if (ctx.mounted) {
+                      Navigator.of(ctx).pop();
+                    }
+                    return;
+                  }
+                  final url = urlCtrl.text.trim();
+                  final count = double.tryParse(countCtrl.text.trim());
+                  final token = tokenCtrl.text.trim();
+
+                  await ref.read(connectedAccountsProvider.notifier).saveAccount(
+                        platform: acc.platform,
+                        handle: handle,
+                        profileUrl: url,
+                        authToken: token.isNotEmpty ? token : null,
+                        metricCount: count,
+                        autoSync: true,
+                      );
+
+                  if (ctx.mounted) {
+                    Navigator.of(ctx).pop();
+                    context.showSnackBar(
+                        'Saved & Synced ${acc.platformDisplayName} account');
+                  }
+                },
+                child: const Text('Save & Sync'),
               ),
             ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final handle = handleCtrl.text.trim();
-              if (handle.isEmpty) {
-                if (ctx.mounted) {
-                  Navigator.of(ctx).pop();
-                }
-                return;
-              }
-              final url = urlCtrl.text.trim();
-              final count = double.tryParse(countCtrl.text.trim());
-
-              await ref.read(connectedAccountsProvider.notifier).saveAccount(
-                    platform: acc.platform,
-                    handle: handle,
-                    profileUrl: url,
-                    metricCount: count,
-                  );
-
-              // If count was provided, also sync matching KPI
-              if (count != null) {
-                final allKpis = await ref
-                    .read(kpiRepositoryProvider)
-                    .getAllKpis(ref.read(currentUserIdProvider));
-                for (final k in allKpis) {
-                  if (k.platform.toLowerCase() == acc.platform.toLowerCase() &&
-                      (k.metricCategory == 'subscriber_growth' ||
-                          k.metricCategory == 'follower_growth')) {
-                    await ref
-                        .read(kpiRepositoryProvider)
-                        .updateCurrentValue(k.id, count);
-                  }
-                }
-              }
-
-              if (ctx.mounted) {
-                Navigator.of(ctx).pop();
-                context.showSnackBar('Saved ${acc.platformDisplayName} account');
-              }
-            },
-            child: const Text('Save & Connect'),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

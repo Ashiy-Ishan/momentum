@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_icons.dart';
+import '../../../core/extensions/context_extensions.dart';
 import '../../../core/theme/theme.dart';
 import '../../../data/sync/sync_engine.dart';
 import '../../../domain/enums/enums.dart';
@@ -817,6 +818,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               Row(
                 children: [
+                  if (activeAccounts.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.sync_rounded, size: 15),
+                      tooltip: 'Sync all connected accounts with API',
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                      onPressed: () async {
+                        context.showSnackBar('Syncing creator accounts with live APIs...');
+                        await ref
+                            .read(connectedAccountsProvider.notifier)
+                            .syncAllAccounts();
+                        if (context.mounted) {
+                          context.showSnackBar('Accounts and KPIs updated!');
+                        }
+                      },
+                    ),
                   TextButton.icon(
                     onPressed: () => context.push('/settings'),
                     icon: const Icon(Icons.link, size: 14),
@@ -856,44 +874,64 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               itemBuilder: (context, idx) {
                 final acc = activeAccounts[idx];
                 final color = AppColors.forPlatform(acc.platform);
-                return Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: color.withValues(alpha: 0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(_platformIcon(acc.platform), size: 13, color: color),
-                      const SizedBox(width: 5),
-                      Text(
-                        acc.handle,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: color,
-                        ),
+                return InkWell(
+                  onTap: () => context.push('/settings'),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: color.withValues(alpha: 0.3),
+                        width: 1,
                       ),
-                      if (acc.metricCount != null) ...[
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (acc.avatarUrl != null && acc.avatarUrl!.isNotEmpty)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(7),
+                            child: Image.network(
+                              acc.avatarUrl!,
+                              width: 14,
+                              height: 14,
+                              errorBuilder: (context, error, stackTrace) => Icon(
+                                  _platformIcon(acc.platform),
+                                  size: 13,
+                                  color: color),
+                            ),
+                          )
+                        else
+                          Icon(_platformIcon(acc.platform), size: 13, color: color),
                         const SizedBox(width: 5),
                         Text(
-                          '• ${_formatMetric(acc.metricCount!)} ${acc.metricUnit}',
+                          acc.handle,
                           style: TextStyle(
                             fontSize: 11,
-                            color: isDark
-                                ? AppColors.textSecondaryDark
-                                : AppColors.textSecondaryLight,
+                            fontWeight: FontWeight.bold,
+                            color: color,
                           ),
                         ),
+                        if (acc.metricCount != null) ...[
+                          const SizedBox(width: 5),
+                          Text(
+                            '• ${_formatMetric(acc.metricCount!)} ${acc.metricUnit}'
+                            '${acc.publicRepos != null ? " • ${acc.publicRepos} repos" : ""}'
+                            '${acc.membersCount != null && acc.membersCount! > 0 ? " • ${acc.membersCount} members" : ""}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondaryLight,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 );
               },
