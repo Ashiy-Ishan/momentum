@@ -6,13 +6,6 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 
-/// A searchable dialog that allows users to select an icon from [AppIcons].
-///
-/// Features:
-/// - Category tabs (Productivity, Learning, Content Creation, Social Media, Personal, Technical)
-/// - Real-time search filter by icon name or category
-/// - Grid layout with hover feedback and clear selection indicators
-/// - Helper [show] method returning the selected icon name string.
 class IconPickerDialog extends StatefulWidget {
   final String? initialIconName;
 
@@ -21,7 +14,6 @@ class IconPickerDialog extends StatefulWidget {
     this.initialIconName,
   });
 
-  /// Displays the icon picker dialog and returns the selected icon name, or `null` if cancelled.
   static Future<String?> show(
     BuildContext context, {
     String? initialIconName,
@@ -54,7 +46,6 @@ class _IconPickerDialogState extends State<IconPickerDialog>
     _searchController = TextEditingController();
     _tabController = TabController(length: _categories.length, vsync: this);
 
-    // If initial icon is provided, attempt to switch to its category tab
     if (_selectedIconName != null) {
       final initialItem = AppIcons.allIcons.firstWhere(
         (i) => i.name.toLowerCase() == _selectedIconName!.toLowerCase(),
@@ -104,9 +95,6 @@ class _IconPickerDialogState extends State<IconPickerDialog>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // -----------------------------------------------------------------
-            // Header
-            // -----------------------------------------------------------------
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.lg,
@@ -147,9 +135,6 @@ class _IconPickerDialogState extends State<IconPickerDialog>
               ),
             ),
 
-            // -----------------------------------------------------------------
-            // Search Input
-            // -----------------------------------------------------------------
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.lg,
@@ -177,9 +162,6 @@ class _IconPickerDialogState extends State<IconPickerDialog>
 
             AppSpacing.vGapXs,
 
-            // -----------------------------------------------------------------
-            // Category Tabs or Search Results Header
-            // -----------------------------------------------------------------
             if (!isSearching)
               TabBar(
                 controller: _tabController,
@@ -208,9 +190,6 @@ class _IconPickerDialogState extends State<IconPickerDialog>
 
             const Divider(height: 1),
 
-            // -----------------------------------------------------------------
-            // Icon Grids Content
-            // -----------------------------------------------------------------
             Expanded(
               child: isSearching
                   ? _buildSearchResultsGrid(colorScheme)
@@ -224,9 +203,6 @@ class _IconPickerDialogState extends State<IconPickerDialog>
 
             const Divider(height: 1),
 
-            // -----------------------------------------------------------------
-            // Dialog Action Buttons & Selected Preview
-            // -----------------------------------------------------------------
             Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(

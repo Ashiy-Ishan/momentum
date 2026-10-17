@@ -50,26 +50,21 @@ void main() {
         await kpiRepo.createKpi(k);
       }
 
-      // Read from stream
       final kpis = await container.read(allKpisStreamProvider.future);
       expect(kpis.length, equals(seeded.length));
 
       final totals = container.read(totalKpiMetricsProvider).valueOrNull!;
       expect(totals.totalKpisCount, equals(seeded.length));
 
-      // Video Generation targets
       expect(totals.totalVideosTarget, equals(2.0));
       expect(totals.totalShortsTarget, equals(5.0));
       expect(totals.totalVideosLongTerm, equals(50.0));
 
-      // Post Publication targets
-      expect(totals.totalPostsTarget, equals(10.0)); // 7 Instagram + 3 LinkedIn
+      expect(totals.totalPostsTarget, equals(10.0));
 
-      // Article Publishing targets
       expect(totals.totalArticlesTarget, equals(1.0));
       expect(totals.totalArticlesLongTerm, equals(52.0));
 
-      // Combined Audience Reach (starts at 0.0 with clean unseeded starting values)
       expect(totals.totalAudienceCurrent, equals(0.0));
       expect(totals.totalAudienceShortTermTarget, greaterThan(0));
       expect(totals.totalAudienceLongTermTarget, greaterThan(20000));
@@ -105,7 +100,6 @@ void main() {
       expect(totals.totalVideosCurrent, equals(1.0));
       expect(totals.achievedCount, equals(0));
 
-      // Increment value to meet target
       await kpiRepo.incrementCurrentValue('kpi-video-test', 1.0);
       await Future<void>.delayed(const Duration(milliseconds: 50));
 

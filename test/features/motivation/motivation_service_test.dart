@@ -107,7 +107,6 @@ void main() {
         expect(quotes.first.author, 'Author A');
         expect(quotes.first.category, 'morning');
 
-        // Subsequent call uses cache
         final cached = await service.loadQuotes();
         expect(identical(quotes, cached), isTrue);
       });
@@ -135,7 +134,6 @@ void main() {
 
         expect(firstQuote, isNotNull);
         expect(secondQuote, isNotNull);
-        // There are 2 morning quotes, so the second call must pick the other one
         expect(firstQuote!.text, isNot(equals(secondQuote!.text)));
       });
     });
@@ -153,7 +151,6 @@ void main() {
         final completion = await service.getCompletionQuote();
         expect(completion, isNull);
 
-        // Re-enabling returns quotes again
         await service.setMotivationEnabled(true);
         expect(await service.isMotivationEnabled(), isTrue);
 

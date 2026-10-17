@@ -21,11 +21,6 @@ import '../../settings/providers/connected_accounts_provider.dart';
 import '../../tasks/providers/task_providers.dart';
 import '../../tasks/widgets/task_card.dart';
 
-/// Central dashboard screen displaying modern user greeting header,
-/// interactive sync & system error alert banner, side-by-side hero gradient action cards,
-/// multi-metric daily momentum card with circular ring + gradient progress,
-/// total KPI executive overview & creator cadence, pastel category squircle focus areas,
-/// and today's task list.
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
@@ -35,7 +30,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   TaskStatus? _selectedStatusFilter;
-  String _kpiViewMode = 'all'; // 'all', 'output', 'audience'
+  String _kpiViewMode = 'all';
   bool _isErrorDismissed = false;
   bool _isErrorExpanded = false;
 
@@ -112,7 +107,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
           children: [
-            // 1. Top Welcome Header with Circular Avatar, Greeting, Date, and Quick Actions
             _buildTopWelcomeHeader(
               context,
               isDark: isDark,
@@ -125,7 +119,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
             const SizedBox(height: 14),
 
-            // 2. Interactive Sync & Operational Error Banner (shows errors on screen when they happen)
             if (showSyncError) ...[
               _buildSyncErrorBanner(
                 context,
@@ -135,12 +128,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 14),
             ],
 
-            // 3. Hero Feature Cards: "Create New Task" (Purple gradient) & "Start Focus Session" (Amber gradient)
             _buildHeroActionCards(context),
 
             const SizedBox(height: 18),
 
-            // 4. Daily Progress Summary Card (Circular Indicator + Multi-gradient bar + Streak)
             statsAsync.when(
               data: (stats) => _buildProgressSummaryCard(context, stats, isDark),
               loading: () => const Center(
@@ -157,7 +148,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
             const SizedBox(height: 14),
 
-            // 5. Motivational Quote Card
             quoteAsync.when(
               data: (quote) => quote != null
                   ? _buildQuoteCard(context, quote, isDark)
@@ -168,7 +158,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
             const SizedBox(height: 18),
 
-            // 6. Creator Output & Total KPIs Overview (Live APIs & Metric Scorecard)
             allKpisAsync.when(
               data: (kpis) {
                 final totals =
@@ -184,7 +173,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               error: (_, _) => const SizedBox.shrink(),
             ),
 
-            // 7. Focus Areas ("Browse Categories")
             _buildFocusAreasSection(
               context,
               isDark: isDark,
@@ -196,7 +184,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
             const SizedBox(height: 24),
 
-            // 8. Today's Tasks Section
             _buildTodayTasksSection(
               context,
               isDark: isDark,
@@ -215,9 +202,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  // ===========================================================================
-  // 1. TOP WELCOME HEADER
-  // ===========================================================================
   Widget _buildTopWelcomeHeader(
     BuildContext context, {
     required bool isDark,
@@ -233,7 +217,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Row(
       children: [
-        // Circular Avatar with architectural titanium ring
         Container(
           width: 50,
           height: 50,
@@ -262,7 +245,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         const SizedBox(width: 14),
 
-        // Greeting and Date
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,7 +280,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ),
 
-        // Quick Circular Action Buttons
         _buildCircularIconButton(
           context,
           icon: Icons.search_rounded,
@@ -430,9 +411,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  // ===========================================================================
-  // 2. ERROR BANNER (shows errors on screen when they happen)
-  // ===========================================================================
   Widget _buildSyncErrorBanner(
     BuildContext context, {
     required String? error,
@@ -553,14 +531,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  // ===========================================================================
-  // 3. HERO ACTION CARDS
-  // ===========================================================================
   Widget _buildHeroActionCards(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
-        // Left Card: "Create New Task" (Refined Architectural Warm Platinum Accent)
         Expanded(
           child: _HeroActionCard(
             title: 'Create\nNew Task',
@@ -573,7 +547,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         const SizedBox(width: 14),
 
-        // Right Card: "Start Focus Session" (Refined Sage Accent)
         Expanded(
           child: _HeroActionCard(
             title: 'Start Focus\nSession',
@@ -588,9 +561,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  // ===========================================================================
-  // 4. DAILY PROGRESS SUMMARY CARD (Circular Ring + Multi-gradient + Streak)
-  // ===========================================================================
   Widget _buildProgressSummaryCard(
     BuildContext context,
     DashboardStats stats,
@@ -621,10 +591,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Row with Circular Indicator + Title & Streak
           Row(
             children: [
-              // Circular Progress Ring (preserves previous version function)
               SizedBox(
                 width: 58,
                 height: 58,
@@ -655,7 +623,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               const SizedBox(width: 14),
 
-              // Title and Summary Details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -670,7 +637,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             letterSpacing: -0.2,
                           ),
                         ),
-                        // Streak Pill
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 4),
@@ -718,7 +684,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           const SizedBox(height: 14),
 
-          // Clean architectural progress bar
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Container(
@@ -741,7 +706,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           const SizedBox(height: 16),
 
-          // 3 Bottom Stats Badges
           Row(
             children: [
               Expanded(
@@ -833,9 +797,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  // ===========================================================================
-  // 5. MOTIVATIONAL QUOTE CARD
-  // ===========================================================================
   Widget _buildQuoteCard(
     BuildContext context,
     MotivationQuote quote,
@@ -903,9 +864,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  // ===========================================================================
-  // 6. CREATOR OUTPUT & TOTAL KPIS CADENCE
-  // ===========================================================================
   Widget _buildTotalKpisAndCadenceSection(
     BuildContext context, {
     required List<KpiDefinition> kpis,
@@ -924,7 +882,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 1. Header with Velocity Badge
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -980,12 +937,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
         const SizedBox(height: 10),
 
-        // 2. Executive Total KPI Overview Card
         _buildTotalKpiScorecardCard(context, totals: totals, isDark: isDark),
 
         const SizedBox(height: 14),
 
-        // 3. Quick Output Logging Action Bar
         _buildQuickLogOutputBar(context, isDark: isDark),
 
         if (activeAccounts.isNotEmpty) ...[
@@ -995,7 +950,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
         const SizedBox(height: 14),
 
-        // 4. Individual Platform KPI Breakdown Carousel Header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -1094,9 +1048,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  // ===========================================================================
-  // EXECUTIVE TOTAL KPI SCORECARD
-  // ===========================================================================
   Widget _buildTotalKpiScorecardCard(
     BuildContext context, {
     required TotalKpiMetrics totals,
@@ -1127,7 +1078,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Velocity & On-Track Summary Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1185,7 +1135,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           const SizedBox(height: 12),
 
-          // Total Velocity Progress Indicator
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: LinearProgressIndicator(
@@ -1202,7 +1151,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           const SizedBox(height: 14),
 
-          // Category Mode Filter Selector
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -1233,11 +1181,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           const SizedBox(height: 14),
 
-          // 4 Executive Hero Metrics
           if (_kpiViewMode == 'all' || _kpiViewMode == 'output') ...[
             Row(
               children: [
-                // 1. Weekly Video Generation Total
                 Expanded(
                   child: _buildMetricTile(
                     title: 'Video Output',
@@ -1265,7 +1211,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
                 const SizedBox(width: 10),
 
-                // 2. Weekly Post Publication Total
                 Expanded(
                   child: _buildMetricTile(
                     title: 'Weekly Posts',
@@ -1296,7 +1241,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
 
           if (_kpiViewMode == 'all' || _kpiViewMode == 'output') ...[
-            // 3. Blog & Articles Total
             _buildMetricTile(
               title: 'Blog Publishing & Code Velocity',
               primaryValue:
@@ -1323,7 +1267,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
 
           if (_kpiViewMode == 'all' || _kpiViewMode == 'audience') ...[
-            // 4. Combined Audience & Community Reach
             _buildAudienceMetricCard(
               totals: totals,
               isDark: isDark,
@@ -1628,7 +1571,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          // Platform Breakdown Pill Wrap
           Wrap(
             spacing: 6,
             runSpacing: 6,
@@ -1667,9 +1609,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  // ===========================================================================
-  // QUICK-LOG OUTPUT BAR
-  // ===========================================================================
   Widget _buildQuickLogOutputBar(BuildContext context, {required bool isDark}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -2094,9 +2033,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
   }
 
-  // ===========================================================================
-  // 7. FOCUS AREAS ("Browse Categories")
-  // ===========================================================================
   Widget _buildFocusAreasSection(
     BuildContext context, {
     required bool isDark,
@@ -2415,9 +2351,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  // ===========================================================================
-  // 8. TODAY'S TASKS SECTION
-  // ===========================================================================
   Widget _buildTodayTasksSection(
     BuildContext context, {
     required bool isDark,
@@ -2480,7 +2413,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
 
-        // Status Filter Chips
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: SingleChildScrollView(
@@ -2534,7 +2466,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ),
 
-        // Tasks list
         todayTasksAsync.when(
           data: (tasks) {
             var filtered = tasks;
@@ -3017,9 +2948,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 }
 
-// =============================================================================
-// HERO ACTION CARD WIDGET
-// =============================================================================
 class _HeroActionCard extends StatelessWidget {
   final String title;
   final String subtitle;

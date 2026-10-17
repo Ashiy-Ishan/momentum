@@ -13,8 +13,6 @@ import '../../../shared/widgets/icon_picker_dialog.dart';
 import '../../tasks/providers/task_providers.dart';
 import '../providers/label_providers.dart';
 
-/// Screen allowing hierarchical management of Parent Focus Areas and Sub-Labels,
-/// including creation, editing, task counts, tree viewing, reordering, and deletion.
 class LabelsScreen extends ConsumerStatefulWidget {
   const LabelsScreen({super.key});
 
@@ -74,7 +72,6 @@ class _LabelsScreenState extends ConsumerState<LabelsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Label Name
                   TextField(
                     controller: nameController,
                     autofocus: true,
@@ -94,7 +91,6 @@ class _LabelsScreenState extends ConsumerState<LabelsScreen> {
                   ),
                   AppSpacing.vGapMd,
 
-                  // Parent Label Selector
                   DropdownButtonFormField<String?>(
                     initialValue: selectedParentId,
                     decoration: InputDecoration(
@@ -121,10 +117,8 @@ class _LabelsScreenState extends ConsumerState<LabelsScreen> {
                   ),
                   AppSpacing.vGapMd,
 
-                  // Icon & Color Pickers Row
                   Row(
                     children: [
-                      // Icon picker
                       Expanded(
                         child: OutlinedButton.icon(
                           icon: Icon(AppIcons.fromName(selectedIcon), size: 20),
@@ -141,7 +135,6 @@ class _LabelsScreenState extends ConsumerState<LabelsScreen> {
                         ),
                       ),
                       AppSpacing.hGapSm,
-                      // Color picker
                       InkWell(
                         onTap: () async {
                           final color = await ColorPickerDialog.show(
@@ -270,7 +263,6 @@ class _LabelsScreenState extends ConsumerState<LabelsScreen> {
     final allLabelsAsync = ref.watch(allLabelsStreamProvider);
     final allTasks = ref.watch(allTasksStreamProvider).valueOrNull ?? [];
 
-    // Calculate task counts per label
     final taskCountMap = <String, int>{};
     for (final t in allTasks) {
       if (t.labelId != null) {
@@ -512,7 +504,6 @@ class _LabelsScreenState extends ConsumerState<LabelsScreen> {
                     ),
                     children: [
                       const Divider(height: 1),
-                      // List Child Labels
                       if (childLabels.isEmpty)
                         Padding(
                           padding: const EdgeInsets.symmetric(

@@ -40,7 +40,6 @@ class NotificationService {
         },
       );
 
-      // Request notification permissions where appropriate (Android 13+)
       if (Platform.isAndroid) {
         final androidImpl = _notificationsPlugin.resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
@@ -53,7 +52,6 @@ class NotificationService {
     }
   }
 
-  /// Shows immediate notification
   Future<void> showNotification({
     required int id,
     required String title,
@@ -86,7 +84,6 @@ class NotificationService {
     );
   }
 
-  /// Schedules a task due reminder
   Future<void> scheduleTaskReminder({
     required int id,
     required String title,
@@ -130,17 +127,14 @@ class NotificationService {
     }
   }
 
-  /// Cancels notification by ID
   Future<void> cancelNotification(int id) async {
     await _notificationsPlugin.cancel(id);
   }
 
-  /// Cancels all scheduled notifications
   Future<void> cancelAll() async {
     await _notificationsPlugin.cancelAll();
   }
 
-  /// Schedules daily end-of-day summary notification
   Future<void> scheduleDailyReport({
     required int hour,
     required int minute,
@@ -176,7 +170,7 @@ class NotificationService {
       );
 
       await _notificationsPlugin.zonedSchedule(
-        999999, // Reserved ID for daily report
+        999999,
         'Daily Productivity Summary',
         summaryText,
         scheduledDate,

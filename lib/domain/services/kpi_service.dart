@@ -6,28 +6,19 @@ import '../models/task.dart';
 import '../models/task_occurrence.dart';
 import '../models/timer_session.dart';
 
-/// Detailed result of a completion rate calculation.
 class CompletionRateResult {
-  /// Total scheduled occurrences evaluated within the window.
   final int totalScheduled;
 
-  /// Number of eligible scheduled occurrences (excluding cancelled, skipped unless enabled,
-  /// and future incomplete occurrences).
   final int eligibleCount;
 
-  /// Number of completed eligible occurrences.
   final int completedCount;
 
-  /// Number of skipped occurrences encountered.
   final int skippedCount;
 
-  /// Number of cancelled occurrences encountered.
   final int cancelledCount;
 
-  /// Number of future incomplete occurrences excluded so they don't count as failures.
   final int futureExcludedCount;
 
-  /// The resulting completion percentage (0.0 to 100.0).
   final double completionRate;
 
   const CompletionRateResult({
@@ -71,7 +62,6 @@ class CompletionRateResult {
       'skipped: $skippedCount, cancelled: $cancelledCount, futureExcluded: $futureExcludedCount)';
 }
 
-/// Completion progress metrics for an individual child label.
 class LabelChildProgress {
   final String labelId;
   final String labelName;
@@ -116,26 +106,20 @@ class LabelChildProgress {
       'LabelChildProgress($labelName: $completedCount/$eligibleCount, ${completionRate.toStringAsFixed(1)}%)';
 }
 
-/// Aggregated KPI progress for a parent label and its descendant labels.
 class LabelKpiAggregation {
   final String parentLabelId;
   final String parentLabelName;
   final String parentColor;
 
-  /// Direct metrics for tasks assigned directly to the parent label.
   final int directEligible;
   final int directCompleted;
   final double directCompletionRate;
 
-  /// Total metrics across all child labels plus the direct parent tasks.
   final int totalEligible;
   final int totalCompleted;
 
-  /// Weighted completion rate:
-  /// (sum of completed across children + parent) / (sum of eligible across children + parent) * 100
   final double weightedCompletionRate;
 
-  /// Breakdown of each direct child label's progress.
   final List<LabelChildProgress> childBreakdown;
 
   const LabelKpiAggregation({
@@ -185,7 +169,6 @@ class LabelKpiAggregation {
       'total: $totalCompleted/$totalEligible, direct: $directCompleted/$directEligible)';
 }
 
-/// Target progress result for a KPI definition.
 class KpiTargetProgress {
   final String kpiId;
   final String name;
@@ -235,21 +218,9 @@ class KpiTargetProgress {
       '(${progressPercentage.toStringAsFixed(1)}%), achieved: $isAchieved)';
 }
 
-/// Domain service for calculating completion rates, aggregating label KPIs,
-/// and evaluating target metrics.
 class KpiService {
   const KpiService();
 
-  /// Calculates the completion rate for an arbitrary collection of occurrences.
-  ///
-  /// Rules:
-  /// - `cancelled` tasks are excluded from eligible occurrences.
-  /// - `skipped` tasks are excluded by default, unless [includeSkipped] is true.
-  ///   When included, skipped occurrences count towards eligible count but not completed count.
-  /// - Future tasks (`occurrenceDate > asOfDate`):
-  ///   - Incomplete occurrences in the future are NOT counted as failures (excluded from eligible).
-  ///   - Completed occurrences (done in advance) are included.
-  /// - If `eligibleCount == 0`, returns [fallbackWhenZeroEligible] (default 0.0).
   CompletionRateResult calculateCompletionRate({
     required Iterable<TaskOccurrence> occurrences,
     DateTime? asOfDate,
@@ -272,7 +243,6 @@ class KpiService {
       final occDate = AppDateUtils.startOfDay(occ.occurrenceDate);
       final isFuture = occDate.isAfter(asOf);
 
-      // Do NOT count future uncompleted tasks as failures
       if (isFuture && occ.status != TaskStatus.done) {
         futureExcludedCount++;
         continue;
@@ -314,7 +284,6 @@ class KpiService {
     );
   }
 
-  /// Daily completion rate = completed eligible scheduled occurrences ÷ eligible scheduled occurrences × 100
   CompletionRateResult calculateDailyCompletionRate({
     required Iterable<TaskOccurrence> occurrences,
     required DateTime date,
@@ -336,7 +305,6 @@ class KpiService {
     );
   }
 
-  /// Weekly completion rate = completed eligible scheduled occurrences in week ÷ eligible scheduled occurrences in week × 100
   CompletionRateResult calculateWeeklyCompletionRate({
     required Iterable<TaskOccurrence> occurrences,
     required DateTime weekDate,
@@ -362,7 +330,6 @@ class KpiService {
     );
   }
 
-  /// Monthly completion rate = completed eligible scheduled occurrences in month ÷ eligible scheduled occurrences in month × 100
   CompletionRateResult calculateMonthlyCompletionRate({
     required Iterable<TaskOccurrence> occurrences,
     required DateTime monthDate,
@@ -387,7 +354,6 @@ class KpiService {
     );
   }
 
-  /// Completion rate for an explicit date range `[startDate, endDate]`.
   CompletionRateResult calculateCompletionRateForRange({
     required Iterable<TaskOccurrence> occurrences,
     required DateTime startDate,
@@ -413,14 +379,6 @@ class KpiService {
     );
   }
 
-  /// Aggregates KPI progress for a parent label and its children:
-  /// - Direct parent tasks
-  /// - Child labels and their descendant tasks
-  /// - Summed counts (total completed, total planned/eligible)
-  /// - Weighted completion rates:
-  ///   (sum of completed across children + parent) / (sum of eligible across children + parent) * 100
-  /// - Distinguishes direct parent progress vs individual child progress
-  /// - Guarantees NO task occurrence is double-counted.
   LabelKpiAggregation aggregateParentLabelKpi({
     required Label parentLabel,
     required List<Label> allLabels,
@@ -430,16 +388,13 @@ class KpiService {
     bool includeSkipped = false,
     double fallbackWhenZeroEligible = 0.0,
   }) {
-    // Map taskId -> task
     final taskMap = <String, Task>{
       for (final t in tasks)
         if (!t.isDeleted) t.id: t,
     };
 
-    // Track processed occurrence IDs to strictly prevent double-counting
     final processedOccurrenceIds = <String>{};
 
-    // 1. Process direct parent tasks
     final directOccurrences = <TaskOccurrence>[];
     for (final occ in occurrences) {
       if (occ.isDeleted) continue;
@@ -458,7 +413,6 @@ class KpiService {
       fallbackWhenZeroEligible: fallbackWhenZeroEligible,
     );
 
-    // 2. Find direct children of the parent label
     final directChildLabels =
         allLabels
             .where((l) => !l.isDeleted && l.parentId == parentLabel.id)
@@ -470,7 +424,6 @@ class KpiService {
     var childCompletedSum = 0;
 
     for (final child in directChildLabels) {
-      // Find all descendant label IDs under this direct child (including itself)
       final descendantLabelIds = _collectDescendantLabelIds(
         child.id,
         allLabels,
@@ -483,7 +436,6 @@ class KpiService {
         if (task != null &&
             task.labelId != null &&
             descendantLabelIds.contains(task.labelId)) {
-          // Strictly prevent double counting across labels
           if (processedOccurrenceIds.add(occ.id)) {
             childOccurrences.add(occ);
           }
@@ -533,10 +485,6 @@ class KpiService {
     );
   }
 
-  /// Calculates target progress percentage based on KPI type:
-  /// - Count-based: (current count / target value) * 100
-  /// - Time-based: (total tracked minutes / target minutes) * 100
-  /// - Rate-based: (actual rate / target rate) * 100
   double calculateTargetProgressPercentage({
     required KpiType type,
     required double currentValue,
@@ -546,7 +494,6 @@ class KpiService {
     return (currentValue / targetValue) * 100.0;
   }
 
-  /// Evaluates progress for a specific [KpiDefinition] given a computed [currentValue].
   KpiTargetProgress evaluateTargetProgress({
     required KpiDefinition definition,
     required double currentValue,
@@ -568,7 +515,6 @@ class KpiService {
     );
   }
 
-  /// Computes full [KpiTargetProgress] from domain models for the given [definition].
   KpiTargetProgress calculateKpiDefinitionProgress({
     required KpiDefinition definition,
     required List<Task> tasks,
@@ -579,7 +525,6 @@ class KpiService {
   }) {
     final asOf = asOfDate ?? DateTime.now();
 
-    // Determine evaluation window from definition period
     final DateTime windowStart;
     final DateTime windowEnd;
 
@@ -604,7 +549,6 @@ class KpiService {
         break;
     }
 
-    // Filter tasks if labelId is specified
     final relevantTaskIds = <String>{};
     for (final task in tasks) {
       if (task.isDeleted) continue;
@@ -613,7 +557,6 @@ class KpiService {
       }
     }
 
-    // Filter occurrences in window for relevant tasks
     final windowOccurrences = occurrences.where((occ) {
       if (occ.isDeleted) return false;
       if (!relevantTaskIds.contains(occ.taskId)) return false;
@@ -625,7 +568,6 @@ class KpiService {
 
     switch (definition.kpiType) {
       case KpiType.count:
-        // Count of completed occurrences
         currentValue = windowOccurrences
             .where((occ) => occ.status == TaskStatus.done)
             .length
@@ -633,7 +575,6 @@ class KpiService {
         break;
 
       case KpiType.rate:
-        // Completion rate in %
         final rateResult = calculateCompletionRate(
           occurrences: windowOccurrences,
           asOfDate: asOf,
@@ -643,7 +584,6 @@ class KpiService {
         break;
 
       case KpiType.time:
-        // Total tracked time in minutes within window
         var totalSeconds = 0;
         if (timerSessions != null) {
           for (final session in timerSessions) {
@@ -665,7 +605,6 @@ class KpiService {
     );
   }
 
-  /// Recursively collects a label ID and all its descendant label IDs.
   Set<String> _collectDescendantLabelIds(String rootId, List<Label> allLabels) {
     final result = <String>{rootId};
     final toExplore = <String>[rootId];

@@ -1,18 +1,17 @@
 import 'package:equatable/equatable.dart';
 
-/// Configuration and preferences for local push notifications and reminders.
 class NotificationSettings with Equatable {
   final String id;
   final String userId;
   final bool hourlyRemindersEnabled;
-  final String activeHoursStart; // HH:mm
-  final String activeHoursEnd; // HH:mm
-  final List<int> activeDays; // 1=Mon..7=Sun
+  final String activeHoursStart;
+  final String activeHoursEnd;
+  final List<int> activeDays;
   final bool quietHoursEnabled;
-  final String quietStart; // HH:mm
-  final String quietEnd; // HH:mm
+  final String quietStart;
+  final String quietEnd;
   final bool dailyReportEnabled;
-  final String dailyReportTime; // HH:mm
+  final String dailyReportTime;
   final bool motivationEnabled;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -38,7 +37,6 @@ class NotificationSettings with Equatable {
     this.isDeleted = false,
   });
 
-  /// Factory creating default notification settings.
   factory NotificationSettings.defaults({String id = '', String userId = ''}) {
     final now = DateTime.now();
     return NotificationSettings(

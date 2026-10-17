@@ -79,12 +79,10 @@ void main() {
       await controller.createTask(task1);
       await controller.createTask(task2);
 
-      // Verify filtered tasks without filters
       final tasksBeforeFilter =
           await container.read(tasksForSelectedDateProvider.future);
       expect(tasksBeforeFilter.length, equals(2));
 
-      // Filter by status done
       container.read(taskFilterProvider.notifier).state = const TaskFilter(
         status: TaskStatus.done,
       );
@@ -93,7 +91,6 @@ void main() {
       expect(filteredDone?.length, equals(1));
       expect(filteredDone?.first.id, equals('t-2'));
 
-      // Filter by search query
       container.read(taskFilterProvider.notifier).state = const TaskFilter(
         searchQuery: 'documentation',
       );
@@ -172,7 +169,6 @@ void main() {
         ),
       );
 
-      // Await today tasks
       await container.read(todayTasksStreamProvider.future);
 
       final stats = container.read(dashboardStatsProvider).valueOrNull;

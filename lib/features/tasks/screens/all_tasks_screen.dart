@@ -54,8 +54,6 @@ enum TaskGroupingOption {
   }
 }
 
-/// Screen displaying all user tasks with full-text search, multi-faceted filtering,
-/// dynamic sorting, multi-attribute grouping, and complete CRUD actions.
 class AllTasksScreen extends ConsumerStatefulWidget {
   const AllTasksScreen({super.key});
 
@@ -84,7 +82,6 @@ class _AllTasksScreenState extends ConsumerState<AllTasksScreen> {
 
   List<Task> _applyFiltersAndSort(List<Task> tasks) {
     final result = tasks.where((t) {
-      // Search query filter
       if (_searchQuery.trim().isNotEmpty) {
         final query = _searchQuery.trim().toLowerCase();
         final matchTitle = t.title.toLowerCase().contains(query);
@@ -93,20 +90,16 @@ class _AllTasksScreenState extends ConsumerState<AllTasksScreen> {
         if (!matchTitle && !matchDesc && !matchCat) return false;
       }
 
-      // Status filter
       if (_selectedStatus != null && t.status != _selectedStatus) return false;
 
-      // Priority filter
       if (_selectedPriority != null && t.priority != _selectedPriority) {
         return false;
       }
 
-      // Label filter
       if (_selectedLabelId != null && t.labelId != _selectedLabelId) {
         return false;
       }
 
-      // Category filter
       if (_selectedCategory != null &&
           _selectedCategory!.isNotEmpty &&
           t.category != _selectedCategory) {
@@ -116,7 +109,6 @@ class _AllTasksScreenState extends ConsumerState<AllTasksScreen> {
       return true;
     }).toList();
 
-    // Sort
     result.sort((a, b) {
       int cmp = 0;
       switch (_sortOption) {
@@ -176,7 +168,6 @@ class _AllTasksScreenState extends ConsumerState<AllTasksScreen> {
       ),
       body: Column(
         children: [
-          // Search Field
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: TextField(
@@ -202,12 +193,10 @@ class _AllTasksScreenState extends ConsumerState<AllTasksScreen> {
             ),
           ),
 
-          // Filter, Sort & Grouping Toolbar
           _buildToolbar(context, allLabels, allTasksAsync.valueOrNull ?? []),
 
           const Divider(height: 1),
 
-          // Tasks List
           Expanded(
             child: allTasksAsync.when(
               data: (tasks) {
@@ -231,7 +220,6 @@ class _AllTasksScreenState extends ConsumerState<AllTasksScreen> {
                   );
                 }
 
-                // Render based on Grouping Option
                 if (_groupingOption == TaskGroupingOption.none) {
                   return ListView.builder(
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -267,7 +255,6 @@ class _AllTasksScreenState extends ConsumerState<AllTasksScreen> {
     List<Label> allLabels,
     List<Task> allTasks,
   ) {
-    // Unique categories from tasks
     final categories = allTasks
         .map((t) => t.category)
         .whereType<String>()
@@ -280,7 +267,6 @@ class _AllTasksScreenState extends ConsumerState<AllTasksScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Row(
         children: [
-          // Sort Dropdown
           PopupMenuButton<TaskSortOption>(
             tooltip: 'Sort Options',
             child: Chip(
@@ -318,7 +304,6 @@ class _AllTasksScreenState extends ConsumerState<AllTasksScreen> {
           ),
           const SizedBox(width: 8),
 
-          // Grouping Dropdown
           PopupMenuButton<TaskGroupingOption>(
             tooltip: 'Group By',
             child: Chip(
@@ -344,7 +329,6 @@ class _AllTasksScreenState extends ConsumerState<AllTasksScreen> {
           ),
           const SizedBox(width: 8),
 
-          // Status Filter Chip
           PopupMenuButton<TaskStatus?>(
             tooltip: 'Filter by Status',
             child: FilterChip(
@@ -375,7 +359,6 @@ class _AllTasksScreenState extends ConsumerState<AllTasksScreen> {
           ),
           const SizedBox(width: 8),
 
-          // Priority Filter Chip
           PopupMenuButton<TaskPriority?>(
             tooltip: 'Filter by Priority',
             child: FilterChip(
@@ -406,7 +389,6 @@ class _AllTasksScreenState extends ConsumerState<AllTasksScreen> {
           ),
           const SizedBox(width: 8),
 
-          // Label Filter Chip
           PopupMenuButton<String?>(
             tooltip: 'Filter by Label',
             child: FilterChip(
@@ -439,7 +421,6 @@ class _AllTasksScreenState extends ConsumerState<AllTasksScreen> {
             ],
           ),
 
-          // Category Filter Chip (if categories exist)
           if (categories.isNotEmpty) ...[
             const SizedBox(width: 8),
             PopupMenuButton<String?>(
@@ -459,7 +440,6 @@ class _AllTasksScreenState extends ConsumerState<AllTasksScreen> {
             ),
           ],
 
-          // Clear All Filters
           if (_selectedStatus != null ||
               _selectedPriority != null ||
               _selectedLabelId != null ||

@@ -34,17 +34,14 @@ part 'database.g.dart';
 class AppDatabase extends _$AppDatabase {
   static AppDatabase? _singletonInstance;
 
-  /// Central singleton database instance.
   factory AppDatabase() {
     return _singletonInstance ??= AppDatabase._internal();
   }
 
   AppDatabase._internal() : super(_openConnection());
 
-  // For testing
   AppDatabase.forTesting(super.e);
 
-  /// Closes any dangling native database connections (useful for desktop / hot restart cleanup).
   static Future<void> closeExistingInstances() async {
     if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) {
       try {
@@ -130,10 +127,8 @@ class AppDatabase extends _$AppDatabase {
     },
   );
 
-  /// Wipes all local data associated with a specific user ID in relational order.
   Future<void> wipeUserData(String userId) async {
     await transaction(() async {
-      // Delete child records before parent records
       await (delete(completionEvents)..where((t) => t.userId.equals(userId))).go();
       await (delete(taskOccurrences)..where((t) => t.userId.equals(userId))).go();
       await (delete(timerSessions)..where((t) => t.userId.equals(userId))).go();

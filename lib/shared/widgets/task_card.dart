@@ -12,20 +12,6 @@ import '../../domain/models/models.dart';
 import '../../features/tasks/providers/task_providers.dart';
 import '../../features/timer/providers/timer_providers.dart';
 
-/// Reusable Task Card component for lists, dashboard, and calendars.
-///
-/// Fully accessible: uses icons, text labels, and color semantics.
-///
-/// Features:
-/// - Status checkbox / circle to toggle Done / Pending
-/// - Strikethrough title and subtle muted tone when completed
-/// - Priority indicator badge (Low / Medium / High / Urgent) with icons & containers
-/// - Label badge with color tag and icon
-/// - Recurrence indicator icon for recurring tasks
-/// - External URL link button
-/// - Time tracking button with live timer integration (Play / Pause / Stop)
-/// - Due date badge with overdue warning state
-/// - Popup menu for Edit, Delete, Skip Occurrence, Add Notes, Archive
 class TaskCard extends ConsumerWidget {
   final Task task;
   final Label? label;
@@ -70,13 +56,11 @@ class TaskCard extends ConsumerWidget {
     final isCancelled = task.status == TaskStatus.cancelled;
     final isSkipped = task.status == TaskStatus.skipped;
 
-    // Active timer status for this task
     final activeSession = ref.watch(activeTimerStreamProvider).valueOrNull;
     final isTimerForThisTask = activeSession != null && activeSession.taskId == task.id;
     final isTimerRunning = isTimerForThisTask && activeSession.status == TimerSessionStatus.running;
     final isTimerPaused = isTimerForThisTask && activeSession.status == TimerSessionStatus.paused;
 
-    // Overdue status
     final now = DateTime.now();
     final isOverdue = task.dueDate != null &&
         task.dueDate!.isBefore(now) &&
@@ -107,13 +91,9 @@ class TaskCard extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ---------------------------------------------------------------
-              // Row 1: Checkbox, Title, and Action Menu
-              // ---------------------------------------------------------------
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Status Checkbox Circle
                   _StatusCircleButton(
                     key: const ValueKey('task_status_button'),
                     isDone: isDone,
@@ -135,7 +115,6 @@ class TaskCard extends ConsumerWidget {
 
                   AppSpacing.hGapSm,
 
-                  // Task Title & Optional Description
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,33 +152,25 @@ class TaskCard extends ConsumerWidget {
                     ),
                   ),
 
-                  // Actions Popup Menu
                   _buildActionsMenu(context, ref),
                 ],
               ),
 
               AppSpacing.vGapSm,
 
-              // ---------------------------------------------------------------
-              // Row 2: Badges & Attributes (Priority, Label, Recurrence, Due, Timer, URL)
-              // ---------------------------------------------------------------
               Wrap(
                 spacing: AppSpacing.xs,
                 runSpacing: AppSpacing.xs,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  // 1. Priority Indicator Badge
                   _PriorityBadge(priority: task.priority, isDark: isDark),
 
-                  // 2. Label Badge (if associated)
                   if (label != null)
                     _LabelBadge(label: label!, isDark: isDark),
 
-                  // 3. Recurrence Badge (if recurring)
                   if (task.recurrenceRuleId != null)
                     _RecurrenceBadge(isDark: isDark),
 
-                  // 4. Due Date / Overdue Warning Badge
                   if (task.dueDate != null)
                     _DueDateBadge(
                       dueDate: task.dueDate!,
@@ -208,7 +179,6 @@ class TaskCard extends ConsumerWidget {
                       isDark: isDark,
                     ),
 
-                  // 5. Estimated Time Badge
                   if (task.hasTimeTracking && task.estimatedMinutes != null)
                     _EstimatedMinutesBadge(
                       minutes: task.estimatedMinutes!,
@@ -217,15 +187,11 @@ class TaskCard extends ConsumerWidget {
                 ],
               ),
 
-              // ---------------------------------------------------------------
-              // Row 3: Action Buttons (Timer Controls & External URL)
-              // ---------------------------------------------------------------
               if (task.hasTimeTracking ||
                   (task.url != null && task.url!.trim().isNotEmpty)) ...[
                 AppSpacing.vGapSm,
                 Row(
                   children: [
-                    // URL link action button
                     if (task.url != null && task.url!.trim().isNotEmpty)
                       OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
@@ -249,7 +215,6 @@ class TaskCard extends ConsumerWidget {
 
                     const Spacer(),
 
-                    // Time tracking controls
                     if (task.hasTimeTracking)
                       _buildTimerButton(
                         ref: ref,
@@ -497,10 +462,6 @@ class TaskCard extends ConsumerWidget {
     return 'Link';
   }
 }
-
-// =============================================================================
-// SUB-COMPONENTS & BADGES
-// =============================================================================
 
 class _StatusCircleButton extends StatelessWidget {
   final bool isDone;

@@ -10,8 +10,6 @@ import '../../labels/providers/label_providers.dart';
 import '../../timer/providers/timer_providers.dart';
 import '../providers/task_providers.dart';
 
-/// Interactive card widget displaying a [Task] with full status controls,
-/// time tracking controls, and metadata badges.
 class TaskCard extends ConsumerWidget {
   final Task task;
   final DateTime? occurrenceDate;
@@ -50,7 +48,6 @@ class TaskCard extends ConsumerWidget {
         ? ref.watch(timerCurrentDurationProvider).valueOrNull ?? Duration.zero
         : Duration.zero;
 
-    // Resolve task label if assigned
     final allLabels = ref.watch(allLabelsStreamProvider).valueOrNull ?? [];
     Label? label;
     if (task.labelId != null && task.labelId!.isNotEmpty) {
@@ -60,7 +57,6 @@ class TaskCard extends ConsumerWidget {
           );
     }
 
-    // Determine overdue status
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final isOverdue = !isDone &&
@@ -95,11 +91,9 @@ class TaskCard extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Row 1: Completion checkbox, Title, and Context menu
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Completion Checkbox
                   Padding(
                     padding: const EdgeInsets.only(top: 2, right: 10),
                     child: InkWell(
@@ -135,7 +129,6 @@ class TaskCard extends ConsumerWidget {
                     ),
                   ),
 
-                  // Title & Description
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,7 +161,6 @@ class TaskCard extends ConsumerWidget {
                     ),
                   ),
 
-                  // Actions popup
                   PopupMenuButton<String>(
                     icon: Icon(
                       Icons.more_vert,
@@ -308,13 +300,11 @@ class TaskCard extends ConsumerWidget {
 
               const SizedBox(height: 8),
 
-              // Row 2: Badges and Metadata
               Wrap(
                 spacing: 6,
                 runSpacing: 4,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  // Label Badge
                   if (showLabel && label != null)
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -354,7 +344,6 @@ class TaskCard extends ConsumerWidget {
                       ),
                     ),
 
-                  // Priority Chip
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
@@ -380,7 +369,6 @@ class TaskCard extends ConsumerWidget {
                     ),
                   ),
 
-                  // Scheduled Date / Due Date Badge
                   if (task.dueDate != null)
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -447,7 +435,6 @@ class TaskCard extends ConsumerWidget {
                       ),
                     ),
 
-                  // Estimated minutes
                   if (task.estimatedMinutes != null &&
                       task.estimatedMinutes! > 0)
                     Container(
@@ -476,7 +463,6 @@ class TaskCard extends ConsumerWidget {
                       ),
                     ),
 
-                  // Recurring badge
                   if (task.recurrenceRuleId != null &&
                       task.recurrenceRuleId!.isNotEmpty)
                     Container(
@@ -505,7 +491,6 @@ class TaskCard extends ConsumerWidget {
                       ),
                     ),
 
-                  // Time Tracking Play / Stop Button
                   if (task.hasTimeTracking)
                     InkWell(
                       borderRadius: BorderRadius.circular(AppRadius.sm),

@@ -7,18 +7,12 @@ import '../../../domain/enums/enums.dart';
 import '../../../domain/models/models.dart';
 import '../../../shared/providers/database_provider.dart';
 
-// =============================================================================
-// Active Timer Session Stream
-// =============================================================================
-
-/// Watches the user's currently active timer session.
 final activeTimerStreamProvider = StreamProvider<TimerSession?>((ref) {
   final userId = ref.watch(currentUserIdProvider);
   final repo = ref.watch(timerRepositoryProvider);
   return repo.watchActiveSession(userId);
 });
 
-/// Computes dynamically ticking elapsed duration every second when a timer is running.
 final timerCurrentDurationProvider =
     StreamProvider.autoDispose<Duration>((ref) async* {
   final activeSession = ref.watch(activeTimerStreamProvider).valueOrNull;
@@ -38,11 +32,6 @@ final timerCurrentDurationProvider =
   }
 });
 
-// =============================================================================
-// Timer Controller
-// =============================================================================
-
-/// Controller managing start, pause, resume, and completion of timer sessions.
 class TimerController extends StateNotifier<AsyncValue<void>> {
   final Ref _ref;
 
@@ -51,7 +40,6 @@ class TimerController extends StateNotifier<AsyncValue<void>> {
   String get _userId => _ref.read(currentUserIdProvider);
   TimerRepository get _repo => _ref.read(timerRepositoryProvider);
 
-  /// Starts tracking time for a given [taskId].
   Future<TimerSession?> start(String taskId, {String? occurrenceId}) async {
     state = const AsyncValue.loading();
     TimerSession? created;
@@ -65,7 +53,6 @@ class TimerController extends StateNotifier<AsyncValue<void>> {
     return created;
   }
 
-  /// Pauses the currently running timer session.
   Future<void> pause() async {
     final active = await _repo.getActiveSession(_userId);
     if (active == null || active.status != TimerSessionStatus.running) return;
@@ -76,7 +63,6 @@ class TimerController extends StateNotifier<AsyncValue<void>> {
     });
   }
 
-  /// Resumes the currently paused timer session.
   Future<void> resume() async {
     final active = await _repo.getActiveSession(_userId);
     if (active == null || active.status != TimerSessionStatus.paused) return;
@@ -87,7 +73,6 @@ class TimerController extends StateNotifier<AsyncValue<void>> {
     });
   }
 
-  /// Stops, saves accumulated time, and closes the active timer session.
   Future<void> stopAndSave() async {
     final active = await _repo.getActiveSession(_userId);
     if (active == null) return;
@@ -99,7 +84,6 @@ class TimerController extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-/// Timer controller provider.
 final timerControllerProvider =
     StateNotifierProvider<TimerController, AsyncValue<void>>((ref) {
   return TimerController(ref);

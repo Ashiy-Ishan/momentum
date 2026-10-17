@@ -1,13 +1,12 @@
 import 'package:equatable/equatable.dart';
 
-/// Represents a label/category for grouping tasks or KPIs.
 class Label with Equatable {
   final String id;
   final String userId;
   final String? parentId;
   final String name;
-  final String iconName; // Material icon name
-  final String color; // Hex color string (e.g. #FF5722)
+  final String iconName;
+  final String color;
   final int sortOrder;
   final bool isArchived;
   final DateTime createdAt;

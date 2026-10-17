@@ -15,8 +15,6 @@ import '../../labels/providers/label_providers.dart';
 import '../providers/task_providers.dart';
 import '../widgets/task_card.dart';
 
-/// Screen displaying tasks for a selected calendar date with quick navigation,
-/// multi-dimensional filtering, and inline quick task creation.
 class TodayTasksScreen extends ConsumerStatefulWidget {
   const TodayTasksScreen({super.key});
 
@@ -123,21 +121,17 @@ class _TodayTasksScreenState extends ConsumerState<TodayTasksScreen> {
       ),
       body: Column(
         children: [
-          // Date Selector Navigation Bar
           _buildDateNavigationBar(context, selectedDate),
 
-          // Task Count Badges Bar
           tasksAsync.when(
             data: (tasks) => _buildTaskCountBadges(context, tasks),
             loading: () => const SizedBox(height: 48),
             error: (_, _) => const SizedBox.shrink(),
           ),
 
-          // Filters Bar
           _buildFilterBar(context, allLabels),
           const Divider(height: 1),
 
-          // Task List
           Expanded(
             child: tasksAsync.when(
               data: (tasks) {
@@ -195,7 +189,6 @@ class _TodayTasksScreenState extends ConsumerState<TodayTasksScreen> {
             ),
           ),
 
-          // Quick Task Creation Bottom Bar
           _buildQuickTaskBottomBar(context, allLabels, selectedDate),
         ],
       ),
@@ -307,7 +300,6 @@ class _TodayTasksScreenState extends ConsumerState<TodayTasksScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
         children: [
-          // Status Filter
           DropdownButton<TaskStatus?>(
             value: _filterStatus,
             hint: const Text('Status: All', style: TextStyle(fontSize: 12)),
@@ -331,7 +323,6 @@ class _TodayTasksScreenState extends ConsumerState<TodayTasksScreen> {
           ),
           const SizedBox(width: 12),
 
-          // Priority Filter
           DropdownButton<TaskPriority?>(
             value: _filterPriority,
             hint: const Text('Priority: All', style: TextStyle(fontSize: 12)),
@@ -356,7 +347,6 @@ class _TodayTasksScreenState extends ConsumerState<TodayTasksScreen> {
           ),
           const SizedBox(width: 12),
 
-          // Label Filter
           DropdownButton<String?>(
             value: _filterLabelId,
             hint: const Text('Label: All', style: TextStyle(fontSize: 12)),
@@ -379,7 +369,6 @@ class _TodayTasksScreenState extends ConsumerState<TodayTasksScreen> {
             onChanged: (val) => setState(() => _filterLabelId = val),
           ),
 
-          // Clear Filters
           if (_filterStatus != null ||
               _filterPriority != null ||
               _filterLabelId != null) ...[
@@ -458,10 +447,8 @@ class _TodayTasksScreenState extends ConsumerState<TodayTasksScreen> {
               ],
             ),
             const SizedBox(height: 6),
-            // Quick metadata row: Priority and Label selectors
             Row(
               children: [
-                // Priority dropdown
                 PopupMenuButton<TaskPriority>(
                   tooltip: 'Select Priority',
                   child: Container(
@@ -503,7 +490,6 @@ class _TodayTasksScreenState extends ConsumerState<TodayTasksScreen> {
                   }).toList(),
                 ),
                 const SizedBox(width: 8),
-                // Label selector
                 PopupMenuButton<String?>(
                   tooltip: 'Select Label',
                   child: Container(

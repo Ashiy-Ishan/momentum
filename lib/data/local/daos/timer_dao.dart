@@ -9,7 +9,6 @@ part 'timer_dao.g.dart';
 class TimerDao extends DatabaseAccessor<AppDatabase> with _$TimerDaoMixin {
   TimerDao(super.db);
 
-  /// Retrieves the currently active timer session (running or paused) for a user.
   Future<TimerSession?> getActiveSession(String userId) {
     return (select(timerSessions)
           ..where(
@@ -24,7 +23,6 @@ class TimerDao extends DatabaseAccessor<AppDatabase> with _$TimerDaoMixin {
         .getSingleOrNull();
   }
 
-  /// Retrieves all timer sessions for a specific task.
   Future<List<TimerSession>> getSessionsForTask(String taskId) {
     return (select(timerSessions)
           ..where(
@@ -34,17 +32,14 @@ class TimerDao extends DatabaseAccessor<AppDatabase> with _$TimerDaoMixin {
         .get();
   }
 
-  /// Inserts a new timer session.
   Future<void> insertSession(TimerSessionsCompanion session) async {
     await into(timerSessions).insert(session);
   }
 
-  /// Updates an existing timer session.
   Future<void> updateSession(TimerSessionsCompanion session) async {
     await update(timerSessions).replace(session);
   }
 
-  /// Computes total elapsed seconds tracked for a specific task.
   Future<int> getTotalTimeForTask(String taskId) async {
     final sumExpr = timerSessions.elapsedSeconds.sum();
     final query = selectOnly(timerSessions)
@@ -57,7 +52,6 @@ class TimerDao extends DatabaseAccessor<AppDatabase> with _$TimerDaoMixin {
     return row?.read(sumExpr) ?? 0;
   }
 
-  /// Computes total elapsed seconds tracked for tasks under a label in a date range.
   Future<int> getTotalTimeForLabel(
     String labelId,
     DateTime start,
@@ -79,7 +73,6 @@ class TimerDao extends DatabaseAccessor<AppDatabase> with _$TimerDaoMixin {
     return row?.read(sumExpr) ?? 0;
   }
 
-  /// Watches the active timer session for a user.
   Stream<TimerSession?> watchActiveSession(String userId) {
     return (select(timerSessions)
           ..where(

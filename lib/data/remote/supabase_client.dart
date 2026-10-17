@@ -9,24 +9,20 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/errors/errors.dart';
 
-/// Riverpod provider exposing the application's [MomentumSupabaseClient] instance.
 final supabaseClientProvider = Provider<MomentumSupabaseClient>((ref) {
   return MomentumSupabaseClient.instance;
 });
 
-/// Riverpod stream provider exposing [AuthState] events.
 final authStateChangesProvider = StreamProvider<AuthState>((ref) {
   final supabase = ref.watch(supabaseClientProvider);
   return supabase.authStateChanges;
 });
 
-/// Riverpod stream provider exposing the current Supabase [User] changes.
 final userChangesProvider = StreamProvider<User?>((ref) {
   final supabase = ref.watch(supabaseClientProvider);
   return supabase.userChanges;
 });
 
-/// Result data returned when a user signs up.
 class SignUpResult {
   const SignUpResult({
     required this.response,
@@ -34,25 +30,17 @@ class SignUpResult {
     required this.confirmationEmailSent,
   });
 
-  /// The underlying Supabase [AuthResponse].
   final AuthResponse response;
 
-  /// Whether a session was established immediately upon sign up.
   final bool sessionCreated;
 
-  /// Whether a confirmation email was sent requiring user verification.
   final bool confirmationEmailSent;
 
-  /// The created or signed up [User].
   User? get user => response.user;
 
-  /// The active [Session], if one was created.
   Session? get session => response.session;
 }
 
-/// Wrapper around [SupabaseClient] providing safe initialization,
-/// offline-first tolerance, configuration checking, credential persistence,
-/// and authentication helpers.
 class MomentumSupabaseClient {
   MomentumSupabaseClient({SupabaseClient? client})
       : _client = client,
@@ -63,7 +51,6 @@ class MomentumSupabaseClient {
 
   static MomentumSupabaseClient? _instance;
 
-  /// Singleton instance of the client wrapper.
   static MomentumSupabaseClient get instance =>
       _instance ??= MomentumSupabaseClient();
 
@@ -71,26 +58,18 @@ class MomentumSupabaseClient {
   String? _currentUrl;
   bool _isConfigured = false;
 
-  /// Returns `true` if Supabase has been properly initialized with valid credentials.
   bool get isConfigured => _isConfigured && _client != null;
 
-  /// Returns the currently configured Supabase project URL, or null.
   String? get currentUrl => _currentUrl;
 
-  /// Access to the underlying [SupabaseClient], or `null` if not configured.
   SupabaseClient? get client => _client;
 
-  /// Returns the currently authenticated Supabase [User], or `null` if unauthenticated
-  /// or if Supabase is not configured.
   User? get currentUser => isConfigured ? _client?.auth.currentUser : null;
 
-  /// Returns the ID of the currently authenticated user, or `null`.
   String? get currentUserId => currentUser?.id;
 
-  /// Indicates whether a user is currently signed in.
   bool get isAuthenticated => currentUser != null;
 
-  /// Stream of [AuthState] changes. Emits an empty stream when not configured.
   Stream<AuthState> get authStateChanges {
     if (!isConfigured || _client == null) {
       return const Stream.empty();
@@ -98,8 +77,6 @@ class MomentumSupabaseClient {
     return _client!.auth.onAuthStateChange;
   }
 
-  /// Stream of currently authenticated [User] changes.
-  /// Emits the current user immediately if available, and subsequently on auth changes.
   Stream<User?> get userChanges {
     if (!isConfigured || _client == null) {
       return Stream.value(currentUser);
@@ -107,7 +84,6 @@ class MomentumSupabaseClient {
     return _client!.auth.onAuthStateChange.map((state) => state.session?.user);
   }
 
-  /// Retrieves saved Supabase credentials from [SharedPreferences].
   Future<Map<String, String?>> getSavedCredentials() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -130,7 +106,6 @@ class MomentumSupabaseClient {
     }
   }
 
-  /// Signs out, removes credentials from [SharedPreferences], and resets [_isConfigured].
   Future<void> clearCredentials() async {
     try {
       await signOut();
@@ -157,7 +132,6 @@ class MomentumSupabaseClient {
     _currentUrl = null;
   }
 
-  /// Tests network and credential connectivity to a Supabase project.
   Future<Result<bool>> testConnection({
     required String supabaseUrl,
     required String supabaseAnonKey,
@@ -215,16 +189,6 @@ class MomentumSupabaseClient {
     }
   }
 
-  /// Safely initializes Supabase.
-  ///
-  /// If credentials are not provided via arguments, attempts to read them
-  /// from [SharedPreferences], falling back to compile-time environment variables.
-  ///
-  /// If valid credentials are provided and [persist] is true, they are saved
-  /// to [SharedPreferences].
-  ///
-  /// If credentials are missing, empty, or offline, this method will not throw.
-  /// Instead, it marks [isConfigured] as `false` and returns a successful `Result.success(false)`.
   Future<Result<bool>> initialize({
     String? supabaseUrl,
     String? supabaseAnonKey,
@@ -236,12 +200,10 @@ class MomentumSupabaseClient {
     String? url = supabaseUrl?.trim();
     String? anonKey = supabaseAnonKey?.trim();
 
-    // If caller explicitly passed empty strings, do not fall back to defaults
     final bool explicitEmpty = (urlExplicitlyProvided && url!.isEmpty) ||
         (keyExplicitlyProvided && anonKey!.isEmpty);
 
     if (!explicitEmpty) {
-      // 1. Read from SharedPreferences if not supplied
       if (url == null || url.isEmpty || anonKey == null || anonKey.isEmpty) {
         try {
           final prefs = await SharedPreferences.getInstance();
@@ -264,7 +226,6 @@ class MomentumSupabaseClient {
         }
       }
 
-      // 2. Fallback to compile-time environment variables, then AppConstants defaults
       if (url == null || url.isEmpty) {
         const envUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: '');
         if (envUrl.isNotEmpty) {
@@ -304,7 +265,6 @@ class MomentumSupabaseClient {
         );
       }
 
-      // 3. Persist valid credentials if requested
       if (persist) {
         try {
           final prefs = await SharedPreferences.getInstance();
@@ -315,7 +275,6 @@ class MomentumSupabaseClient {
         }
       }
 
-      // Check if Supabase was already initialized globally
       try {
         if (Supabase.instance.isInitialized) {
           if (_currentUrl != url) {
@@ -328,7 +287,6 @@ class MomentumSupabaseClient {
           }
         }
       } catch (_) {
-        // Not initialized yet, proceed to initialize
       }
 
       final supabase = await Supabase.initialize(
@@ -357,7 +315,6 @@ class MomentumSupabaseClient {
     }
   }
 
-  /// Helper to convert Supabase [AuthException] to user-friendly message.
   String _getFriendlyAuthErrorMessage(AuthException e) {
     final msg = e.message.toLowerCase();
     if (msg.contains('invalid login credentials') ||
@@ -389,7 +346,6 @@ class MomentumSupabaseClient {
         : 'Authentication failed. Please verify your credentials and try again.';
   }
 
-  /// Signs in an existing user with email and password.
   Future<Result<AuthResponse>> signInWithEmail(
     String email,
     String password,
@@ -442,7 +398,6 @@ class MomentumSupabaseClient {
     }
   }
 
-  /// Registers a new user with email and password.
   Future<Result<SignUpResult>> signUpWithEmail(
     String email,
     String password, {
@@ -519,7 +474,6 @@ class MomentumSupabaseClient {
     }
   }
 
-  /// Signs out the currently active user.
   Future<Result<void>> signOut() async {
     if (!isConfigured || _client == null) {
       return Result.success(null);
@@ -529,7 +483,6 @@ class MomentumSupabaseClient {
       await _client!.auth.signOut().timeout(const Duration(seconds: 10));
       return Result.success(null);
     } on TimeoutException {
-      // Local sign out fallback even if remote timed out
       return Result.success(null);
     } on AuthException catch (e, st) {
       return Result.failure(
@@ -542,7 +495,6 @@ class MomentumSupabaseClient {
     }
   }
 
-  /// Sends a password reset email.
   Future<Result<void>> resetPassword(String email) async {
     final trimmedEmail = email.trim();
     if (trimmedEmail.isEmpty) {
@@ -576,11 +528,6 @@ class MomentumSupabaseClient {
     }
   }
 
-  /// Deletes all user data records from Supabase tables for the given [userId].
-  ///
-  /// Clears tables in relational order:
-  /// completion_events, task_occurrences, timer_sessions, attachments,
-  /// tasks, recurrence_rules, kpi_definitions, labels, notification_settings.
   Future<Result<void>> purgeUserData(String userId) async {
     final trimmedId = userId.trim();
     if (trimmedId.isEmpty) {
@@ -630,7 +577,6 @@ class MomentumSupabaseClient {
     return Result.success(null);
   }
 
-  /// Purges all data associated with the current user, deletes their profile, and signs out.
   Future<Result<void>> deleteUserAccount() async {
     if (!isConfigured || _client == null) {
       return Result.failure(
@@ -645,13 +591,11 @@ class MomentumSupabaseClient {
       );
     }
 
-    // 1. Purge all records from partitioned tables
     final purgeRes = await purgeUserData(userId);
     if (purgeRes.isFailure) {
       return purgeRes;
     }
 
-    // 2. Delete user profile from public.users
     try {
       await _client!.from('users').delete().eq('id', userId).timeout(const Duration(seconds: 10));
     } catch (e) {
@@ -660,13 +604,11 @@ class MomentumSupabaseClient {
       );
     }
 
-    // 3. Sign out the user
     await signOut();
 
     return Result.success(null);
   }
 
-  /// Query builder helper for Supabase tables.
   SupabaseQueryBuilder? from(String table) {
     if (!isConfigured || _client == null) return null;
     return _client!.from(table);

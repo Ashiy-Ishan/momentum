@@ -1,25 +1,6 @@
--- ==============================================================================
--- Momentum Productivity App - Supabase Initial Schema Migration
--- Migration Date: 2026-10-16
--- Tables:
---   1. users
---   2. labels
---   3. recurrence_rules
---   4. tasks
---   5. task_occurrences
---   6. completion_events
---   7. timer_sessions
---   8. kpi_definitions
---   9. attachments
---  10. notification_settings
--- ==============================================================================
 
--- Enable UUID extension if not already present
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- ==============================================================================
--- 1. USERS (Profiles linked to Supabase Auth)
--- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.users (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT,
@@ -33,9 +14,6 @@ CREATE TABLE IF NOT EXISTS public.users (
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
--- ==============================================================================
--- 2. LABELS / CATEGORIES
--- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.labels (
     id TEXT PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -51,9 +29,6 @@ CREATE TABLE IF NOT EXISTS public.labels (
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
--- ==============================================================================
--- 3. RECURRENCE RULES
--- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.recurrence_rules (
     id TEXT PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -70,9 +45,6 @@ CREATE TABLE IF NOT EXISTS public.recurrence_rules (
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
--- ==============================================================================
--- 4. TASKS
--- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.tasks (
     id TEXT PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -97,9 +69,6 @@ CREATE TABLE IF NOT EXISTS public.tasks (
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
--- ==============================================================================
--- 5. TASK OCCURRENCES (Recurring Instances)
--- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.task_occurrences (
     id TEXT PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -113,9 +82,6 @@ CREATE TABLE IF NOT EXISTS public.task_occurrences (
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
--- ==============================================================================
--- 6. COMPLETION EVENTS (Append-Only Log)
--- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.completion_events (
     id TEXT PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -127,9 +93,6 @@ CREATE TABLE IF NOT EXISTS public.completion_events (
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
--- ==============================================================================
--- 7. TIMER SESSIONS (Append-Only Log)
--- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.timer_sessions (
     id TEXT PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -146,9 +109,6 @@ CREATE TABLE IF NOT EXISTS public.timer_sessions (
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
--- ==============================================================================
--- 8. KPI DEFINITIONS
--- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.kpi_definitions (
     id TEXT PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -166,9 +126,6 @@ CREATE TABLE IF NOT EXISTS public.kpi_definitions (
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
--- ==============================================================================
--- 9. ATTACHMENTS
--- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.attachments (
     id TEXT PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -184,9 +141,6 @@ CREATE TABLE IF NOT EXISTS public.attachments (
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
--- ==============================================================================
--- 10. NOTIFICATION SETTINGS (1:1 with User)
--- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.notification_settings (
     id TEXT PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
@@ -206,20 +160,13 @@ CREATE TABLE IF NOT EXISTS public.notification_settings (
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
--- ==============================================================================
--- INDEXES
--- ==============================================================================
--- Users
 CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
 
--- Labels
 CREATE INDEX IF NOT EXISTS idx_labels_user_id ON public.labels(user_id);
 CREATE INDEX IF NOT EXISTS idx_labels_parent_id ON public.labels(parent_id);
 
--- Recurrence Rules
 CREATE INDEX IF NOT EXISTS idx_recurrence_rules_user_id ON public.recurrence_rules(user_id);
 
--- Tasks
 CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON public.tasks(user_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_label_id ON public.tasks(label_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_scheduled_date ON public.tasks(scheduled_date);
@@ -228,44 +175,34 @@ CREATE INDEX IF NOT EXISTS idx_tasks_status ON public.tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_recurrence_rule_id ON public.tasks(recurrence_rule_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_updated_at ON public.tasks(updated_at);
 
--- Task Occurrences
 CREATE INDEX IF NOT EXISTS idx_task_occurrences_user_id ON public.task_occurrences(user_id);
 CREATE INDEX IF NOT EXISTS idx_task_occurrences_task_id ON public.task_occurrences(task_id);
 CREATE INDEX IF NOT EXISTS idx_task_occurrences_occurrence_date ON public.task_occurrences(occurrence_date);
 CREATE INDEX IF NOT EXISTS idx_task_occurrences_status ON public.task_occurrences(status);
 CREATE INDEX IF NOT EXISTS idx_task_occurrences_updated_at ON public.task_occurrences(updated_at);
 
--- Completion Events
 CREATE INDEX IF NOT EXISTS idx_completion_events_user_id ON public.completion_events(user_id);
 CREATE INDEX IF NOT EXISTS idx_completion_events_task_id ON public.completion_events(task_id);
 CREATE INDEX IF NOT EXISTS idx_completion_events_occurrence_id ON public.completion_events(occurrence_id);
 CREATE INDEX IF NOT EXISTS idx_completion_events_completed_at ON public.completion_events(completed_at);
 CREATE INDEX IF NOT EXISTS idx_completion_events_created_at ON public.completion_events(created_at);
 
--- Timer Sessions
 CREATE INDEX IF NOT EXISTS idx_timer_sessions_user_id ON public.timer_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_timer_sessions_task_id ON public.timer_sessions(task_id);
 CREATE INDEX IF NOT EXISTS idx_timer_sessions_occurrence_id ON public.timer_sessions(occurrence_id);
 CREATE INDEX IF NOT EXISTS idx_timer_sessions_started_at ON public.timer_sessions(started_at);
 CREATE INDEX IF NOT EXISTS idx_timer_sessions_updated_at ON public.timer_sessions(updated_at);
 
--- KPI Definitions
 CREATE INDEX IF NOT EXISTS idx_kpi_definitions_user_id ON public.kpi_definitions(user_id);
 CREATE INDEX IF NOT EXISTS idx_kpi_definitions_label_id ON public.kpi_definitions(label_id);
 CREATE INDEX IF NOT EXISTS idx_kpi_definitions_updated_at ON public.kpi_definitions(updated_at);
 
--- Attachments
 CREATE INDEX IF NOT EXISTS idx_attachments_user_id ON public.attachments(user_id);
 CREATE INDEX IF NOT EXISTS idx_attachments_task_id ON public.attachments(task_id);
 CREATE INDEX IF NOT EXISTS idx_attachments_updated_at ON public.attachments(updated_at);
 
--- Notification Settings
 CREATE INDEX IF NOT EXISTS idx_notification_settings_user_id ON public.notification_settings(user_id);
 
--- ==============================================================================
--- ROW LEVEL SECURITY (RLS)
--- Enabled on EVERY table with strict user isolation
--- ==============================================================================
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.labels ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.recurrence_rules ENABLE ROW LEVEL SECURITY;
@@ -277,14 +214,12 @@ ALTER TABLE public.kpi_definitions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.attachments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notification_settings ENABLE ROW LEVEL SECURITY;
 
--- Users policy (matching auth.uid() with id)
 DROP POLICY IF EXISTS "Users can access own data" ON public.users;
 CREATE POLICY "Users can access own data"
     ON public.users
     FOR ALL
     USING (auth.uid() = id);
 
--- Standard tables matching auth.uid() with user_id
 DROP POLICY IF EXISTS "Users can access own data" ON public.labels;
 CREATE POLICY "Users can access own data"
     ON public.labels
@@ -339,9 +274,6 @@ CREATE POLICY "Users can access own data"
     FOR ALL
     USING (auth.uid() = user_id);
 
--- ==============================================================================
--- AUTOMATIC updated_at TRIGGER FUNCTION
--- ==============================================================================
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -350,7 +282,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Attach triggers to all tables with updated_at column
 DROP TRIGGER IF EXISTS set_updated_at_users ON public.users;
 CREATE TRIGGER set_updated_at_users
     BEFORE UPDATE ON public.users
@@ -405,9 +336,6 @@ CREATE TRIGGER set_updated_at_notification_settings
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_updated_at();
 
--- ==============================================================================
--- AUTH HOOK: Automatically create public.users profile on signup
--- ==============================================================================
 CREATE OR REPLACE FUNCTION public.handle_new_auth_user()
 RETURNS TRIGGER AS $$
 BEGIN

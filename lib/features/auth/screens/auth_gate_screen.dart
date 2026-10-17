@@ -10,11 +10,6 @@ import '../../../core/utils/validators.dart';
 import '../../../data/remote/supabase_client.dart';
 import '../../../shared/providers/database_provider.dart';
 
-/// The entry authentication screen displayed before accessing the dashboard.
-///
-/// Ensures all cloud requests are authenticated and parameterized through
-/// Supabase with Row Level Security, preventing SQL injection and protecting
-/// user data.
 class AuthGateScreen extends ConsumerStatefulWidget {
   const AuthGateScreen({super.key});
 
@@ -28,7 +23,7 @@ class _AuthGateScreenState extends ConsumerState<AuthGateScreen> {
   final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
 
-  int _selectedTab = 0; // 0: Sign In, 1: Create Account
+  int _selectedTab = 0;
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
@@ -240,7 +235,6 @@ class _AuthGateScreenState extends ConsumerState<AuthGateScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Brand Icon & Header
                     Center(
                       child: Container(
                         width: 64,
@@ -283,7 +277,6 @@ class _AuthGateScreenState extends ConsumerState<AuthGateScreen> {
                     ),
                     AppSpacing.vGapLg,
 
-                    // Security & Architecture Badge
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -321,7 +314,6 @@ class _AuthGateScreenState extends ConsumerState<AuthGateScreen> {
                     ),
                     AppSpacing.vGapMd,
 
-                    // Segmented Button: Sign In / Create Account
                     SegmentedButton<int>(
                       segments: const [
                         ButtonSegment<int>(
@@ -345,7 +337,6 @@ class _AuthGateScreenState extends ConsumerState<AuthGateScreen> {
                     ),
                     AppSpacing.vGapLg,
 
-                    // Error Banner
                     if (_errorMessage != null) ...[
                       Container(
                         padding: const EdgeInsets.all(12),
@@ -382,7 +373,6 @@ class _AuthGateScreenState extends ConsumerState<AuthGateScreen> {
                       AppSpacing.vGapMd,
                     ],
 
-                    // Input Fields
                     if (_selectedTab == 1) ...[
                       TextField(
                         controller: _nameController,
@@ -460,7 +450,6 @@ class _AuthGateScreenState extends ConsumerState<AuthGateScreen> {
                     ],
                     AppSpacing.vGapSm,
 
-                    // Forgot Password Link (Sign In mode only)
                     if (_selectedTab == 0) ...[
                       Align(
                         alignment: Alignment.centerRight,
@@ -477,7 +466,6 @@ class _AuthGateScreenState extends ConsumerState<AuthGateScreen> {
                       AppSpacing.vGapSm,
                     ],
 
-                    // Action Button
                     FilledButton(
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),

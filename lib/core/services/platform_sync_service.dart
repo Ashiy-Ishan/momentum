@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-/// Result from syncing an external platform account.
 class PlatformSyncResult {
   final bool success;
   final String platform;
@@ -41,7 +40,6 @@ class PlatformSyncResult {
   }
 }
 
-/// Service that communicates with public and authenticated platform APIs (GitHub, etc.).
 class PlatformSyncService {
   final HttpClient _client;
 
@@ -49,26 +47,21 @@ class PlatformSyncService {
     _client.connectionTimeout = const Duration(seconds: 10);
   }
 
-  /// Cleans up raw handle input (strips `@` and extracts username from profile URLs).
   static String extractCleanHandle(String input, String platform) {
     var cleaned = input.trim();
     if (cleaned.isEmpty) return '';
 
-    // Strip trailing slashes
     while (cleaned.endsWith('/')) {
       cleaned = cleaned.substring(0, cleaned.length - 1);
     }
 
-    // If a full URL was provided, extract the last path segment
     if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
       final uri = Uri.tryParse(cleaned);
       if (uri != null && uri.pathSegments.isNotEmpty) {
-        // e.g. https://github.com/username or https://linkedin.com/in/username
         cleaned = uri.pathSegments.last;
       }
     }
 
-    // Strip leading @
     if (cleaned.startsWith('@')) {
       cleaned = cleaned.substring(1);
     }
@@ -76,7 +69,6 @@ class PlatformSyncService {
     return cleaned.trim();
   }
 
-  /// Syncs an account based on its platform and parameters.
   Future<PlatformSyncResult> syncAccount({
     required String platform,
     required String rawHandle,
@@ -96,7 +88,6 @@ class PlatformSyncService {
       case 'github':
         return _syncGitHub(cleanHandle, authToken);
       default:
-        // Generic fallback for platforms without public REST endpoints
         return PlatformSyncResult(
           success: true,
           platform: platform,
@@ -108,10 +99,8 @@ class PlatformSyncService {
     }
   }
 
-  /// Syncs GitHub account metrics (followers, public repos, following, stars, and members).
   Future<PlatformSyncResult> _syncGitHub(String username, String? authToken) async {
     try {
-      // 1. Fetch user or organization profile
       final userUri = Uri.parse('https://api.github.com/users/$username');
       final req = await _client.getUrl(userUri);
       req.headers.set(HttpHeaders.userAgentHeader, 'Momentum-Productivity-App');
@@ -169,7 +158,6 @@ class PlatformSyncService {
       final avatarUrl = userData['avatar_url'] as String?;
       final isOrg = userData['type'] == 'Organization';
 
-      // 2. Try fetching total stars from public repos (up to first 100)
       int totalStars = 0;
       int membersCount = 0;
 
@@ -194,7 +182,6 @@ class PlatformSyncService {
         }
       } catch (_) {}
 
-      // 3. If organization, fetch members count
       if (isOrg) {
         try {
           final membersUri =

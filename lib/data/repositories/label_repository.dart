@@ -7,43 +7,30 @@ import '../local/daos/labels_dao.dart';
 import '../local/database.dart' as db;
 import '../sync/sync_engine.dart';
 
-/// Contract for category/label data operations and hierarchy management.
 abstract class LabelRepository {
-  /// Retrieves all non-deleted labels for [userId].
   Future<List<domain.Label>> getAllLabels(String userId);
 
-  /// Retrieves active root-level labels (no parent) for [userId].
   Future<List<domain.Label>> getRootLabels(String userId);
 
-  /// Retrieves active child sub-labels for [parentId].
   Future<List<domain.Label>> getChildLabels(String parentId);
 
-  /// Creates a new [label].
   Future<void> createLabel(domain.Label label);
 
-  /// Updates an existing [label].
   Future<void> updateLabel(domain.Label label);
 
-  /// Archives or unarchives a label by [id].
   Future<void> archiveLabel(String id, bool archive);
 
-  /// Soft deletes a label by [id].
   Future<void> deleteLabel(String id);
 
-  /// Seeds the default productivity labels if the user has no existing labels.
   Future<void> seedDefaultLabels(String userId);
 
-  /// Watches active root-level labels for [userId].
   Stream<List<domain.Label>> watchRootLabels(String userId);
 
-  /// Watches active child sub-labels under [parentId].
   Stream<List<domain.Label>> watchChildLabels(String parentId);
 
-  /// Watches all non-deleted labels for [userId].
   Stream<List<domain.Label>> watchAllLabels(String userId);
 }
 
-/// Drift-backed implementation of [LabelRepository].
 class LabelRepositoryImpl implements LabelRepository {
   final db.AppDatabase database;
   final LabelsDao labelsDao;

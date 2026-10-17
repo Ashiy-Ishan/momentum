@@ -9,7 +9,6 @@ part 'kpi_dao.g.dart';
 class KpiDao extends DatabaseAccessor<AppDatabase> with _$KpiDaoMixin {
   KpiDao(super.db);
 
-  /// Retrieves KPI definitions configured for a label.
   Future<List<KpiDefinition>> getKpisForLabel(String labelId) {
     return (select(kpiDefinitions)
           ..where(
@@ -19,7 +18,6 @@ class KpiDao extends DatabaseAccessor<AppDatabase> with _$KpiDaoMixin {
         .get();
   }
 
-  /// Retrieves all KPI definitions for a user.
   Future<List<KpiDefinition>> getAllKpis(String userId) {
     return (select(kpiDefinitions)
           ..where(
@@ -29,17 +27,14 @@ class KpiDao extends DatabaseAccessor<AppDatabase> with _$KpiDaoMixin {
         .get();
   }
 
-  /// Inserts a new KPI definition.
   Future<void> insertKpi(KpiDefinitionsCompanion kpi) async {
     await into(kpiDefinitions).insert(kpi);
   }
 
-  /// Updates an existing KPI definition.
   Future<void> updateKpi(KpiDefinitionsCompanion kpi) async {
     await update(kpiDefinitions).replace(kpi);
   }
 
-  /// Updates the current value of a KPI definition.
   Future<void> updateCurrentValue(String id, double newValue) async {
     final existing = await (select(kpiDefinitions)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
     await (update(kpiDefinitions)..where((tbl) => tbl.id.equals(id))).write(
@@ -51,7 +46,6 @@ class KpiDao extends DatabaseAccessor<AppDatabase> with _$KpiDaoMixin {
     );
   }
 
-  /// Increments the current value of a KPI definition by [delta].
   Future<void> incrementCurrentValue(String id, double delta) async {
     await transaction(() async {
       final existing = await (select(kpiDefinitions)
@@ -69,7 +63,6 @@ class KpiDao extends DatabaseAccessor<AppDatabase> with _$KpiDaoMixin {
     });
   }
 
-  /// Soft deletes a KPI definition by setting isDeleted = true.
   Future<void> softDeleteKpi(String id) async {
     final existing = await (select(kpiDefinitions)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
     await (update(kpiDefinitions)..where((tbl) => tbl.id.equals(id))).write(
@@ -81,7 +74,6 @@ class KpiDao extends DatabaseAccessor<AppDatabase> with _$KpiDaoMixin {
     );
   }
 
-  /// Watches KPI definitions for a given label.
   Stream<List<KpiDefinition>> watchKpisForLabel(String labelId) {
     return (select(kpiDefinitions)
           ..where(
@@ -91,7 +83,6 @@ class KpiDao extends DatabaseAccessor<AppDatabase> with _$KpiDaoMixin {
         .watch();
   }
 
-  /// Watches all KPI definitions for a user.
   Stream<List<KpiDefinition>> watchAllKpis(String userId) {
     return (select(kpiDefinitions)
           ..where(

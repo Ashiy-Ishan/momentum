@@ -2,7 +2,6 @@ import 'package:equatable/equatable.dart';
 
 import '../enums/enums.dart';
 
-/// Represents a single occurrence of a recurring or scheduled task.
 class TaskOccurrence with Equatable {
   final String id;
   final String userId;

@@ -1,23 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Riverpod provider for the conflict resolver.
 final conflictResolverProvider = Provider<ConflictResolver>((ref) {
   return const ConflictResolver();
 });
 
-/// Resolution outcome for synchronization conflicts.
 enum ConflictResolution {
-  /// The local record takes precedence over the remote record.
   localWins,
 
-  /// The remote record takes precedence over the local record.
   remoteWins,
 
-  /// Both local and remote records must be preserved (append-only collections).
   preserveBoth,
 }
 
-/// Detailed result of a conflict resolution evaluation.
 class ConflictResolutionResult {
   final ConflictResolution resolution;
   final String reason;
@@ -38,26 +32,19 @@ class ConflictResolutionResult {
       'ConflictResolutionResult(resolution: $resolution, reason: $reason)';
 }
 
-/// Implements Momentum's conflict resolution policies:
-/// 1. Last-write-wins for simple record updates based on `updatedAt` / `version`
-/// 2. Server-wins for deletion conflicts
-/// 3. Append-only (preserve both) for CompletionEvents and TimerSessions
 class ConflictResolver {
   const ConflictResolver();
 
-  /// Tables designated as append-only.
   static const Set<String> appendOnlyTables = {
     'completion_events',
     'timer_sessions',
   };
 
-  /// Checks if a table follows an append-only (preserve both) policy.
   bool isAppendOnly(String tableName) {
     final normalized = _normalizeTableName(tableName);
     return appendOnlyTables.contains(normalized);
   }
 
-  /// Resolves a data conflict between local and remote records for a given table.
   ConflictResolutionResult resolve({
     required String tableName,
     required Map<String, dynamic> localData,
@@ -65,9 +52,6 @@ class ConflictResolver {
   }) {
     final normalizedTable = _normalizeTableName(tableName);
 
-    // =========================================================================
-    // Policy 3: Append-Only (Preserve Both) for CompletionEvents & TimerSessions
-    // =========================================================================
     if (isAppendOnly(normalizedTable)) {
       return ConflictResolutionResult(
         resolution: ConflictResolution.preserveBoth,
@@ -77,9 +61,6 @@ class ConflictResolver {
       );
     }
 
-    // =========================================================================
-    // Policy 2: Server-Wins for Deletion Conflicts
-    // =========================================================================
     final localDeleted = _parseBool(
       localData['is_deleted'] ?? localData['isDeleted'],
     );
@@ -97,7 +78,6 @@ class ConflictResolver {
     }
 
     if (localDeleted && !remoteDeleted) {
-      // Server has active record while local was deleted -> server wins
       return ConflictResolutionResult(
         resolution: ConflictResolution.remoteWins,
         reason:
@@ -106,9 +86,6 @@ class ConflictResolver {
       );
     }
 
-    // =========================================================================
-    // Policy 1: Last-Write-Wins based on Version and updatedAt
-    // =========================================================================
     final localVersion = _tryParseInt(
       localData['version'] ?? localData['Version'],
     );
@@ -116,7 +93,6 @@ class ConflictResolver {
       remoteData['version'] ?? remoteData['Version'],
     );
 
-    // 1a. If versions differ, higher version wins
     if (localVersion != null && remoteVersion != null && localVersion != remoteVersion) {
       if (localVersion > remoteVersion) {
         return ConflictResolutionResult(
@@ -135,7 +111,6 @@ class ConflictResolver {
       }
     }
 
-    // 1b. If versions are equal (or missing), compare timestamps
     final localUpdatedAt = _tryParseDateTime(
       localData['updated_at'] ?? localData['updatedAt'],
     );
@@ -159,7 +134,6 @@ class ConflictResolver {
           winningData: remoteData,
         );
       } else {
-        // Exact tie: fallback to server-wins
         return ConflictResolutionResult(
           resolution: ConflictResolution.remoteWins,
           reason:
@@ -169,7 +143,6 @@ class ConflictResolver {
       }
     }
 
-    // If local has timestamp and remote does not, local wins
     if (localUpdatedAt != null && remoteUpdatedAt == null) {
       return ConflictResolutionResult(
         resolution: ConflictResolution.localWins,
@@ -178,7 +151,6 @@ class ConflictResolver {
       );
     }
 
-    // Default safe fallback: remote wins
     return ConflictResolutionResult(
       resolution: ConflictResolution.remoteWins,
       reason: 'Default fallback: remote record accepted.',

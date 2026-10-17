@@ -29,7 +29,6 @@ class WallpaperData {
 }
 
 class WallpaperSvgRenderer {
-  /// Renders dashboard statistics into a high-resolution 1920x1080 SVG document.
   static String renderSvg(WallpaperData data) {
     final bgStart = data.isDark ? '#0B0F19' : '#F8FAFC';
     final bgEnd = data.isDark ? '#151C2C' : '#EEF2F6';
@@ -43,7 +42,6 @@ class WallpaperSvgRenderer {
     final dateStr = DateFormat('EEEE, MMMM d, yyyy').format(data.date);
     final pct = data.completionPercentage;
 
-    // Build parent label cards
     final labelEntries = data.parentLabelProgress.entries.take(5).toList();
     final buffer = StringBuffer();
 
@@ -137,7 +135,6 @@ class WallpaperSvgRenderer {
         .replaceAll("'", '&apos;');
   }
 
-  /// Saves SVG to application documents/wallpaper directory and converts to PNG if possible.
   static Future<String> generateWallpaperImage(WallpaperData data) async {
     final docsDir = await getApplicationDocumentsDirectory();
     final wallpaperDir = Directory(p.join(docsDir.path, 'wallpapers'));
@@ -149,7 +146,6 @@ class WallpaperSvgRenderer {
     final svgFile = File(p.join(wallpaperDir.path, 'momentum_wallpaper.svg'));
     await svgFile.writeAsString(svgContent);
 
-    // Convert SVG to PNG using imagemagick convert if available
     final pngPath = p.join(wallpaperDir.path, 'momentum_wallpaper.png');
     try {
       final res = await Process.run('convert', [
@@ -163,7 +159,6 @@ class WallpaperSvgRenderer {
       }
     } catch (_) {}
 
-    // If convert is not available, return svg directly (modern GNOME/KDE support SVG wallpapers)
     return svgFile.path;
   }
 }

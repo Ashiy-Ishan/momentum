@@ -1,6 +1,4 @@
 abstract class StringUtils {
-  /// Truncates string to [maxLength], appending [ellipsis] if truncated.
-  /// If [maxLength] is less than or equal to [ellipsis.length], it truncates directly without ellipsis.
   static String truncate(
     String text,
     int maxLength, {
@@ -14,14 +12,12 @@ abstract class StringUtils {
     return '${text.substring(0, maxLength - ellipsis.length)}$ellipsis';
   }
 
-  /// Capitalizes the first character of [text].
   static String capitalize(String text) {
     if (text.isEmpty) return text;
     if (text.length == 1) return text.toUpperCase();
     return '${text[0].toUpperCase()}${text.substring(1)}';
   }
 
-  /// Generates 1-2 character uppercase initials from a name (e.g., "John Doe" -> "JD").
   static String initials(String name) {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return '';
@@ -36,9 +32,6 @@ abstract class StringUtils {
     return '${words.first[0].toUpperCase()}${words.last[0].toUpperCase()}';
   }
 
-  /// Formats singular or plural string according to [count].
-  /// By default includes [count] in the output (e.g. "3 tasks", "1 task").
-  /// If [showCount] is false, only returns the noun ("tasks", "task").
   static String pluralize(
     int count,
     String singular, {

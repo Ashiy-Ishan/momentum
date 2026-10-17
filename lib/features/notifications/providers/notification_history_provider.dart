@@ -5,7 +5,6 @@ import 'package:uuid/uuid.dart';
 
 import '../../../domain/models/notification_history_item.dart';
 
-/// Notification types supported in Momentum.
 abstract class NotificationType {
   static const String taskReminder = 'task_reminder';
   static const String hourlyNudge = 'hourly_nudge';
@@ -15,7 +14,6 @@ abstract class NotificationType {
   static const String system = 'system';
 }
 
-/// State notifier managing user's notification history and unread status.
 class NotificationHistoryNotifier
     extends StateNotifier<List<NotificationHistoryItem>> {
   static const String _prefKey = 'momentum_notification_history_v1';
@@ -98,13 +96,11 @@ class NotificationHistoryNotifier
   }
 }
 
-/// Provider managing notification history items.
 final notificationHistoryProvider = StateNotifierProvider<
     NotificationHistoryNotifier, List<NotificationHistoryItem>>((ref) {
   return NotificationHistoryNotifier();
 });
 
-/// Provider computing count of unread notifications.
 final unreadNotificationCountProvider = Provider<int>((ref) {
   final list = ref.watch(notificationHistoryProvider);
   return list.where((item) => !item.isRead).length;

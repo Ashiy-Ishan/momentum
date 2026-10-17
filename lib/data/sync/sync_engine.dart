@@ -20,12 +20,10 @@ import 'conflict_resolver.dart';
 
 import '../../shared/providers/database_provider.dart';
 
-/// Riverpod provider for the global database instance.
 final databaseProvider = Provider<AppDatabase>((ref) {
   return ref.watch(appDatabaseProvider);
 });
 
-/// Riverpod provider exposing the [SyncEngine].
 final syncEngineProvider = Provider<SyncEngine>((ref) {
   final db = ref.watch(databaseProvider);
   final supabase = ref.watch(supabaseClientProvider);
@@ -42,32 +40,27 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
   return engine;
 });
 
-/// Stream provider for listening to sync engine status updates.
 final syncStatusStreamProvider = StreamProvider<SyncEngineStatus>((ref) {
   final engine = ref.watch(syncEngineProvider);
   return engine.syncStatusStream;
 });
 
-/// Current sync engine status.
 final syncStatusProvider = Provider<SyncEngineStatus>((ref) {
   final engine = ref.watch(syncEngineProvider);
   return engine.currentStatus;
 });
 
-/// Stream provider for listening to sync engine error messages.
 final syncErrorStreamProvider = StreamProvider<String?>((ref) {
   final engine = ref.watch(syncEngineProvider);
   return engine.syncErrorStream;
 });
 
-/// Current sync engine error message, if any.
 final syncLastErrorProvider = Provider<String?>((ref) {
   final engine = ref.watch(syncEngineProvider);
   final errorAsync = ref.watch(syncErrorStreamProvider);
   return errorAsync.valueOrNull ?? engine.lastError;
 });
 
-/// Status of the local-first synchronization engine.
 enum SyncEngineStatus {
   idle,
   syncing,
@@ -88,14 +81,6 @@ enum SyncEngineStatus {
   }
 }
 
-/// Local-first synchronization engine for Momentum.
-///
-/// Features:
-/// - Enqueues local changes to SQLite `SyncQueueItems`
-/// - Monitors network connectivity via `connectivity_plus`
-/// - Pushes pending local changes to Supabase with exponential backoff & max retry
-/// - Pulls remote updates since `lastSyncTimestamp` and resolves conflicts
-/// - Safe error handling: never crashes UI, updates status streams
 class SyncEngine {
   final AppDatabase db;
   final MomentumSupabaseClient _supabase;
@@ -134,27 +119,18 @@ class SyncEngine {
   Timer? _periodicSyncTimer;
   Timer? _debounceTimer;
 
-  /// Current status of the sync engine.
   SyncEngineStatus get currentStatus => _status;
 
-  /// Stream of status changes for reactive UI updates.
   Stream<SyncEngineStatus> get syncStatusStream => _statusController.stream;
 
-  /// Stream of sync errors for reactive UI error presentation.
   Stream<String?> get syncErrorStream => _errorController.stream;
 
-  /// Last recorded synchronization error message, if any.
   String? get lastError => _lastError;
 
-  /// Timestamp of the last successful synchronization.
   DateTime? get lastSyncTime => _lastSyncTime;
 
-  /// Indicates whether the device currently has active network connectivity.
   bool get isOnline => _isOnline;
 
-  /// Initializes connectivity listeners, loads stored sync timestamps, and triggers initial sync.
-  /// Verifies active network socket connectivity by resolving a reliable host
-  /// (Supabase host if configured, or google.com).
   Future<bool> _verifyInternetAccess() async {
     try {
       String? host;
@@ -179,20 +155,16 @@ class SyncEngine {
     }
   }
 
-  /// Checks connectivity using connectivity_plus if available, and falls back
-  /// to an active socket lookup if missing or reporting offline on desktop.
   Future<bool> _checkAndSetOnlineStatus() async {
     bool hasNet = false;
     try {
       final results = await _connectivity.checkConnectivity();
       hasNet = _hasConnection(results);
     } catch (e) {
-      // MissingPluginException on desktop platforms (e.g. Linux desktop)
       debugPrint('SyncEngine: connectivity_plus check notice ($e), checking socket...');
       hasNet = false;
     }
 
-    // If connectivity plugin reported false or failed, perform active socket verification
     if (!hasNet) {
       hasNet = await _verifyInternetAccess();
     }
@@ -203,12 +175,10 @@ class SyncEngine {
     return _isOnline;
   }
 
-  /// Initializes connectivity listeners, loads stored sync timestamps, and triggers initial sync.
   Future<void> initialize() async {
     if (_isInitialized) return;
     _isInitialized = true;
 
-    // 1. Load stored sync timestamp
     try {
       prefs ??= await SharedPreferences.getInstance();
       final storedSync = prefs?.getString(_prefLastSyncKey);
@@ -219,10 +189,8 @@ class SyncEngine {
       debugPrint('SyncEngine: prefs load notice: $e');
     }
 
-    // 2. Check initial connectivity with active socket fallback
     await _checkAndSetOnlineStatus();
 
-    // 3. Listen to connectivity transitions (safely catching missing plugin on desktop)
     try {
       _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
         (results) async {
@@ -248,7 +216,6 @@ class SyncEngine {
       debugPrint('SyncEngine: connectivity listener notice: $e');
     }
 
-    // 4. Listen to auth state transitions
     try {
       _authSubscription = _supabase.authStateChanges.listen((data) async {
         debugPrint('SyncEngine: Auth state change: ${data.event}');
@@ -268,7 +235,6 @@ class SyncEngine {
       debugPrint('SyncEngine: auth listener notice: $e');
     }
 
-    // 5. Initial sync and realtime subscription if authenticated and online
     if (_supabase.isConfigured && _supabase.isAuthenticated) {
       if (!_isOnline) {
         await _checkAndSetOnlineStatus();
@@ -280,8 +246,6 @@ class SyncEngine {
     }
   }
 
-  /// Sets up Supabase Realtime channel to listen for cross-device database changes
-  /// and establishes a reliable periodic sync heartbeat.
   void _setupRealtimeSubscription() {
     _cleanupRealtime();
     if (!_supabase.isConfigured || !_supabase.isAuthenticated) return;
@@ -304,7 +268,6 @@ class SyncEngine {
       debugPrint('SyncEngine: Realtime subscription notice: $e');
     }
 
-    // Periodic heartbeat sync every 25 seconds for cross-device parity
     _periodicSyncTimer = Timer.periodic(const Duration(seconds: 25), (_) async {
       if (!_supabase.isConfigured || !_supabase.isAuthenticated || _isSyncInProgress) {
         return;
@@ -341,7 +304,6 @@ class SyncEngine {
     _debounceTimer = null;
   }
 
-  /// Disposes of background listeners and streams.
   void dispose() {
     _cleanupRealtime();
     _connectivitySubscription?.cancel();
@@ -350,7 +312,6 @@ class SyncEngine {
     _errorController.close();
   }
 
-  /// Enqueues a local data operation into SQLite `SyncQueueItems`.
   Future<void> enqueueOperation({
     required String tableName,
     required String recordId,
@@ -371,7 +332,6 @@ class SyncEngine {
 
       await db.syncDao.enqueue(item);
 
-      // Attempt automatic sync if online and authenticated
       if (_supabase.isConfigured && _supabase.isAuthenticated) {
         if (!_isOnline) {
           await _checkAndSetOnlineStatus();
@@ -385,13 +345,11 @@ class SyncEngine {
     }
   }
 
-  /// Manually triggers a synchronization cycle (Push local changes -> Pull remote changes).
   Future<Result<bool>> triggerSync({bool forceFullSync = false}) async {
     if (_isSyncInProgress) {
       return Result.success(false);
     }
 
-    // If currently marked offline, re-verify network access before aborting
     if (!_isOnline) {
       final hasNet = await _checkAndSetOnlineStatus();
       if (!hasNet) {
@@ -409,13 +367,10 @@ class SyncEngine {
     _updateStatus(SyncEngineStatus.syncing);
 
     try {
-      // 1. Push local changes (including local records reconciliation)
       await _pushLocalChanges();
 
-      // 2. Pull remote changes
       await _pullRemoteChanges(forceFullSync: forceFullSync);
 
-      // 3. Clear completed queue items
       await db.syncDao.clearCompleted();
 
       _lastSyncTime = DateTime.now().toUtc();
@@ -436,9 +391,6 @@ class SyncEngine {
     }
   }
 
-  // ===========================================================================
-  // PUSH LOCAL CHANGES
-  // ===========================================================================
   Future<void> _pushLocalChanges() async {
     final currentAuthUserId = _supabase.currentUserId;
     if (currentAuthUserId != null && currentAuthUserId.isNotEmpty) {
@@ -449,7 +401,6 @@ class SyncEngine {
     if (pendingItems.isEmpty) return;
 
     for (final item in pendingItems) {
-      // Check maximum retries
       if (item.retryCount >= AppConstants.maxRetryAttempts) {
         await db.syncDao.markFailed(
           item.id,
@@ -468,8 +419,6 @@ class SyncEngine {
       final remoteTable = _mapToRemoteTableName(item.syncTableName);
       final remotePayload = _toRemoteSnakeCase(rawPayload);
 
-      // If user is authenticated, ensure payload uses authenticated user's ID
-      // rather than offline/local 'local-user' placeholder for Supabase RLS compatibility.
       if (currentAuthUserId != null && currentAuthUserId.isNotEmpty) {
         if (remotePayload.containsKey('user_id') &&
             (remotePayload['user_id'] == 'local-user' || remotePayload['user_id'] == null)) {
@@ -486,13 +435,11 @@ class SyncEngine {
 
         final op = SyncOperation.fromString(item.operation);
         if (op == SyncOperation.delete) {
-          // Soft-delete on server
           await client.from(remoteTable).update({
             'is_deleted': true,
             'updated_at': DateTime.now().toIso8601String(),
           }).eq('id', item.recordId).timeout(const Duration(seconds: 15));
         } else {
-          // Insert or update (upsert)
           await client.from(remoteTable).upsert(remotePayload).timeout(const Duration(seconds: 15));
         }
 
@@ -504,20 +451,16 @@ class SyncEngine {
           await db.syncDao.markFailed(item.id, e.toString());
         }
 
-        // Exponential backoff
         final backoffMs = min(300 * pow(2, item.retryCount).toInt(), 5000);
         await Future<void>.delayed(Duration(milliseconds: backoffMs));
       }
     }
   }
 
-  /// Migrates local-user records to current authenticated user and pushes
-  /// any local records that exist in SQLite but are missing on Supabase.
   Future<void> _reconcileUnsyncedLocalRecords(String currentUserId) async {
     final client = _supabase.client;
     if (client == null) return;
 
-    // 1. Migrate local SQLite tables where user_id is 'local-user' or empty
     const tables = [
       'tasks',
       'labels',
@@ -557,7 +500,6 @@ class SyncEngine {
       debugPrint('SyncEngine: Notice updating id on user_profiles: $e');
     }
 
-    // 2. Reconcile Labels first (Root labels first, then child labels)
     try {
       final remoteLabelRows = await client
           .from('labels')
@@ -572,7 +514,6 @@ class SyncEngine {
             ..where((tbl) => tbl.userId.equals(currentUserId)))
           .get();
 
-      // Separate root labels from child labels so parents exist before children
       final rootLabels = localLabels
           .where((l) => l.parentId == null || l.parentId!.isEmpty)
           .toList();
@@ -607,7 +548,6 @@ class SyncEngine {
       debugPrint('SyncEngine: Labels reconciliation notice: $e');
     }
 
-    // 3. Reconcile Recurrence Rules before tasks
     try {
       final remoteRecurrenceRows = await client
           .from('recurrence_rules')
@@ -651,7 +591,6 @@ class SyncEngine {
       debugPrint('SyncEngine: Recurrence rules reconciliation notice: $e');
     }
 
-    // 4. Reconcile Tasks: find local tasks for this user not yet on Supabase
     try {
       final remoteTaskRows = await client
           .from('tasks')
@@ -676,7 +615,6 @@ class SyncEngine {
             debugPrint(
               'SyncEngine: Error upserting task ${t.id} (${t.title}): $e',
             );
-            // If FK failed because label_id or recurrence_rule_id is invalid on server, retry with null
             try {
               final fallbackPayload = _mapTaskToRemoteMap(t, currentUserId);
               fallbackPayload['label_id'] = null;
@@ -691,7 +629,6 @@ class SyncEngine {
       debugPrint('SyncEngine: Tasks reconciliation notice: $e');
     }
 
-    // 5. Reconcile KPI Definitions
     try {
       final remoteKpiRows = await client
           .from('kpi_definitions')
@@ -729,7 +666,6 @@ class SyncEngine {
       debugPrint('SyncEngine: KPI reconciliation notice: $e');
     }
 
-    // 6. Reconcile Task Occurrences
     try {
       final remoteOccRows = await client
           .from('task_occurrences')
@@ -769,7 +705,6 @@ class SyncEngine {
       debugPrint('SyncEngine: Task occurrences reconciliation notice: $e');
     }
 
-    // 7. Reconcile Completion Events
     try {
       final remoteCompRows = await client
           .from('completion_events')
@@ -807,7 +742,6 @@ class SyncEngine {
       debugPrint('SyncEngine: Completion events reconciliation notice: $e');
     }
 
-    // 8. Reconcile Timer Sessions
     try {
       final remoteTimerRows = await client
           .from('timer_sessions')
@@ -850,7 +784,6 @@ class SyncEngine {
       debugPrint('SyncEngine: Timer sessions reconciliation notice: $e');
     }
 
-    // 9. Reconcile Notification Settings
     try {
       final remoteNotifRows = await client
           .from('notification_settings')
@@ -897,9 +830,6 @@ class SyncEngine {
     }
   }
 
-  // ===========================================================================
-  // PULL REMOTE CHANGES
-  // ===========================================================================
   Future<void> _pullRemoteChanges({bool forceFullSync = false}) async {
     final userId = _supabase.currentUserId;
     final client = _supabase.client;
@@ -952,10 +882,8 @@ class SyncEngine {
           final existingLocal = await _getLocalRecord(localTable, recordId);
 
           if (existingLocal == null) {
-            // New record from server: insert into local database
             await _upsertLocalRecord(localTable, row);
           } else {
-            // Existing record: evaluate conflict resolution
             final resolution = _conflictResolver.resolve(
               tableName: remoteTable,
               localData: existingLocal,
@@ -965,7 +893,6 @@ class SyncEngine {
             if (resolution.isRemoteWinner || resolution.shouldPreserveBoth) {
               await _upsertLocalRecord(localTable, row);
             } else if (resolution.isLocalWinner) {
-              // Local record is newer: enqueue it to update server
               await enqueueOperation(
                 tableName: localTable,
                 recordId: recordId,
@@ -981,9 +908,6 @@ class SyncEngine {
     }
   }
 
-  // ===========================================================================
-  // LOCAL SQLITE DIRECT ACCESS
-  // ===========================================================================
   Future<Map<String, dynamic>?> _getLocalRecord(
     String tableName,
     String id,
@@ -1418,9 +1342,6 @@ class SyncEngine {
     }
   }
 
-  // ===========================================================================
-  // HELPERS
-  // ===========================================================================
   void _updateStatus(SyncEngineStatus newStatus, {String? error}) {
     _status = newStatus;
     if (error != null) {
@@ -1477,7 +1398,6 @@ class SyncEngine {
       final key = _camelToSnake(entry.key);
       var val = entry.value;
 
-      // Handle integer Unix epochs from SQLite for timestamp columns
       if (val is int) {
         if (key.endsWith('_at') || key.endsWith('_date')) {
           final isSeconds = val < 10000000000;

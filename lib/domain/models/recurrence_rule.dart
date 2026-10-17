@@ -2,12 +2,11 @@ import 'package:equatable/equatable.dart';
 
 import '../enums/enums.dart';
 
-/// Defines how a recurring task repeats over time.
 class RecurrenceRule with Equatable {
   final String id;
   final String userId;
   final RecurrenceType type;
-  final List<int>? daysOfWeek; // 1=Mon, 7=Sun
+  final List<int>? daysOfWeek;
   final int? intervalDays;
   final int? intervalMonths;
   final DateTime startDate;
@@ -94,7 +93,6 @@ class RecurrenceRule with Equatable {
     );
   }
 
-  /// Checks if this rule is scheduled for the given [date].
   bool isScheduledFor(DateTime date) {
     if (isDeleted) return false;
 
@@ -122,7 +120,6 @@ class RecurrenceRule with Equatable {
     return true;
   }
 
-  /// Finds the next occurrence strictly after the given [date].
   DateTime? nextOccurrenceAfter(DateTime date) {
     if (isDeleted) return null;
 
@@ -140,7 +137,7 @@ class RecurrenceRule with Equatable {
         ? DateTime(endDate!.year, endDate!.month, endDate!.day)
         : null;
 
-    final maxLookahead = check.add(const Duration(days: 1095)); // ~3 years
+    final maxLookahead = check.add(const Duration(days: 1095));
 
     while (!check.isAfter(maxLookahead)) {
       if (end != null && check.isAfter(end)) {

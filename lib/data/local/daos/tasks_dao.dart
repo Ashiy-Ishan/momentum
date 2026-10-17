@@ -13,7 +13,6 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
   DateTime _endOfDay(DateTime d) =>
       DateTime(d.year, d.month, d.day, 23, 59, 59, 999);
 
-  /// Retrieves all non-deleted tasks for a user.
   Future<List<Task>> getAllTasks(String userId) {
     return (select(tasks)
           ..where(
@@ -23,7 +22,6 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
         .get();
   }
 
-  /// Retrieves non-deleted and non-archived tasks scheduled or due on a specific date.
   Future<List<Task>> getTasksForDate(String userId, DateTime date) {
     final start = _startOfDay(date);
     final end = _endOfDay(date);
@@ -42,7 +40,6 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
         .get();
   }
 
-  /// Retrieves non-deleted and non-archived tasks associated with a label.
   Future<List<Task>> getTasksByLabel(String labelId) {
     return (select(tasks)
           ..where(
@@ -55,7 +52,6 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
         .get();
   }
 
-  /// Retrieves non-deleted and non-archived tasks by status for a user.
   Future<List<Task>> getTasksByStatus(String userId, String status) {
     return (select(tasks)
           ..where(
@@ -69,24 +65,20 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
         .get();
   }
 
-  /// Retrieves a single non-deleted task by its ID.
   Future<Task?> getTaskById(String id) {
     return (select(tasks)
           ..where((tbl) => tbl.id.equals(id) & tbl.isDeleted.equals(false)))
         .getSingleOrNull();
   }
 
-  /// Inserts a new task.
   Future<void> insertTask(TasksCompanion task) async {
     await into(tasks).insert(task);
   }
 
-  /// Updates an existing task.
   Future<void> updateTask(TasksCompanion task) async {
     await update(tasks).replace(task);
   }
 
-  /// Updates status for a task and refreshes updatedAt.
   Future<void> updateTaskStatus(String id, String status) async {
     final existing = await (select(tasks)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
     await (update(tasks)..where((tbl) => tbl.id.equals(id))).write(
@@ -98,7 +90,6 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
     );
   }
 
-  /// Soft deletes a task.
   Future<void> softDeleteTask(String id) async {
     final existing = await (select(tasks)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
     await (update(tasks)..where((tbl) => tbl.id.equals(id))).write(
@@ -110,7 +101,6 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
     );
   }
 
-  /// Archives or unarchives a task.
   Future<void> archiveTask(String id, bool archived) async {
     final existing = await (select(tasks)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
     await (update(tasks)..where((tbl) => tbl.id.equals(id))).write(
@@ -122,7 +112,6 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
     );
   }
 
-  /// Watches tasks scheduled or due on a given date.
   Stream<List<Task>> watchTasksForDate(String userId, DateTime date) {
     final start = _startOfDay(date);
     final end = _endOfDay(date);
@@ -141,7 +130,6 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
         .watch();
   }
 
-  /// Watches tasks under a specific label.
   Stream<List<Task>> watchTasksByLabel(String labelId) {
     return (select(tasks)
           ..where(
@@ -154,7 +142,6 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
         .watch();
   }
 
-  /// Watches all active (non-deleted, non-archived) tasks for a user.
   Stream<List<Task>> watchAllActiveTasks(String userId) {
     return (select(tasks)
           ..where(
@@ -167,7 +154,6 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
         .watch();
   }
 
-  /// Searches non-deleted tasks matching a text query in title or description.
   Future<List<Task>> searchTasks(String userId, String query) {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return Future.value([]);
@@ -183,7 +169,6 @@ class TasksDao extends DatabaseAccessor<AppDatabase> with _$TasksDaoMixin {
         .get();
   }
 
-  /// Counts tasks by status, optionally filtering by date.
   Future<int> countTasksByStatus(
     String userId,
     String status, {

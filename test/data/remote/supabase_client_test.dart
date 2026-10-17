@@ -41,12 +41,10 @@ void main() {
     test('credential persistence in SharedPreferences works as expected', () async {
       final client = MomentumSupabaseClient();
       
-      // Initially empty
       final initialCreds = await client.getSavedCredentials();
       expect(initialCreds['url'], isNull);
       expect(initialCreds['anonKey'], isNull);
 
-      // Seed SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(MomentumSupabaseClient.prefSupabaseUrl, 'https://test.supabase.co');
       await prefs.setString(MomentumSupabaseClient.prefSupabaseAnonKey, 'test-key-123');
@@ -56,7 +54,6 @@ void main() {
       expect(saved['anonKey'], equals('test-key-123'));
       expect(saved[MomentumSupabaseClient.prefSupabaseUrl], equals('https://test.supabase.co'));
 
-      // clearCredentials removes them
       await client.clearCredentials();
       final afterClear = await client.getSavedCredentials();
       expect(afterClear['url'], isNull);
@@ -67,22 +64,18 @@ void main() {
     test('signInWithEmail validates email and password input', () async {
       final client = MomentumSupabaseClient();
 
-      // Empty email
       final r1 = await client.signInWithEmail('', 'password123');
       expect(r1.isFailure, isTrue);
       expect(r1.errorOrNull?.message, contains('cannot be empty'));
 
-      // Invalid email
       final r2 = await client.signInWithEmail('not-an-email', 'password123');
       expect(r2.isFailure, isTrue);
       expect(r2.errorOrNull?.message, contains('valid email'));
 
-      // Empty password
       final r3 = await client.signInWithEmail('test@example.com', '');
       expect(r3.isFailure, isTrue);
       expect(r3.errorOrNull?.message, contains('Password cannot be empty'));
 
-      // Unconfigured client
       final r4 = await client.signInWithEmail('test@example.com', 'password123');
       expect(r4.isFailure, isTrue);
       expect(r4.errorOrNull?.message, contains('Supabase is not configured'));
@@ -91,27 +84,22 @@ void main() {
     test('signUpWithEmail validates email and password length', () async {
       final client = MomentumSupabaseClient();
 
-      // Empty email
       final r1 = await client.signUpWithEmail('   ', 'password123');
       expect(r1.isFailure, isTrue);
       expect(r1.errorOrNull?.message, contains('cannot be empty'));
 
-      // Invalid email
       final r2 = await client.signUpWithEmail('bad-email@', 'password123');
       expect(r2.isFailure, isTrue);
       expect(r2.errorOrNull?.message, contains('valid email'));
 
-      // Empty password
       final r3 = await client.signUpWithEmail('test@example.com', '');
       expect(r3.isFailure, isTrue);
       expect(r3.errorOrNull?.message, contains('Password cannot be empty'));
 
-      // Short password (< 6 chars)
       final r4 = await client.signUpWithEmail('test@example.com', '12345');
       expect(r4.isFailure, isTrue);
       expect(r4.errorOrNull?.message, contains('at least 6 characters'));
 
-      // Unconfigured client
       final r5 = await client.signUpWithEmail('test@example.com', 'password123');
       expect(r5.isFailure, isTrue);
       expect(r5.errorOrNull?.message, contains('Supabase is not configured'));

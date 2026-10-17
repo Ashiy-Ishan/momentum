@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart';
 
-/// Table definition for hierarchical Labels / Categories.
 class Labels extends Table {
   TextColumn get id => text()();
   TextColumn get userId => text()();
@@ -19,7 +18,6 @@ class Labels extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// Table definition for Tasks.
 class Tasks extends Table {
   TextColumn get id => text()();
   TextColumn get userId => text()();
@@ -48,12 +46,11 @@ class Tasks extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// Table definition for Recurrence Rules.
 class RecurrenceRules extends Table {
   TextColumn get id => text()();
   TextColumn get userId => text()();
   TextColumn get type => text()();
-  TextColumn get daysOfWeek => text().nullable()(); // comma separated
+  TextColumn get daysOfWeek => text().nullable()();
   IntColumn get intervalDays => integer().nullable()();
   IntColumn get intervalMonths => integer().nullable()();
   DateTimeColumn get startDate => dateTime()();
@@ -68,7 +65,6 @@ class RecurrenceRules extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// Table definition for Task Occurrences (recurring instances).
 class TaskOccurrences extends Table {
   TextColumn get id => text()();
   TextColumn get userId => text()();
@@ -85,7 +81,6 @@ class TaskOccurrences extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// Table definition for Task Completion Events log.
 class CompletionEvents extends Table {
   TextColumn get id => text()();
   TextColumn get userId => text()();
@@ -100,7 +95,6 @@ class CompletionEvents extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// Table definition for Timer Sessions.
 class TimerSessions extends Table {
   TextColumn get id => text()();
   TextColumn get userId => text()();
@@ -120,7 +114,6 @@ class TimerSessions extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// Table definition for KPI Definitions.
 class KpiDefinitions extends Table {
   TextColumn get id => text()();
   TextColumn get userId => text()();
@@ -147,7 +140,6 @@ class KpiDefinitions extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// Table definition for Task Attachments.
 class Attachments extends Table {
   TextColumn get id => text()();
   TextColumn get userId => text()();
@@ -166,7 +158,6 @@ class Attachments extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// Table definition for Offline Synchronization Queue.
 class SyncQueueItems extends Table {
   TextColumn get id => text()();
   TextColumn get syncTableName => text().named('table_name')();
@@ -183,7 +174,6 @@ class SyncQueueItems extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// Table definition for Notification Settings.
 class NotificationSettingsTable extends Table {
   TextColumn get id => text()();
   TextColumn get userId => text()();
@@ -214,7 +204,6 @@ class NotificationSettingsTable extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// Table definition for User Profiles.
 class UserProfiles extends Table {
   TextColumn get id => text()();
   TextColumn get email => text().nullable()();

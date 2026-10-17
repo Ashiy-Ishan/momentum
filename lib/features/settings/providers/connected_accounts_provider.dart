@@ -6,7 +6,6 @@ import '../../../core/services/platform_sync_service.dart';
 import '../../../domain/models/connected_account.dart';
 import '../../../shared/providers/database_provider.dart';
 
-/// Supported social and developer creator platforms.
 abstract class ConnectedPlatform {
   static const String github = 'github';
   static const String linkedin = 'linkedin';
@@ -63,12 +62,10 @@ abstract class ConnectedPlatform {
   }
 }
 
-/// Provider for the PlatformSyncService.
 final platformSyncServiceProvider = Provider<PlatformSyncService>((ref) {
   return PlatformSyncService();
 });
 
-/// Manages and persists connected creator and social accounts with live API syncing.
 class ConnectedAccountsNotifier extends StateNotifier<List<ConnectedAccount>> {
   static const String _prefKey = 'momentum_connected_accounts';
   final Ref? ref;
@@ -142,7 +139,6 @@ class ConnectedAccountsNotifier extends StateNotifier<List<ConnectedAccount>> {
     } catch (_) {}
   }
 
-  /// Saves account details and initiates automatic API sync.
   Future<PlatformSyncResult?> saveAccount({
     required String platform,
     required String handle,
@@ -195,14 +191,12 @@ class ConnectedAccountsNotifier extends StateNotifier<List<ConnectedAccount>> {
     state = updated;
     await _persist();
 
-    // Auto-fetch live stats if handle is provided
     if (autoSync && cleanHandle.isNotEmpty) {
       return await syncAccount(platform);
     }
     return null;
   }
 
-  /// Automatically syncs a single connected account against its live API.
   Future<PlatformSyncResult> syncAccount(String platform) async {
     final target = getAccount(platform);
     if (target == null || target.handle.trim().isEmpty) {
@@ -214,7 +208,6 @@ class ConnectedAccountsNotifier extends StateNotifier<List<ConnectedAccount>> {
       );
     }
 
-    // Set syncing state
     state = state.map((acc) {
       if (acc.platform.toLowerCase() == platform.toLowerCase()) {
         return acc.copyWith(isSyncing: true, syncError: null);
@@ -256,7 +249,6 @@ class ConnectedAccountsNotifier extends StateNotifier<List<ConnectedAccount>> {
 
     await _persist();
 
-    // Propagate live stats to KPI Repository
     if (result.success && ref != null) {
       await _syncMatchingKpis(platform, result);
     }
@@ -264,14 +256,12 @@ class ConnectedAccountsNotifier extends StateNotifier<List<ConnectedAccount>> {
     return result;
   }
 
-  /// Automatically synchronizes all currently connected accounts.
   Future<void> syncAllAccounts() async {
     for (final acc in state.where((a) => a.isConnected && a.handle.isNotEmpty)) {
       await syncAccount(acc.platform);
     }
   }
 
-  /// Updates corresponding KPI records when live metrics change.
   Future<void> _syncMatchingKpis(
       String platform, PlatformSyncResult result) async {
     final activeRef = ref;
@@ -283,14 +273,12 @@ class ConnectedAccountsNotifier extends StateNotifier<List<ConnectedAccount>> {
 
       for (final k in allKpis) {
         if (k.platform.toLowerCase() == platform.toLowerCase()) {
-          // 1. Follower & subscriber count updates
           if (k.metricCategory == 'follower_growth' ||
               k.metricCategory == 'subscriber_growth') {
             if (result.metricCount != null && result.metricCount! > 0) {
               await kpiRepo.updateCurrentValue(k.id, result.metricCount!);
             }
           }
-          // 2. Public repositories / projects updates
           else if (platform.toLowerCase() == 'github' &&
               (k.name.toLowerCase().contains('repo') ||
                   k.name.toLowerCase().contains('project') ||
@@ -300,7 +288,6 @@ class ConnectedAccountsNotifier extends StateNotifier<List<ConnectedAccount>> {
               await kpiRepo.updateCurrentValue(k.id, repos.toDouble());
             }
           }
-          // 3. Stargazers / Stars updates
           else if (k.name.toLowerCase().contains('star') ||
               (k.description?.toLowerCase().contains('star') ?? false)) {
             final stars = result.additionalStats['stars'];
@@ -308,7 +295,6 @@ class ConnectedAccountsNotifier extends StateNotifier<List<ConnectedAccount>> {
               await kpiRepo.updateCurrentValue(k.id, stars.toDouble());
             }
           }
-          // 4. Team / Organization members updates
           else if (k.name.toLowerCase().contains('member') ||
               (k.description?.toLowerCase().contains('member') ?? false)) {
             final members = result.additionalStats['members'];
@@ -379,7 +365,6 @@ class ConnectedAccountsNotifier extends StateNotifier<List<ConnectedAccount>> {
   }
 }
 
-/// Provider for connected creator and social accounts.
 final connectedAccountsProvider =
     StateNotifierProvider<ConnectedAccountsNotifier, List<ConnectedAccount>>(
         (ref) {

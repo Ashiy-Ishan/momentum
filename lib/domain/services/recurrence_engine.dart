@@ -4,41 +4,32 @@ import '../../core/utils/date_utils.dart';
 import '../enums/enums.dart';
 import '../models/recurrence_rule.dart';
 
-/// Service responsible for evaluating and generating task recurrence schedules.
 class RecurrenceEngine {
   const RecurrenceEngine();
 
-  /// Default maximum window (in days) for generating occurrences to avoid
-  /// unbounded memory usage or infinite loops.
   static const int defaultMaxDaysWindow = 365;
 
-  /// Normalizes any [DateTime] to local midnight (00:00:00.000) for date-only comparison.
   DateTime normalizeDate(DateTime date) {
     return DateTime(date.year, date.month, date.day);
   }
 
-  /// Evaluates whether the given [rule] is scheduled on [date] (date-only comparison).
   bool isScheduledFor(RecurrenceRule rule, DateTime date) {
     if (rule.isDeleted) return false;
 
     final target = normalizeDate(date);
     final start = normalizeDate(rule.startDate);
 
-    // Cannot occur before rule start date
     if (target.isBefore(start)) return false;
 
-    // Cannot occur after rule end date if specified
     if (rule.endDate != null) {
       final end = normalizeDate(rule.endDate!);
       if (target.isAfter(end)) return false;
     }
 
-    // Check if the target date matches the recurrence pattern
     if (!_matchesPattern(rule, target, start)) {
       return false;
     }
 
-    // Check maxOccurrences limit if specified
     if (rule.maxOccurrences != null && rule.maxOccurrences! > 0) {
       final count = _countOccurrencesUpTo(rule, target, start);
       if (count > rule.maxOccurrences!) {
@@ -49,13 +40,6 @@ class RecurrenceEngine {
     return true;
   }
 
-  /// Generates all occurrence dates between [from] and [to] inclusive.
-  ///
-  /// Safe bounds:
-  /// - Clamped to [maxDaysWindow] (default: 365 days) to avoid unbounded generation.
-  /// - Respects [rule.startDate] and [rule.endDate].
-  /// - Respects [rule.maxOccurrences].
-  /// - Date-only comparison normalized to local midnight.
   List<DateTime> generateOccurrences(
     RecurrenceRule rule,
     DateTime from,
@@ -69,7 +53,6 @@ class RecurrenceEngine {
 
     if (normFrom.isAfter(normTo)) return const [];
 
-    // Enforce safe upper bound on date range
     if (normTo.difference(normFrom).inDays > maxDaysWindow) {
       normTo = normFrom.add(Duration(days: maxDaysWindow));
     }
@@ -88,7 +71,6 @@ class RecurrenceEngine {
       }
     }
 
-    // If maxOccurrences is specified, we must track occurrences from the rule start
     if (rule.maxOccurrences != null && rule.maxOccurrences! > 0) {
       final occurrences = <DateTime>[];
       var count = 0;
@@ -110,7 +92,6 @@ class RecurrenceEngine {
       return occurrences;
     }
 
-    // No maxOccurrences limit: iterate directly within [effectiveFrom, effectiveTo]
     final occurrences = <DateTime>[];
     var cur = effectiveFrom;
 
@@ -124,9 +105,6 @@ class RecurrenceEngine {
     return occurrences;
   }
 
-  /// Finds the next occurrence strictly after the given [after] date.
-  ///
-  /// Searches up to [maxLookaheadDays] (default 365) days into the future.
   DateTime? nextOccurrence(
     RecurrenceRule rule,
     DateTime after, {
@@ -148,7 +126,6 @@ class RecurrenceEngine {
     return list.isNotEmpty ? list.first : null;
   }
 
-  /// Finds the previous occurrence strictly before the given [before] date.
   DateTime? previousOccurrence(
     RecurrenceRule rule,
     DateTime before, {
@@ -170,12 +147,10 @@ class RecurrenceEngine {
     return list.isNotEmpty ? list.last : null;
   }
 
-  /// Checks if any occurrences exist between [from] and [to].
   bool hasOccurrencesBetween(RecurrenceRule rule, DateTime from, DateTime to) {
     return generateOccurrences(rule, from, to).isNotEmpty;
   }
 
-  /// Internal pattern matching logic for all recurrence types.
   bool _matchesPattern(RecurrenceRule rule, DateTime target, DateTime start) {
     final diffDays = target.difference(start).inDays;
 
@@ -237,7 +212,6 @@ class RecurrenceEngine {
             (target.year - start.year) * 12 + target.month - start.month;
         if (monthsDiff < 0 || monthsDiff % step != 0) return false;
 
-        // Handle shorter months by capping to the last day of the target month
         final maxDaysInTargetMonth = AppDateUtils.daysInMonth(
           target.year,
           target.month,
@@ -284,7 +258,6 @@ class RecurrenceEngine {
     }
   }
 
-  /// Counts the total occurrences from [start] up to [target] inclusive.
   int _countOccurrencesUpTo(
     RecurrenceRule rule,
     DateTime target,
@@ -297,7 +270,6 @@ class RecurrenceEngine {
     while (!cur.isAfter(target)) {
       if (_matchesPattern(rule, cur, start)) {
         count++;
-        // Early break if we have already exceeded maxOccurrences
         if (maxOccurrences > 0 && count > maxOccurrences) {
           return count;
         }

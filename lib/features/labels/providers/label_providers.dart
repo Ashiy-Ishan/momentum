@@ -4,39 +4,26 @@ import '../../../data/repositories/repositories.dart';
 import '../../../domain/models/models.dart';
 import '../../../shared/providers/database_provider.dart';
 
-// =============================================================================
-// Label Streams
-// =============================================================================
-
-/// Watches root-level categories/labels for the current user.
 final rootLabelsStreamProvider = StreamProvider<List<Label>>((ref) {
   final userId = ref.watch(currentUserIdProvider);
   final repo = ref.watch(labelRepositoryProvider);
   return repo.watchRootLabels(userId);
 });
 
-/// Watches all non-deleted categories/labels for the current user.
 final allLabelsStreamProvider = StreamProvider<List<Label>>((ref) {
   final userId = ref.watch(currentUserIdProvider);
   final repo = ref.watch(labelRepositoryProvider);
   return repo.watchAllLabels(userId);
 });
 
-/// Watches sub-labels belonging to a specific [parentId].
 final childLabelsProvider =
     StreamProvider.family<List<Label>, String>((ref, parentId) {
   final repo = ref.watch(labelRepositoryProvider);
   return repo.watchChildLabels(parentId);
 });
 
-/// Selected label identifier for filtering or inspection.
 final selectedLabelIdProvider = StateProvider<String?>((ref) => null);
 
-// =============================================================================
-// Label Controller
-// =============================================================================
-
-/// Controller managing label mutations, reordering, and archiving.
 class LabelController extends StateNotifier<AsyncValue<void>> {
   final Ref _ref;
 
@@ -45,7 +32,6 @@ class LabelController extends StateNotifier<AsyncValue<void>> {
   String get _userId => _ref.read(currentUserIdProvider);
   LabelRepository get _repo => _ref.read(labelRepositoryProvider);
 
-  /// Creates a new label.
   Future<void> createLabel(Label label) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -53,7 +39,6 @@ class LabelController extends StateNotifier<AsyncValue<void>> {
     });
   }
 
-  /// Updates an existing label.
   Future<void> updateLabel(Label label) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -61,7 +46,6 @@ class LabelController extends StateNotifier<AsyncValue<void>> {
     });
   }
 
-  /// Archives or unarchives a label by ID.
   Future<void> archiveLabel(String id, bool archive) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -69,7 +53,6 @@ class LabelController extends StateNotifier<AsyncValue<void>> {
     });
   }
 
-  /// Soft deletes a label by ID.
   Future<void> deleteLabel(String id) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -77,7 +60,6 @@ class LabelController extends StateNotifier<AsyncValue<void>> {
     });
   }
 
-  /// Updates sort order for an ordered list of labels.
   Future<void> reorderLabels(List<Label> labels) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -91,7 +73,6 @@ class LabelController extends StateNotifier<AsyncValue<void>> {
     });
   }
 
-  /// Seeds default productivity labels if none exist.
   Future<void> seedDefaultLabels() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -100,7 +81,6 @@ class LabelController extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-/// Label controller provider.
 final labelControllerProvider =
     StateNotifierProvider<LabelController, AsyncValue<void>>((ref) {
   return LabelController(ref);

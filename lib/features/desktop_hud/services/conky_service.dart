@@ -5,13 +5,6 @@ import 'package:flutter/foundation.dart';
 
 import '../../../domain/models/models.dart';
 
-/// Service managing native Linux Conky system monitor integration.
-///
-/// Generates and maintains ~/.config/conky/momentum_conky.conf and dynamic
-/// live telemetry at ~/.config/conky/momentum_data.txt. Launches, monitors,
-/// and stops the native /usr/bin/conky daemon so Momentum tasks, streaks,
-/// and KPIs remain visible directly on the desktop wallpaper even when the
-/// main application is minimized or closed.
 class ConkyService {
   static const String configDirName = '.config/conky';
   static const String configFileName = 'momentum_conky.conf';
@@ -36,7 +29,6 @@ class ConkyService {
     return File('${dir.path}/$dataFileName');
   }
 
-  /// Check if /usr/bin/conky or conky binary is installed on the system
   static Future<bool> isConkyInstalled() async {
     if (!Platform.isLinux) return false;
     try {
@@ -48,7 +40,6 @@ class ConkyService {
     }
   }
 
-  /// Check if Momentum's Conky daemon is currently running in background
   static Future<bool> isConkyRunning() async {
     if (!Platform.isLinux) return false;
     try {
@@ -59,7 +50,6 @@ class ConkyService {
     }
   }
 
-  /// Generates the modern Lua Conky configuration file
   static Future<File> ensureConfigFileExists({bool overwrite = false}) async {
     final file = getConfigFile();
     if (file.existsSync() && !overwrite) return file;
@@ -119,7 +109,6 @@ conky.text = [[
     return file;
   }
 
-  /// Updates ~/.config/conky/momentum_data.txt with the latest tasks, streak & KPIs
   static Future<void> updateConkyData({
     required int streakDays,
     required double completionRate,
@@ -132,14 +121,12 @@ conky.text = [[
 
       final buffer = StringBuffer();
 
-      // Daily streak & completion bar
       final pct = (completionRate * 100).toInt().clamp(0, 100);
       buffer.writeln(r'${color #14B8A6}${font DejaVu Sans:bold:size=10}DAILY PROGRESS & STREAK${font}');
       buffer.writeln('\${color #94A3B8}Streak: \${color #F59E0B}🔥 $streakDays Days\${color #94A3B8}   Completion: \${color #10B981}$pct%');
       buffer.writeln('\${color #10B981}\${execbar echo $pct}');
       buffer.writeln();
 
-      // Active Platform KPIs (up to 3)
       if (kpis.isNotEmpty) {
         buffer.writeln(r'${color #14B8A6}${font DejaVu Sans:bold:size=10}CREATOR & DEV KPIS${font}');
         for (final kpi in kpis.take(3)) {
@@ -150,7 +137,6 @@ conky.text = [[
         buffer.writeln();
       }
 
-      // Today's Tasks (up to 5)
       buffer.writeln(r"${color #14B8A6}${font DejaVu Sans:bold:size=10}TODAY'S TASKS${font}");
       if (tasks.isEmpty) {
         buffer.writeln(r'${color #64748B}No tasks scheduled for today.');
@@ -172,7 +158,6 @@ conky.text = [[
     }
   }
 
-  /// Launch the background native Conky daemon
   static Future<bool> startConky() async {
     if (!Platform.isLinux) return false;
     try {
@@ -184,16 +169,13 @@ conky.text = [[
 
       final configFile = await ensureConfigFileExists();
 
-      // Ensure data file exists with initial content
       final dataFile = getDataFile();
       if (!dataFile.existsSync()) {
         await dataFile.writeAsString(r'${color #14B8A6}Momentum Conky Initialized.${font}');
       }
 
-      // Stop previous instance if running
       await stopConky();
 
-      // Launch conky in daemon mode (-d) with our config (-c)
       final res = await Process.run('conky', ['-c', configFile.path, '-d']);
       return res.exitCode == 0;
     } catch (e) {
@@ -202,7 +184,6 @@ conky.text = [[
     }
   }
 
-  /// Gracefully stops the native conky daemon
   static Future<bool> stopConky() async {
     if (!Platform.isLinux) return false;
     try {

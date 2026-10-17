@@ -28,7 +28,6 @@ abstract class DesktopAdapter {
     return DesktopEnvironment.unknown;
   }
 
-  /// Retrieves the current wallpaper path/URI before changing it.
   static Future<String?> getCurrentWallpaper(DesktopEnvironment env) async {
     if (!Platform.isLinux) return null;
 
@@ -45,7 +44,6 @@ abstract class DesktopAdapter {
           }
           break;
         case DesktopEnvironment.kde:
-          // Plasma stores wallpaper in plasma-org.kde.plasma.desktop-appletsrc
           final home = Platform.environment['HOME'] ?? '';
           final configFile = File('$home/.config/plasma-org.kde.plasma.desktop-appletsrc');
           if (await configFile.exists()) {
@@ -74,7 +72,6 @@ abstract class DesktopAdapter {
     return null;
   }
 
-  /// Safely applies the generated wallpaper image file to the desktop.
   static Future<bool> applyWallpaper(String imagePath, DesktopEnvironment env) async {
     if (!Platform.isLinux) return false;
 
@@ -89,7 +86,6 @@ abstract class DesktopAdapter {
 
       switch (env) {
         case DesktopEnvironment.gnome:
-          // Set both light and dark backgrounds for GNOME 42+
           final lightRes = await Process.run('gsettings', [
             'set',
             'org.gnome.desktop.background',
@@ -120,7 +116,6 @@ abstract class DesktopAdapter {
           return res.exitCode == 0;
 
         case DesktopEnvironment.unknown:
-          // Try generic feh or nitrogen if present
           try {
             final feh = await Process.run('feh', ['--bg-fill', imagePath]);
             if (feh.exitCode == 0) return true;
@@ -133,7 +128,6 @@ abstract class DesktopAdapter {
     }
   }
 
-  /// Restores previous wallpaper configuration.
   static Future<bool> restoreWallpaper(String originalValue, DesktopEnvironment env) async {
     if (!Platform.isLinux) return false;
 

@@ -67,7 +67,7 @@ void main() {
         name: 'Daily Study Hours',
         description: 'Read documentation & code',
         kpiType: KpiType.time,
-        targetValue: 120.0, // 2 hours
+        targetValue: 120.0,
         period: KpiPeriod.daily,
         startDate: DateTime.now(),
         createdAt: DateTime.now(),
@@ -78,7 +78,7 @@ void main() {
         buildTestableWidget(
           KpiCard(
             kpi: kpi,
-            currentValue: 90.0, // 1h 30m
+            currentValue: 90.0,
           ),
         ),
       );
@@ -190,7 +190,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Flutter Development'), findsOneWidget);
-      expect(find.text('3'), findsOneWidget); // child label badge
+      expect(find.text('3'), findsOneWidget);
       expect(find.text('6/8 tasks completed • 75%'), findsOneWidget);
     });
   });
@@ -233,7 +233,6 @@ void main() {
       expect(find.text('flutter.dev'), findsOneWidget);
       expect(find.text('Track Time'), findsOneWidget);
 
-      // Tap on status checkbox
       await tester.tap(find.byKey(const ValueKey('task_status_button')));
       await tester.pumpAndSettle();
       expect(toggled, isTrue);
@@ -332,7 +331,7 @@ void main() {
       expect(find.text('Analytics & KPIs'), findsOneWidget);
       expect(find.text('Calendar & History'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
-      expect(find.text('Up to date'), findsOneWidget); // sync status
+      expect(find.text('Up to date'), findsOneWidget);
     });
 
     testWidgets('renders Mobile layout with bottom navigation when width < 1024',
@@ -356,7 +355,7 @@ void main() {
       expect(find.text('Mobile Body'), findsOneWidget);
       expect(find.byType(BottomNavigationBar), findsOneWidget);
       expect(find.byType(FloatingActionButton), findsOneWidget);
-      expect(find.byIcon(Icons.menu_rounded), findsOneWidget); // Drawer button
+      expect(find.byIcon(Icons.menu_rounded), findsOneWidget);
     });
   });
 }

@@ -2,7 +2,6 @@ import 'package:equatable/equatable.dart';
 
 import '../enums/enums.dart';
 
-/// Represents a task in Momentum.
 class Task with Equatable {
   final String id;
   final String userId;

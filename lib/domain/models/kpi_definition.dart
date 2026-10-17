@@ -2,7 +2,6 @@ import 'package:equatable/equatable.dart';
 
 import '../enums/enums.dart';
 
-/// Defines a Key Performance Indicator (KPI) metric and its targets.
 class KpiDefinition with Equatable {
   final String id;
   final String userId;
@@ -46,14 +45,11 @@ class KpiDefinition with Equatable {
     this.isDeleted = false,
   });
 
-  /// Whether a valid long-term target milestone is configured.
   bool get hasLongTermTarget => longTermTarget != null && longTermTarget! > 0;
 
-  /// Progress ratio towards short-term target (clamped between 0.0 and 1.0).
   double get shortTermProgress =>
       targetValue > 0 ? (currentValue / targetValue).clamp(0.0, 1.0) : 0.0;
 
-  /// Progress ratio towards long-term target (clamped between 0.0 and 1.0).
   double get longTermProgress =>
       (hasLongTermTarget && longTermTarget! > 0)
           ? (currentValue / longTermTarget!).clamp(0.0, 1.0)

@@ -8,42 +8,30 @@ import '../local/daos/tasks_dao.dart';
 import '../local/database.dart' as db;
 import '../sync/sync_engine.dart';
 
-/// Contract for task data operations and persistence.
 abstract class TaskRepository {
-  /// Retrieves tasks scheduled or due on [date] for [userId].
   Future<List<domain.Task>> getTasksForDate(String userId, DateTime date);
 
-  /// Retrieves all non-deleted tasks for [userId].
   Future<List<domain.Task>> getAllTasks(String userId);
 
-  /// Retrieves non-deleted and non-archived tasks tagged with [labelId].
   Future<List<domain.Task>> getTasksByLabel(String labelId);
 
-  /// Creates a new [task], optionally saving its [recurrence] rule.
   Future<void> createTask(
     domain.Task task, {
     domain.RecurrenceRule? recurrence,
   });
 
-  /// Updates an existing [task].
   Future<void> updateTask(domain.Task task);
 
-  /// Soft deletes a task by [id].
   Future<void> deleteTask(String id);
 
-  /// Archives or unarchives a task by [id].
   Future<void> archiveTask(String id, bool archive);
 
-  /// Updates the lifecycle status of a task by [id].
   Future<void> setTaskStatus(String id, TaskStatus status);
 
-  /// Watches stream of tasks scheduled or occurring on [date] for [userId].
   Stream<List<domain.Task>> watchTasksForDate(String userId, DateTime date);
 
-  /// Watches all active (non-deleted, non-archived) tasks for [userId].
   Stream<List<domain.Task>> watchAllActiveTasks(String userId);
 
-  /// Marks a specific occurrence on [occurrenceDate] as completed with optional [notes].
   Future<void> completeTaskOccurrence(
     String userId,
     String taskId,
@@ -51,7 +39,6 @@ abstract class TaskRepository {
     String? notes,
   });
 
-  /// Uncompletes a specific occurrence on [occurrenceDate], reverting to pending.
   Future<void> uncompleteTaskOccurrence(
     String userId,
     String taskId,
@@ -59,7 +46,6 @@ abstract class TaskRepository {
   );
 }
 
-/// Drift-backed implementation of [TaskRepository].
 class TaskRepositoryImpl implements TaskRepository {
   final db.AppDatabase database;
   final TasksDao tasksDao;
@@ -287,7 +273,6 @@ class TaskRepositoryImpl implements TaskRepository {
     }
 
     final eventId = _uuid.v4();
-    // Insert completion event log
     await occurrencesDao.insertCompletionEvent(
       db.CompletionEventsCompanion(
         id: Value(eventId),
@@ -300,13 +285,11 @@ class TaskRepositoryImpl implements TaskRepository {
       ),
     );
 
-    // If the task does not repeat, update the main task status
     final taskRow = await tasksDao.getTaskById(taskId);
     if (taskRow != null && taskRow.recurrenceRuleId == null) {
       await tasksDao.updateTaskStatus(taskId, TaskStatus.done.name);
     }
 
-    // Sync occurrence and completion event to cloud
     await syncEngine?.enqueueOperation(
       tableName: 'task_occurrences',
       recordId: occurrenceId,
@@ -395,7 +378,6 @@ class TaskRepositoryImpl implements TaskRepository {
             ..where((tbl) => tbl.occurrenceId.equals(occ.id)))
           .get();
 
-      // Soft delete completion events for this occurrence
       await (database.update(database.completionEvents)
             ..where((tbl) => tbl.occurrenceId.equals(occ.id)))
           .write(
@@ -430,7 +412,6 @@ class TaskRepositoryImpl implements TaskRepository {
       );
     }
 
-    // If the task is non-recurring, revert task status to pending
     final taskRow = await tasksDao.getTaskById(taskId);
     if (taskRow != null && taskRow.recurrenceRuleId == null) {
       await tasksDao.updateTaskStatus(taskId, TaskStatus.pending.name);
@@ -448,7 +429,6 @@ class TaskRepositoryImpl implements TaskRepository {
     }
   }
 
-  /// Helper to merge scheduled tasks, recurring pattern matches, and occurrence completions.
   Future<List<domain.Task>> _enrichTasksForDate(
     String userId,
     DateTime date,
@@ -460,7 +440,6 @@ class TaskRepositoryImpl implements TaskRepository {
       taskMap[row.id] = _mapTaskFromDb(row);
     }
 
-    // Check active recurring tasks for date inclusion
     final recurringTasks = await (database.select(database.tasks)
           ..where(
             (tbl) =>
@@ -488,7 +467,6 @@ class TaskRepositoryImpl implements TaskRepository {
       }
     }
 
-    // Query occurrence statuses on this date to reflect completed state per day
     final occurrences = await occurrencesDao.getOccurrencesForDate(userId, date);
     final occurrencesByTaskId = <String, db.TaskOccurrence>{};
     for (final occ in occurrences) {
@@ -506,7 +484,6 @@ class TaskRepositoryImpl implements TaskRepository {
     }).toList();
 
     enrichedList.sort((a, b) {
-      // Sort by priority desc, then title
       final prioComp = b.priority.level.compareTo(a.priority.level);
       if (prioComp != 0) return prioComp;
       return a.title.compareTo(b.title);

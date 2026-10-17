@@ -36,7 +36,7 @@ void main() {
         id: 'r2',
         userId: 'u1',
         type: RecurrenceType.daily,
-        intervalDays: 2, // every 2 days
+        intervalDays: 2,
         startDate: DateTime(2026, 10, 1),
         createdAt: now,
         updatedAt: now,
@@ -53,7 +53,6 @@ void main() {
         DateTime(2026, 10, 1),
         DateTime(2026, 10, 7),
       );
-      // 1st, 3rd, 5th, 7th = 4 occurrences
       expect(occ.length, 4);
       expect(occ[0], DateTime(2026, 10, 1));
       expect(occ[1], DateTime(2026, 10, 3));
@@ -62,7 +61,6 @@ void main() {
     });
 
     test('RecurrenceType.weekdays matches only Monday to Friday', () {
-      // 2026-10-15 is Thursday, 16 is Friday, 17 is Saturday, 18 is Sunday, 19 is Monday
       final rule = RecurrenceRule(
         id: 'r3',
         userId: 'u1',
@@ -72,11 +70,11 @@ void main() {
         updatedAt: now,
       );
 
-      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 15)), isTrue); // Thursday
-      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 16)), isTrue); // Friday
-      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 17)), isFalse); // Saturday
-      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 18)), isFalse); // Sunday
-      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 19)), isTrue); // Monday
+      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 15)), isTrue);
+      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 16)), isTrue);
+      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 17)), isFalse);
+      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 18)), isFalse);
+      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 19)), isTrue);
     });
 
     test('RecurrenceType.everyOtherDay matches every 2 days', () {
@@ -95,28 +93,26 @@ void main() {
     });
 
     test('RecurrenceType.weekly respects daysOfWeek', () {
-      // Mon (1), Wed (3), Fri (5)
       final rule = RecurrenceRule(
         id: 'r5',
         userId: 'u1',
         type: RecurrenceType.weekly,
         daysOfWeek: const [1, 3, 5],
-        startDate: DateTime(2026, 10, 12), // Monday
+        startDate: DateTime(2026, 10, 12),
         createdAt: now,
         updatedAt: now,
       );
 
-      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 12)), isTrue); // Mon
-      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 13)), isFalse); // Tue
-      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 14)), isTrue); // Wed
-      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 15)), isFalse); // Thu
-      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 16)), isTrue); // Fri
-      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 17)), isFalse); // Sat
-      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 18)), isFalse); // Sun
+      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 12)), isTrue);
+      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 13)), isFalse);
+      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 14)), isTrue);
+      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 15)), isFalse);
+      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 16)), isTrue);
+      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 17)), isFalse);
+      expect(engine.isScheduledFor(rule, DateTime(2026, 10, 18)), isFalse);
     });
 
     test('RecurrenceType.monthly respects intervalMonths and clamps day for shorter months', () {
-      // Started on Jan 31, 2026
       final rule = RecurrenceRule(
         id: 'r6',
         userId: 'u1',
@@ -128,13 +124,10 @@ void main() {
       );
 
       expect(engine.isScheduledFor(rule, DateTime(2026, 1, 31)), isTrue);
-      // Feb 2026 has 28 days -> Feb 28 should match
       expect(engine.isScheduledFor(rule, DateTime(2026, 2, 28)), isTrue);
       expect(engine.isScheduledFor(rule, DateTime(2026, 2, 27)), isFalse);
-      // March has 31 days -> March 31 should match
       expect(engine.isScheduledFor(rule, DateTime(2026, 3, 31)), isTrue);
       expect(engine.isScheduledFor(rule, DateTime(2026, 3, 30)), isFalse);
-      // April has 30 days -> April 30 should match
       expect(engine.isScheduledFor(rule, DateTime(2026, 4, 30)), isTrue);
     });
 
@@ -150,7 +143,6 @@ void main() {
         updatedAt: now,
       );
 
-      // Days 1 to 5 match, day 6 does not because maxOccurrences is 5
       expect(engine.isScheduledFor(rule, DateTime(2026, 10, 1)), isTrue);
       expect(engine.isScheduledFor(rule, DateTime(2026, 10, 5)), isTrue);
       expect(engine.isScheduledFor(rule, DateTime(2026, 10, 6)), isFalse);
@@ -174,14 +166,12 @@ void main() {
         updatedAt: now,
       );
 
-      // Request 1000 days, but maxDaysWindow is 10
       final occ = engine.generateOccurrences(
         rule,
         DateTime(2026, 1, 1),
         DateTime(2026, 1, 1).add(const Duration(days: 1000)),
         maxDaysWindow: 10,
       );
-      // 10 days window inclusive = 11 occurrences (days 0..10)
       expect(occ.length, 11);
     });
   });
@@ -256,7 +246,6 @@ void main() {
         ),
       ];
 
-      // Default: skipped excluded
       final result = kpiService.calculateDailyCompletionRate(
         occurrences: occurrences,
         date: today,
@@ -269,7 +258,6 @@ void main() {
       expect(result.skippedCount, 1);
       expect(result.completionRate, 100.0);
 
-      // When includeSkipped = true
       final withSkipped = kpiService.calculateDailyCompletionRate(
         occurrences: occurrences,
         date: today,
@@ -300,7 +288,7 @@ void main() {
           userId: 'u1',
           taskId: 't2',
           occurrenceDate: tomorrow,
-          status: TaskStatus.pending, // Future pending task
+          status: TaskStatus.pending,
           createdAt: today,
           updatedAt: today,
         ),
@@ -393,7 +381,6 @@ void main() {
       ];
 
       final occurrences = [
-        // Direct parent task: 1 occurrence, completed
         TaskOccurrence(
           id: 'occ_dir',
           userId: 'u1',
@@ -403,7 +390,6 @@ void main() {
           createdAt: now,
           updatedAt: now,
         ),
-        // Child 1 (coding): 2 occurrences, 1 completed, 1 pending (50%)
         TaskOccurrence(
           id: 'occ_c1_1',
           userId: 'u1',
@@ -422,7 +408,6 @@ void main() {
           createdAt: now,
           updatedAt: now,
         ),
-        // Child 2 (meetings): 1 occurrence, completed (100%)
         TaskOccurrence(
           id: 'occ_c2_1',
           userId: 'u1',
@@ -442,12 +427,10 @@ void main() {
         asOfDate: now,
       );
 
-      // Direct parent: 1 eligible, 1 completed = 100%
       expect(agg.directEligible, 1);
       expect(agg.directCompleted, 1);
       expect(agg.directCompletionRate, 100.0);
 
-      // Children breakdown:
       expect(agg.childBreakdown.length, 2);
       final codingChild = agg.childBreakdown.firstWhere((c) => c.labelId == 'l_child1');
       expect(codingChild.eligibleCount, 2);
@@ -459,14 +442,12 @@ void main() {
       expect(meetChild.completedCount, 1);
       expect(meetChild.completionRate, 100.0);
 
-      // Weighted aggregate: 3 completed / 4 eligible = 75%
       expect(agg.totalCompleted, 3);
       expect(agg.totalEligible, 4);
       expect(agg.weightedCompletionRate, 75.0);
     });
 
     test('Target progress formulas for count, time, and rate', () {
-      // Count-based: 8 completed / 10 target = 80%
       final countProgress = kpiService.calculateTargetProgressPercentage(
         type: KpiType.count,
         currentValue: 8.0,
@@ -474,7 +455,6 @@ void main() {
       );
       expect(countProgress, 80.0);
 
-      // Time-based: 90 mins tracked / 120 mins target = 75%
       final timeProgress = kpiService.calculateTargetProgressPercentage(
         type: KpiType.time,
         currentValue: 90.0,
@@ -482,7 +462,6 @@ void main() {
       );
       expect(timeProgress, 75.0);
 
-      // Rate-based: 85% achieved / 90% target = 94.444...%
       final rateProgress = kpiService.calculateTargetProgressPercentage(
         type: KpiType.rate,
         currentValue: 85.0,
@@ -571,7 +550,7 @@ void main() {
           userId: 'u1',
           taskId: 't1',
           occurrenceDate: today,
-          status: TaskStatus.pending, // Pending today!
+          status: TaskStatus.pending,
           createdAt: today,
           updatedAt: today,
         ),
@@ -590,9 +569,9 @@ void main() {
 
     test('Grace day preserves streak over a single missed day', () {
       final today = DateTime(2026, 10, 15);
-      final yesterday = DateTime(2026, 10, 14); // Missed!
-      final dayBefore = DateTime(2026, 10, 13); // Done
-      final twoDaysBefore = DateTime(2026, 10, 12); // Done
+      final yesterday = DateTime(2026, 10, 14);
+      final dayBefore = DateTime(2026, 10, 13);
+      final twoDaysBefore = DateTime(2026, 10, 12);
 
       final occurrences = [
         TaskOccurrence(
@@ -618,7 +597,7 @@ void main() {
           userId: 'u1',
           taskId: 't1',
           occurrenceDate: yesterday,
-          status: TaskStatus.pending, // Yesterday missed
+          status: TaskStatus.pending,
           createdAt: yesterday,
           updatedAt: yesterday,
         ),
@@ -627,13 +606,12 @@ void main() {
           userId: 'u1',
           taskId: 't1',
           occurrenceDate: today,
-          status: TaskStatus.done, // Today done
+          status: TaskStatus.done,
           createdAt: today,
           updatedAt: today,
         ),
       ];
 
-      // With grace day: yesterday is bridged, streak is 3 (today + 2 days before)
       final withGrace = streakService.calculateStreak(
         occurrences: occurrences,
         asOfDate: today,
@@ -643,14 +621,13 @@ void main() {
       expect(withGrace.currentStreak, 3);
       expect(withGrace.graceDaysUsedInCurrentStreak, 1);
 
-      // Without grace day: yesterday breaks the streak, currentStreak is 1 (today only)
       final withoutGrace = streakService.calculateStreak(
         occurrences: occurrences,
         asOfDate: today,
         enableGraceDay: false,
       );
       expect(withoutGrace.currentStreak, 1);
-      expect(withoutGrace.longestStreak, 2); // 2 days before
+      expect(withoutGrace.longestStreak, 2);
     });
 
     test('Future occurrences do not count as missed dates', () {
@@ -703,7 +680,6 @@ void main() {
       expect(session.status, TimerSessionStatus.running);
       expect(session.elapsedSeconds, 0);
 
-      // Check after 25 seconds
       final checkTime = start.add(const Duration(seconds: 25));
       final elapsedSec = timerService.calculateElapsedSeconds(session, checkTime);
       expect(elapsedSec, 25);
@@ -717,19 +693,16 @@ void main() {
         now: start,
       );
 
-      // Run for 30 seconds, then pause
       final pauseTime = start.add(const Duration(seconds: 30));
       session = timerService.pauseTimer(session, now: pauseTime);
 
       expect(session.status, TimerSessionStatus.paused);
       expect(session.elapsedSeconds, 30);
 
-      // While paused for 10 minutes, elapsed duration must REMAIN 30 seconds
       final duringPause = pauseTime.add(const Duration(minutes: 10));
       final elapsedSec = timerService.calculateElapsedSeconds(session, duringPause);
       expect(elapsedSec, 30);
 
-      // Resume after 10 minutes
       final resumeTime = duringPause;
       session = timerService.resumeTimer(session, now: resumeTime);
 
@@ -737,12 +710,10 @@ void main() {
       expect(session.startedAt, resumeTime);
       expect(session.elapsedSeconds, 30);
 
-      // Run for 20 more seconds
       final checkTime = resumeTime.add(const Duration(seconds: 20));
       final finalSec = timerService.calculateElapsedSeconds(session, checkTime);
-      expect(finalSec, 50); // 30 + 20
+      expect(finalSec, 50);
 
-      // Stop timer
       session = timerService.stopTimer(session, now: checkTime);
       expect(session.status, TimerSessionStatus.completed);
       expect(session.elapsedSeconds, 50);
@@ -808,11 +779,11 @@ void main() {
       );
 
       final totalMin = timerService.calculateTotalMinutes([s1, s2, s3]);
-      expect(totalMin, 90); // 15 + 30 + 45 = 90 mins
+      expect(totalMin, 90);
 
       final byTask = timerService.calculateElapsedByTask([s1, s2, s3]);
-      expect(byTask['t1']?.inMinutes, 45); // 15 + 30
-      expect(byTask['t2']?.inMinutes, 45); // 45
+      expect(byTask['t1']?.inMinutes, 45);
+      expect(byTask['t2']?.inMinutes, 45);
     });
   });
 }

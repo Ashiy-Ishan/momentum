@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 
-/// Represents a motivational quote with optional author attribution and category.
 class MotivationQuote extends Equatable {
   final String text;
   final String? author;

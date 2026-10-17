@@ -9,7 +9,6 @@ part 'labels_dao.g.dart';
 class LabelsDao extends DatabaseAccessor<AppDatabase> with _$LabelsDaoMixin {
   LabelsDao(super.db);
 
-  /// Retrieves all non-deleted labels for a user ordered by sort order.
   Future<List<Label>> getAllLabels(String userId) {
     return (select(labels)
           ..where(
@@ -19,7 +18,6 @@ class LabelsDao extends DatabaseAccessor<AppDatabase> with _$LabelsDaoMixin {
         .get();
   }
 
-  /// Retrieves active root-level labels (no parent) for a user.
   Future<List<Label>> getRootLabels(String userId) {
     return (select(labels)
           ..where(
@@ -33,7 +31,6 @@ class LabelsDao extends DatabaseAccessor<AppDatabase> with _$LabelsDaoMixin {
         .get();
   }
 
-  /// Retrieves active child labels belonging to a parent label.
   Future<List<Label>> getChildLabels(String parentId) {
     return (select(labels)
           ..where(
@@ -46,24 +43,20 @@ class LabelsDao extends DatabaseAccessor<AppDatabase> with _$LabelsDaoMixin {
         .get();
   }
 
-  /// Retrieves a single label by its primary key.
   Future<Label?> getLabelById(String id) {
     return (select(labels)
           ..where((tbl) => tbl.id.equals(id) & tbl.isDeleted.equals(false)))
         .getSingleOrNull();
   }
 
-  /// Inserts a new label record.
   Future<void> insertLabel(LabelsCompanion label) async {
     await into(labels).insert(label);
   }
 
-  /// Updates an existing label record.
   Future<void> updateLabel(LabelsCompanion label) async {
     await update(labels).replace(label);
   }
 
-  /// Soft deletes a label by setting isDeleted = true.
   Future<void> softDeleteLabel(String id) async {
     final existing = await (select(labels)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
     await (update(labels)..where((tbl) => tbl.id.equals(id))).write(
@@ -75,7 +68,6 @@ class LabelsDao extends DatabaseAccessor<AppDatabase> with _$LabelsDaoMixin {
     );
   }
 
-  /// Archives or unarchives a label.
   Future<void> archiveLabel(String id, bool archived) async {
     final existing = await (select(labels)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
     await (update(labels)..where((tbl) => tbl.id.equals(id))).write(
@@ -87,7 +79,6 @@ class LabelsDao extends DatabaseAccessor<AppDatabase> with _$LabelsDaoMixin {
     );
   }
 
-  /// Watches active root-level labels for a user.
   Stream<List<Label>> watchRootLabels(String userId) {
     return (select(labels)
           ..where(
@@ -101,7 +92,6 @@ class LabelsDao extends DatabaseAccessor<AppDatabase> with _$LabelsDaoMixin {
         .watch();
   }
 
-  /// Watches all non-deleted labels for a user.
   Stream<List<Label>> watchAllLabels(String userId) {
     return (select(labels)
           ..where(
@@ -111,7 +101,6 @@ class LabelsDao extends DatabaseAccessor<AppDatabase> with _$LabelsDaoMixin {
         .watch();
   }
 
-  /// Watches active child labels for a parent label.
   Stream<List<Label>> watchChildLabels(String parentId) {
     return (select(labels)
           ..where(
@@ -124,7 +113,6 @@ class LabelsDao extends DatabaseAccessor<AppDatabase> with _$LabelsDaoMixin {
         .watch();
   }
 
-  /// Watches a single label by its id.
   Stream<Label?> watchLabel(String id) {
     return (select(labels)
           ..where((tbl) => tbl.id.equals(id) & tbl.isDeleted.equals(false)))

@@ -11,8 +11,6 @@ import '../../../domain/models/models.dart';
 import '../../tasks/providers/task_providers.dart';
 import '../../tasks/widgets/task_card.dart';
 
-/// Interactive month calendar view visualizing task densities and completion rates,
-/// with per-day drilldown and occurrence inspector.
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
 
@@ -57,7 +55,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final theme = Theme.of(context);
     final allTasks = ref.watch(allTasksStreamProvider).valueOrNull ?? [];
 
-    // Group tasks by date key 'yyyy-MM-dd'
     final taskMap = <String, List<Task>>{};
     for (final task in allTasks) {
       if (task.scheduledDate != null) {
@@ -99,18 +96,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       ),
       body: Column(
         children: [
-          // Month Header Bar
           _buildMonthHeader(context),
 
-          // Days of week row
           _buildWeekdaysHeader(context),
 
-          // Calendar Days Grid
           _buildMonthGrid(context, taskMap),
 
           const Divider(height: 1),
 
-          // Selected Day Overview Panel Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
@@ -133,7 +126,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ),
                   ],
                 ),
-                // Task counts pill
                 Row(
                   children: [
                     if (tasksForSelected.isNotEmpty) ...[
@@ -160,7 +152,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             ),
           ),
 
-          // Tasks for selected day
           Expanded(
             child: tasksForSelected.isEmpty
                 ? Center(
@@ -278,9 +269,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
     final daysInCurrentMonth =
         AppDateUtils.daysInMonth(_viewMonth.year, _viewMonth.month);
-    final firstDayWeekday = _viewMonth.weekday; // 1 = Mon, 7 = Sun
+    final firstDayWeekday = _viewMonth.weekday;
 
-    // Previous month filler days
     final prevMonth = DateTime(_viewMonth.year, _viewMonth.month - 1, 1);
     final daysInPrevMonth =
         AppDateUtils.daysInMonth(prevMonth.year, prevMonth.month);
@@ -306,16 +296,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           bool isCurrentMonth = true;
 
           if (index < fillerDaysBefore) {
-            // Day from previous month
             final dayNum = daysInPrevMonth - fillerDaysBefore + index + 1;
             cellDate = DateTime(prevMonth.year, prevMonth.month, dayNum);
             isCurrentMonth = false;
           } else if (index < fillerDaysBefore + daysInCurrentMonth) {
-            // Day in current month
             final dayNum = index - fillerDaysBefore + 1;
             cellDate = DateTime(_viewMonth.year, _viewMonth.month, dayNum);
           } else {
-            // Day in next month
             final dayNum = index - (fillerDaysBefore + daysInCurrentMonth) + 1;
             final nextMonth =
                 DateTime(_viewMonth.year, _viewMonth.month + 1, 1);
@@ -379,7 +366,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  // Dots indicator
                   if (dayTasks.isNotEmpty)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,

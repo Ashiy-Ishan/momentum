@@ -30,7 +30,6 @@ void main() {
       ],
     );
 
-    // Seed default labels & platform creator KPIs for test user
     const userId = 'test-dashboard-user';
     final labelRepo = container.read(labelRepositoryProvider);
     final kpiRepo = container.read(kpiRepositoryProvider);
@@ -65,22 +64,18 @@ void main() {
 
       expect(find.byType(DashboardScreen), findsOneWidget);
 
-      // Verify Header and Executive Scorecard
       expect(find.text('Creator Cadence & Total KPIs'), findsOneWidget);
       expect(find.text('Executive KPI Scorecard'), findsOneWidget);
 
-      // Verify filter chips
       expect(find.text('All Totals'), findsOneWidget);
       expect(find.text('Video & Content'), findsOneWidget);
       expect(find.text('Audience Reach'), findsOneWidget);
 
-      // Verify Hero Metric Tiles
       expect(find.text('Video Output'), findsOneWidget);
       expect(find.text('Weekly Posts'), findsOneWidget);
       expect(find.text('Blog Publishing & Code Velocity'), findsOneWidget);
       expect(find.text('TOTAL AUDIENCE & COMMUNITY REACH'), findsOneWidget);
 
-      // Verify Quick-Log Action Buttons
       expect(find.text('+1 Video'), findsOneWidget);
       expect(find.text('+1 Short'), findsOneWidget);
       expect(find.text('+1 Post'), findsOneWidget);
@@ -132,9 +127,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      // Audience Reach card should remain visible
       expect(find.text('TOTAL AUDIENCE & COMMUNITY REACH'), findsOneWidget);
-      // Video Output tile should be hidden when filtered to audience
       expect(find.text('Video Output'), findsNothing);
     });
 
@@ -149,7 +142,6 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Verify route changed to /notifications
       expect(find.text('Notification History'), findsOneWidget);
     });
   });

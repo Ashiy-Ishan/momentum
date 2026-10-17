@@ -6,15 +6,6 @@ import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 
-/// Card widget representing a category/project label in Momentum.
-///
-/// Displays:
-/// - Label icon and theme color
-/// - Label name & hierarchy indicator
-/// - Count of active sub-labels
-/// - Completion percentage & progress bar
-/// - Concise KPI summary ("8/12 tasks completed • 67%")
-/// - Tap to view label dashboard & action menu (Edit, Delete, Add Sub-label)
 class LabelCard extends StatelessWidget {
   final Label label;
   final int childLabelCount;
@@ -69,9 +60,6 @@ class LabelCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ---------------------------------------------------------------
-              // Left Color Accent Bar
-              // ---------------------------------------------------------------
               Container(
                 width: 3.5,
                 decoration: BoxDecoration(
@@ -83,16 +71,12 @@ class LabelCard extends StatelessWidget {
                 ),
               ),
 
-              // ---------------------------------------------------------------
-              // Card Main Body
-              // ---------------------------------------------------------------
               Expanded(
                 child: Padding(
                   padding: AppSpacing.cardPadding,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header Row: Icon, Title, and Sub-label count
                       Row(
                         children: [
                           Container(
@@ -239,9 +223,6 @@ class LabelCard extends StatelessWidget {
 
                       AppSpacing.vGapMd,
 
-                      // ---------------------------------------------------------
-                      // Progress Bar & KPI Summary
-                      // ---------------------------------------------------------
                       ClipRRect(
                         borderRadius: AppRadius.borderSm,
                         child: LinearProgressIndicator(

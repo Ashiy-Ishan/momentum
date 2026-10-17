@@ -16,7 +16,6 @@ import '../../../shared/widgets/icon_picker_dialog.dart';
 import '../../labels/providers/label_providers.dart';
 import '../providers/task_providers.dart';
 
-/// Screen / Form dialog to create or edit a [Task].
 class TaskFormScreen extends ConsumerStatefulWidget {
   final String? taskId;
   final Task? initialTask;
@@ -73,7 +72,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
     if (widget.initialTask != null) {
       _populateFromTask(widget.initialTask!);
     } else if (widget.taskId != null) {
-      // Will load in didChangeDependencies or post-frame callback
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadTask());
     } else {
       _scheduledDate = widget.defaultScheduledDate ?? DateTime.now();
@@ -217,7 +215,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
     final mins = int.tryParse(_durationMinutesController.text.trim()) ?? 0;
     final totalEstimatedMinutes = (hours * 60) + mins;
 
-    // Use chosen subLabelId, or fallback to parentLabelId
     final finalLabelId = _subLabelId ?? _parentLabelId;
 
     final isEditing = _loadedTask != null || widget.taskId != null;
@@ -299,7 +296,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
     final allLabels = ref.watch(allLabelsStreamProvider).valueOrNull ?? [];
     final rootLabels = allLabels.where((l) => l.parentId == null).toList();
 
-    // If subLabelId is set but parentLabelId is not, infer parent
     if (_subLabelId != null && _parentLabelId == null) {
       final sub = allLabels.cast<Label?>().firstWhere(
             (l) => l?.id == _subLabelId,
@@ -357,7 +353,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-            // Task Title
             TextFormField(
               controller: _titleController,
               autofocus: !isEditing,
@@ -381,7 +376,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
             ),
             AppSpacing.vGapMd,
 
-            // Description / Notes
             TextFormField(
               controller: _descController,
               maxLines: 3,
@@ -400,7 +394,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
             ),
             AppSpacing.vGapMd,
 
-            // Priority Selector
             Text(
               'Priority',
               style: theme.textTheme.labelLarge?.copyWith(
@@ -438,7 +431,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
             ),
             AppSpacing.vGapLg,
 
-            // Parent & Sub Label Section
             Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -457,7 +449,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                       ),
                     ),
                     AppSpacing.vGapSm,
-                    // Parent Label Dropdown
                     DropdownButtonFormField<String?>(
                       initialValue: _parentLabelId,
                       decoration: InputDecoration(
@@ -494,7 +485,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                       onChanged: (val) {
                         setState(() {
                           _parentLabelId = val;
-                          _subLabelId = null; // Reset sub-label when parent changes
+                          _subLabelId = null;
                         });
                       },
                     ),
@@ -557,7 +548,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
             ),
             AppSpacing.vGapMd,
 
-            // Schedule & Due Dates Card
             Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -577,7 +567,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                     ),
                     AppSpacing.vGapSm,
 
-                    // Scheduled Date
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.calendar_today_outlined),
@@ -605,7 +594,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                     ),
                     const Divider(),
 
-                    // Due Date
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.flag_outlined),
@@ -632,7 +620,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                     ),
                     const Divider(),
 
-                    // Recurrence
                     DropdownButtonFormField<RecurrenceType>(
                       initialValue: _recurrenceType,
                       decoration: InputDecoration(
@@ -682,7 +669,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
             ),
             AppSpacing.vGapMd,
 
-            // Time Tracking & Duration Card
             Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -765,7 +751,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
             ),
             AppSpacing.vGapMd,
 
-            // Website URL
             TextFormField(
               controller: _urlController,
               decoration: InputDecoration(
@@ -785,7 +770,6 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
             ),
             AppSpacing.vGapXl,
 
-            // Save Button
             FilledButton.icon(
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),

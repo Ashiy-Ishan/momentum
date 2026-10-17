@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Represents a categorized group of icons.
 class IconCategory {
   final String name;
   final List<IconItem> icons;
@@ -8,7 +7,6 @@ class IconCategory {
   const IconCategory({required this.name, required this.icons});
 }
 
-/// Represents a single icon choice in the built-in icon library.
 class IconItem {
   final String name;
   final IconData iconData;
@@ -33,13 +31,8 @@ class IconItem {
   int get hashCode => Object.hash(name, iconData, category);
 }
 
-/// Built-in icon library for categories, tasks, labels, and habits in Momentum.
 abstract class AppIcons {
-  // ---------------------------------------------------------------------------
-  // Icon Categories Definition
-  // ---------------------------------------------------------------------------
   static final List<IconCategory> _categories = [
-    // 1. Productivity (13 icons)
     const IconCategory(
       name: 'Productivity',
       icons: [
@@ -107,7 +100,6 @@ abstract class AppIcons {
       ],
     ),
 
-    // 2. Learning (10 icons)
     const IconCategory(
       name: 'Learning',
       icons: [
@@ -164,7 +156,6 @@ abstract class AppIcons {
       ],
     ),
 
-    // 3. Content Creation (10 icons)
     const IconCategory(
       name: 'Content Creation',
       icons: [
@@ -221,7 +212,6 @@ abstract class AppIcons {
       ],
     ),
 
-    // 4. Social Media (10 icons)
     const IconCategory(
       name: 'Social Media',
       icons: [
@@ -274,7 +264,6 @@ abstract class AppIcons {
       ],
     ),
 
-    // 5. Personal (10 icons)
     const IconCategory(
       name: 'Personal',
       icons: [
@@ -331,7 +320,6 @@ abstract class AppIcons {
       ],
     ),
 
-    // 6. Technical (10 icons)
     const IconCategory(
       name: 'Technical',
       icons: [
@@ -377,15 +365,12 @@ abstract class AppIcons {
     ),
   ];
 
-  /// List of all defined icon categories
   static List<IconCategory> get categories => _categories;
 
-  /// Flattened list of all available icons
   static final List<IconItem> allIcons = [
     for (final cat in _categories) ...cat.icons,
   ];
 
-  // Fast lookup cache tables
   static final Map<String, IconData> _nameToIcon = {
     for (final item in allIcons) item.name.toLowerCase(): item.iconData,
   };
@@ -394,8 +379,6 @@ abstract class AppIcons {
     for (final item in allIcons) item.iconData: item.name,
   };
 
-  /// Lookup [IconData] by its registered name.
-  /// Returns [fallback] (default: Icons.circle_outlined) if not found.
   static IconData fromName(
     String name, {
     IconData fallback = Icons.circle_outlined,
@@ -404,13 +387,10 @@ abstract class AppIcons {
     return _nameToIcon[key] ?? fallback;
   }
 
-  /// Lookup registered name for a given [IconData].
-  /// Returns [fallback] (default: 'circle_outlined') if not found.
   static String nameOf(IconData icon, {String fallback = 'circle_outlined'}) {
     return _iconToName[icon] ?? fallback;
   }
 
-  /// Search icons by query string matching name or category (case-insensitive).
   static List<IconItem> search(String query) {
     final cleanQuery = query.toLowerCase().trim();
     if (cleanQuery.isEmpty) {

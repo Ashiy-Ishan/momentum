@@ -31,8 +31,6 @@ enum AnalyticsDateRange {
   }
 }
 
-/// Comprehensive analytics dashboard screen delivering interactive charts,
-/// productivity trend lines, daily completion bar visualizations, and label distribution.
 class AnalyticsScreen extends ConsumerStatefulWidget {
   const AnalyticsScreen({super.key});
 
@@ -116,11 +114,9 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     final end = _endDate;
     final days = AppDateUtils.dateRange(start, end);
 
-    // Calculate completion stats for the date range
     int totalScheduled = 0;
     int totalDone = 0;
 
-    // Daily breakdown maps
     final dailyScheduled = <String, int>{};
     final dailyDone = <String, int>{};
 
@@ -154,11 +150,9 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         children: [
-          // Date Range Selector Chips
           _buildDateRangeSelector(context),
           AppSpacing.vGapMd,
 
-          // Consistency & Streak Stat Cards
           _buildStatsCardsRow(
             context,
             streakDays: currentStreak,
@@ -168,7 +162,6 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           ),
           AppSpacing.vGapLg,
 
-          // Chart 1: Daily Completion Bar Chart
           Text(
             'Daily Task Activity',
             style: theme.textTheme.titleMedium?.copyWith(
@@ -196,7 +189,6 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           ),
           AppSpacing.vGapLg,
 
-          // Chart 2: Weekly / Trend Line Chart
           Text(
             'Productivity Trend',
             style: theme.textTheme.titleMedium?.copyWith(
@@ -224,7 +216,6 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           ),
           AppSpacing.vGapLg,
 
-          // Chart 3: Focus Distribution by Label (Pie Chart)
           Text(
             'Focus Distribution by Area',
             style: theme.textTheme.titleMedium?.copyWith(
@@ -298,7 +289,6 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
 
     return Row(
       children: [
-        // Streak Card
         Expanded(
           child: _buildMetricSummaryCard(
             title: 'Streak',
@@ -309,7 +299,6 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           ),
         ),
         const SizedBox(width: 8),
-        // Done Tasks Card
         Expanded(
           child: _buildMetricSummaryCard(
             title: 'Completed',
@@ -320,7 +309,6 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           ),
         ),
         const SizedBox(width: 8),
-        // Rate Card
         Expanded(
           child: _buildMetricSummaryCard(
             title: 'Success Rate',
@@ -492,7 +480,6 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           ),
         ),
         const SizedBox(height: 10),
-        // Legend
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

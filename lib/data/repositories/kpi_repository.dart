@@ -7,43 +7,31 @@ import '../local/daos/kpi_dao.dart';
 import '../local/database.dart' as db;
 import '../sync/sync_engine.dart';
 
-/// Contract for Key Performance Indicator (KPI) metrics tracking.
 abstract class KpiRepository {
-  /// Retrieves KPI definitions configured for [labelId].
   Future<List<domain.KpiDefinition>> getKpisForLabel(String labelId);
 
-  /// Retrieves all KPI definitions for [userId].
   Future<List<domain.KpiDefinition>> getAllKpis(String userId);
 
-  /// Creates a new [kpi] metric definition.
   Future<void> createKpi(domain.KpiDefinition kpi);
 
-  /// Updates an existing [kpi] metric definition.
   Future<void> updateKpi(domain.KpiDefinition kpi);
 
-  /// Updates the current recorded value of a KPI definition.
   Future<void> updateCurrentValue(String id, double newValue);
 
-  /// Increments or decrements the current recorded value of a KPI definition by [delta].
   Future<void> incrementCurrentValue(String id, double delta);
 
-  /// Soft deletes a KPI definition by [id].
   Future<void> deleteKpi(String id);
 
-  /// Seeds default platform and output creator KPIs for [userId] (YouTube, Instagram, Blog).
   Future<void> seedDefaultPlatformKpis(
     String userId,
     List<domain.Label> labels,
   );
 
-  /// Watches KPI definitions configured for [labelId].
   Stream<List<domain.KpiDefinition>> watchKpisForLabel(String labelId);
 
-  /// Watches all KPI definitions for [userId].
   Stream<List<domain.KpiDefinition>> watchAllKpis(String userId);
 }
 
-/// Drift-backed implementation of [KpiRepository].
 class KpiRepositoryImpl implements KpiRepository {
   final db.AppDatabase database;
   final KpiDao kpiDao;

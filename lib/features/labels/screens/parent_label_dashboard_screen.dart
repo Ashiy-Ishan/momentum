@@ -11,9 +11,6 @@ import '../../analytics/providers/analytics_providers.dart';
 import '../../tasks/providers/task_providers.dart';
 import '../../tasks/widgets/task_card.dart';
 
-/// Comprehensive dashboard screen for a parent focus area category,
-/// aggregating child label performances, comparative KPI cards, breakdown charts,
-/// and directly assigned tasks.
 class ParentLabelDashboardScreen extends ConsumerStatefulWidget {
   final String labelId;
 
@@ -30,7 +27,7 @@ class ParentLabelDashboardScreen extends ConsumerStatefulWidget {
 class _ParentLabelDashboardScreenState
     extends ConsumerState<ParentLabelDashboardScreen> {
   int _touchedPieIndex = -1;
-  String? _selectedFilterId; // null = all platform tasks, or parent.id, or specific child.id
+  String? _selectedFilterId;
 
   Color _colorFromHex(String? hex, Color fallback) {
     if (hex == null || hex.isEmpty) return fallback;
@@ -87,7 +84,6 @@ class _ParentLabelDashboardScreenState
 
           return CustomScrollView(
             slivers: [
-              // Header SliverAppBar
               SliverAppBar(
                 expandedHeight: 180,
                 pinned: true,
@@ -152,14 +148,12 @@ class _ParentLabelDashboardScreenState
                 ],
               ),
 
-              // Content Body
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Consolidated KPI Metrics Section
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
@@ -177,7 +171,6 @@ class _ParentLabelDashboardScreenState
 
                       AppSpacing.vGapLg,
 
-                      // Comparison Cards for Child Labels
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(
@@ -231,7 +224,6 @@ class _ParentLabelDashboardScreenState
 
                       AppSpacing.vGapLg,
 
-                      // Activity Breakdown Chart
                       if (summary.childMetrics.isNotEmpty) ...[
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -263,7 +255,6 @@ class _ParentLabelDashboardScreenState
                         AppSpacing.vGapLg,
                       ],
 
-                      // Platform & Sub-Project Tasks
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Row(

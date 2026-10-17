@@ -9,8 +9,6 @@ import '../../../domain/models/notification_history_item.dart';
 import '../providers/notification_history_provider.dart';
 import '../services/notification_service.dart';
 
-/// Screen displaying chronological notification history with unread filtering,
-/// quick mark-as-read, delete actions, and test alert trigger.
 class NotificationHistoryScreen extends ConsumerStatefulWidget {
   const NotificationHistoryScreen({super.key});
 
@@ -21,7 +19,7 @@ class NotificationHistoryScreen extends ConsumerStatefulWidget {
 
 class _NotificationHistoryScreenState
     extends ConsumerState<NotificationHistoryScreen> {
-  String _selectedFilter = 'all'; // 'all', 'unread', 'tasks', 'reports'
+  String _selectedFilter = 'all';
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +30,6 @@ class _NotificationHistoryScreenState
 
     final unreadCount = history.where((n) => !n.isRead).length;
 
-    // Filter list
     final filtered = history.where((item) {
       if (_selectedFilter == 'unread') return !item.isRead;
       if (_selectedFilter == 'tasks') {
@@ -75,7 +72,6 @@ class _NotificationHistoryScreenState
       ),
       body: Column(
         children: [
-          // Filter Chips Bar
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -110,7 +106,6 @@ class _NotificationHistoryScreenState
           ),
           const Divider(height: 1),
 
-          // Notification List
           Expanded(
             child: filtered.isEmpty
                 ? _buildEmptyState(context, isDark)
@@ -196,7 +191,6 @@ class _NotificationHistoryScreenState
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Type Icon
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -207,7 +201,6 @@ class _NotificationHistoryScreenState
                 ),
                 const SizedBox(width: 12),
 
-                // Content
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -287,7 +280,6 @@ class _NotificationHistoryScreenState
                   ),
                 ),
 
-                // Quick actions
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert, size: 18),
                   onSelected: (val) {
@@ -371,7 +363,6 @@ class _NotificationHistoryScreenState
     const title = 'Momentum Test Alert';
     const body = 'Your notification pipeline is working smoothly!';
 
-    // Show native notification
     await NotificationService.instance.showNotification(
       id: DateTime.now().millisecondsSinceEpoch % 100000,
       title: title,
@@ -379,7 +370,6 @@ class _NotificationHistoryScreenState
       payload: '/today',
     );
 
-    // Save to history
     await ref.read(notificationHistoryProvider.notifier).addNotification(
           title: title,
           body: body,

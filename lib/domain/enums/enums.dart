@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Status of a task or occurrence.
 enum TaskStatus {
   pending,
   doing,
@@ -41,15 +40,15 @@ enum TaskStatus {
   Color get color {
     switch (this) {
       case TaskStatus.pending:
-        return const Color(0xFFC28D4E); // Refined Warm Ochre
+        return const Color(0xFFC28D4E);
       case TaskStatus.doing:
-        return const Color(0xFF5B82A6); // Subtle Steel Blue
+        return const Color(0xFF5B82A6);
       case TaskStatus.done:
-        return const Color(0xFF4E9B78); // Soft Muted Sage
+        return const Color(0xFF4E9B78);
       case TaskStatus.skipped:
-        return const Color(0xFF64748B); // Muted Slate
+        return const Color(0xFF64748B);
       case TaskStatus.cancelled:
-        return const Color(0xFFB85454); // Soft Muted Crimson
+        return const Color(0xFFB85454);
     }
   }
 
@@ -112,7 +111,6 @@ enum TaskStatus {
   }
 }
 
-/// Priority level of a task.
 enum TaskPriority {
   low,
   medium,
@@ -150,13 +148,13 @@ enum TaskPriority {
   Color get color {
     switch (this) {
       case TaskPriority.low:
-        return const Color(0xFF64748B); // Muted Slate
+        return const Color(0xFF64748B);
       case TaskPriority.medium:
-        return const Color(0xFF5B82A6); // Subtle Steel Blue
+        return const Color(0xFF5B82A6);
       case TaskPriority.high:
-        return const Color(0xFFC28D4E); // Refined Warm Ochre
+        return const Color(0xFFC28D4E);
       case TaskPriority.urgent:
-        return const Color(0xFFB85454); // Soft Muted Crimson
+        return const Color(0xFFB85454);
     }
   }
 
@@ -209,7 +207,6 @@ enum TaskPriority {
   }
 }
 
-/// Recurrence type for tasks.
 enum RecurrenceType {
   once,
   daily,
@@ -267,7 +264,6 @@ enum RecurrenceType {
   }
 }
 
-/// Type of KPI metric tracking.
 enum KpiType {
   count,
   rate,
@@ -307,7 +303,6 @@ enum KpiType {
   }
 }
 
-/// Tracking period for KPI.
 enum KpiPeriod {
   daily,
   weekly,
@@ -350,7 +345,6 @@ enum KpiPeriod {
   }
 }
 
-/// Status of an active or past timer session.
 enum TimerSessionStatus {
   running,
   paused,
@@ -412,7 +406,6 @@ enum TimerSessionStatus {
   }
 }
 
-/// Operation type for sync queue entries.
 enum SyncOperation {
   insert,
   update,
@@ -452,7 +445,6 @@ enum SyncOperation {
   }
 }
 
-/// Status of a sync queue item.
 enum SyncStatus {
   pending,
   processing,
@@ -495,7 +487,6 @@ enum SyncStatus {
   }
 }
 
-/// Status of attachment file synchronization.
 enum AttachmentSyncStatus {
   pending,
   uploaded,
@@ -535,7 +526,6 @@ enum AttachmentSyncStatus {
   }
 }
 
-/// User preference for application theme.
 enum ThemePreference {
   light,
   dark,

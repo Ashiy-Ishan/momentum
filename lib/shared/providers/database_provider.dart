@@ -6,52 +6,36 @@ import '../../data/remote/supabase_client.dart';
 import '../../data/repositories/repositories.dart';
 import '../../data/sync/sync_engine.dart';
 
-/// Central Drift database instance provider.
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
   final database = AppDatabase();
   ref.onDispose(() => database.close());
   return database;
 });
 
-// =============================================================================
-// DAOs
-// =============================================================================
-
-/// Tasks DAO provider.
 final tasksDaoProvider = Provider<TasksDao>((ref) {
   return ref.watch(appDatabaseProvider).tasksDao;
 });
 
-/// Labels DAO provider.
 final labelsDaoProvider = Provider<LabelsDao>((ref) {
   return ref.watch(appDatabaseProvider).labelsDao;
 });
 
-/// KPI DAO provider.
 final kpiDaoProvider = Provider<KpiDao>((ref) {
   return ref.watch(appDatabaseProvider).kpiDao;
 });
 
-/// Timer sessions DAO provider.
 final timerDaoProvider = Provider<TimerDao>((ref) {
   return ref.watch(appDatabaseProvider).timerDao;
 });
 
-/// Occurrences & Completion Events DAO provider.
 final occurrencesDaoProvider = Provider<OccurrencesDao>((ref) {
   return ref.watch(appDatabaseProvider).occurrencesDao;
 });
 
-/// Offline sync queue DAO provider.
 final syncDaoProvider = Provider<SyncDao>((ref) {
   return ref.watch(appDatabaseProvider).syncDao;
 });
 
-// =============================================================================
-// Repositories
-// =============================================================================
-
-/// Task repository provider.
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {
   return TaskRepositoryImpl(
     database: ref.watch(appDatabaseProvider),
@@ -61,7 +45,6 @@ final taskRepositoryProvider = Provider<TaskRepository>((ref) {
   );
 });
 
-/// Label repository provider.
 final labelRepositoryProvider = Provider<LabelRepository>((ref) {
   return LabelRepositoryImpl(
     database: ref.watch(appDatabaseProvider),
@@ -70,7 +53,6 @@ final labelRepositoryProvider = Provider<LabelRepository>((ref) {
   );
 });
 
-/// KPI repository provider.
 final kpiRepositoryProvider = Provider<KpiRepository>((ref) {
   return KpiRepositoryImpl(
     database: ref.watch(appDatabaseProvider),
@@ -79,7 +61,6 @@ final kpiRepositoryProvider = Provider<KpiRepository>((ref) {
   );
 });
 
-/// Timer session repository provider.
 final timerRepositoryProvider = Provider<TimerRepository>((ref) {
   return TimerRepositoryImpl(
     database: ref.watch(appDatabaseProvider),
@@ -88,17 +69,10 @@ final timerRepositoryProvider = Provider<TimerRepository>((ref) {
   );
 });
 
-// =============================================================================
-// Current User State
-// =============================================================================
-
-/// Holds the currently active user identifier ('local-user' by default).
-/// Reactively follows the Supabase authenticated user when available.
 final currentUserIdProvider = StateProvider<String>((ref) {
   final supabase = ref.watch(supabaseClientProvider);
   final initialUser = supabase.currentUser?.id ?? 'local-user';
 
-  // Reactively sync whenever Supabase auth changes
   final subscription = supabase.authStateChanges.listen((authState) {
     final nextUserId = authState.session?.user.id ?? 'local-user';
     if (ref.controller.state != nextUserId) {
@@ -110,7 +84,6 @@ final currentUserIdProvider = StateProvider<String>((ref) {
   return initialUser;
 });
 
-/// Holds the currently active user display name for greetings and UI.
 final currentUserNameProvider = Provider<String>((ref) {
   final supabase = ref.watch(supabaseClientProvider);
   final user = supabase.currentUser;

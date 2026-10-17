@@ -7,14 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../domain/motivation_quote.dart';
 
-/// Service responsible for loading, caching, and serving motivational quotes and greetings.
-///
-/// Features:
-/// - Loads quotes from `assets/quotes.json`
-/// - In-memory caching for zero-latency retrieval
-/// - Time-of-day greeting and category alignment
-/// - Anti-repetition algorithm tracking recently displayed quotes
-/// - Toggle user preferences for enabling or disabling motivation quotes
 class MotivationService {
   MotivationService({
     this.prefs,
@@ -34,11 +26,6 @@ class MotivationService {
   final List<String> _recentlyShownTexts = [];
   bool? _cachedEnabled;
 
-  /// Retrieves the time-of-day greeting.
-  ///
-  /// - Morning: 05:00 - 11:59 ("Good morning")
-  /// - Afternoon: 12:00 - 16:59 ("Good afternoon")
-  /// - Evening / Night: 17:00 - 04:59 ("Good evening")
   String getGreeting([DateTime? dateTime]) {
     final now = dateTime ?? DateTime.now();
     final hour = now.hour;
@@ -52,7 +39,6 @@ class MotivationService {
     }
   }
 
-  /// Determines the relevant quote category based on current time.
   String getTimeOfDayCategory([DateTime? dateTime]) {
     final now = dateTime ?? DateTime.now();
     final hour = now.hour;
@@ -66,7 +52,6 @@ class MotivationService {
     }
   }
 
-  /// Checks if motivational quotes are enabled by the user. Defaults to `true`.
   Future<bool> isMotivationEnabled() async {
     if (_cachedEnabled != null) return _cachedEnabled!;
     try {
@@ -78,7 +63,6 @@ class MotivationService {
     return _cachedEnabled!;
   }
 
-  /// Enables or disables motivational quotes according to user preference.
   Future<void> setMotivationEnabled(bool enabled) async {
     _cachedEnabled = enabled;
     try {
@@ -89,7 +73,6 @@ class MotivationService {
     }
   }
 
-  /// Loads all motivational quotes from `assets/quotes.json` and caches them locally.
   Future<List<MotivationQuote>> loadQuotes() async {
     if (_cachedQuotes != null && _cachedQuotes!.isNotEmpty) {
       return _cachedQuotes!;
@@ -126,9 +109,6 @@ class MotivationService {
     }
   }
 
-  /// Returns an appropriate quote based on the current time of day (morning, afternoon, evening).
-  ///
-  /// Returns `null` if the user has disabled motivational quotes or if no quotes are available.
   Future<MotivationQuote?> getQuoteForTimeOfDay([DateTime? dateTime]) async {
     final enabled = await isMotivationEnabled();
     if (!enabled) return null;
@@ -137,9 +117,6 @@ class MotivationService {
     return _pickQuoteWithAntiRepetition(preferredCategory: category);
   }
 
-  /// Returns a celebratory quote specifically for task or milestone completion.
-  ///
-  /// Returns `null` if motivation is disabled.
   Future<MotivationQuote?> getCompletionQuote() async {
     final enabled = await isMotivationEnabled();
     if (!enabled) return null;
@@ -147,7 +124,6 @@ class MotivationService {
     return _pickQuoteWithAntiRepetition(preferredCategory: 'completion');
   }
 
-  /// Returns a random quote for a given category (or across all categories).
   Future<MotivationQuote?> getRandomQuote({String? category}) async {
     final enabled = await isMotivationEnabled();
     if (!enabled) return null;
@@ -155,7 +131,6 @@ class MotivationService {
     return _pickQuoteWithAntiRepetition(preferredCategory: category);
   }
 
-  /// Core quote selection algorithm with anti-repetition filter.
   Future<MotivationQuote?> _pickQuoteWithAntiRepetition({
     String? preferredCategory,
   }) async {
@@ -164,38 +139,31 @@ class MotivationService {
 
     List<MotivationQuote> candidates = [];
 
-    // 1. Try to find candidates in preferred category
     if (preferredCategory != null && preferredCategory.isNotEmpty) {
       candidates = _quotesByCategory[preferredCategory.toLowerCase()] ?? [];
     }
 
-    // 2. If no candidates found, fallback to 'general'
     if (candidates.isEmpty) {
       candidates = _quotesByCategory['general'] ?? [];
     }
 
-    // 3. If still empty, use all quotes
     if (candidates.isEmpty) {
       candidates = allQuotes;
     }
 
-    // 4. Filter out recently shown quotes to prevent frequent repetition
     List<MotivationQuote> eligible = candidates
         .where((q) => !_recentlyShownTexts.contains(q.text))
         .toList();
 
-    // 5. If all candidates were recently shown, clear category entries from recent list
     if (eligible.isEmpty) {
       final candidateTexts = candidates.map((c) => c.text).toSet();
       _recentlyShownTexts.removeWhere((t) => candidateTexts.contains(t));
       eligible = candidates;
     }
 
-    // 6. Pick random candidate
     final selectedIndex = _random.nextInt(eligible.length);
     final selectedQuote = eligible[selectedIndex];
 
-    // 7. Track in recent history
     _recordShownQuote(selectedQuote.text);
 
     return selectedQuote;

@@ -25,8 +25,6 @@ import '../../tasks/providers/task_providers.dart';
 import '../providers/connected_accounts_provider.dart';
 import '../providers/settings_providers.dart';
 
-/// Application settings screen covering Appearance theming, Notifications & Active hours,
-/// Linux Desktop dynamic wallpaper dashboard, Supabase cloud sync & auth, and JSON Data backup.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -35,11 +33,9 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  // Linux Wallpaper State
   late final LinuxWallpaperService _wallpaperService;
   bool _isLinuxSupported = false;
 
-  // Supabase Auth & Config State
   final TextEditingController _supabaseUrlController = TextEditingController();
   final TextEditingController _supabaseKeyController = TextEditingController();
   final TextEditingController _authEmailController = TextEditingController();
@@ -59,10 +55,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _isPurgingData = false;
   bool _isDeletingAccount = false;
   bool _isManualSyncing = false;
-  int _authTabIndex = 0; // 0: Sign In, 1: Create Account
+  int _authTabIndex = 0;
   bool _showCredentialsConfig = false;
 
-  // Desktop HUD & Conky State
   bool _isConkyInstalled = false;
   bool _isConkyRunning = false;
   bool _isLaunchingHud = false;
@@ -188,7 +183,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  // --- Backup & Export ---
   Future<void> _exportBackup() async {
     final allTasks = ref.read(allTasksStreamProvider).valueOrNull ?? [];
     final allLabels = ref.read(allLabelsStreamProvider).valueOrNull ?? [];
@@ -389,11 +383,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
-          // Section 1: User Account & Authentication (Placed at the top)
           _buildAccountSection(context, theme, supabase, syncStatus),
           AppSpacing.vGapLg,
 
-          // Section 2: Appearance
           _buildSectionHeader('Appearance', Icons.palette_outlined),
           Card(
             elevation: 0,
@@ -447,7 +439,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           AppSpacing.vGapLg,
 
-          // Section 2: Notifications & Reminders
           _buildSectionHeader(
               'Notifications & Reminders', Icons.notifications_outlined),
           Card(
@@ -534,10 +525,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           AppSpacing.vGapLg,
 
-          // Section 3: Connected Creator & Social Accounts
           _buildConnectedAccountsSection(context),
 
-          // Section 4: Interactive Desktop HUD (Conky Mode)
           _buildSectionHeader(
             'Interactive Desktop HUD (Conky Mode)',
             Icons.dashboard_customize_outlined,
@@ -684,12 +673,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           AppSpacing.vGapLg,
 
-          // Section 4: Cloud Sync (Supabase)
           _buildSectionHeader('Cloud Sync & Storage', Icons.cloud_outlined),
           _buildSupabaseSection(theme, syncStatus, supabase),
           AppSpacing.vGapLg,
 
-          // Section 5: Data & Backup
           _buildSectionHeader('Data & Local Storage', Icons.storage_outlined),
           Card(
             elevation: 0,
@@ -1658,10 +1645,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  // ===========================================================================
-  // USER ACCOUNT & SUPABASE HELPERS
-  // ===========================================================================
-
   Widget _buildAccountSection(
     BuildContext context,
     ThemeData theme,
@@ -1728,7 +1711,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Row: Title & Status Badge
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1738,7 +1720,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                // Status Badge
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
@@ -1788,13 +1769,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             AppSpacing.vGapMd,
 
-            // If Supabase is not configured, show Quick Setup Tips & Credential Inputs
             if (!supabase.isConfigured) ...[
               _buildSupabaseSetupTips(theme),
               AppSpacing.vGapMd,
               _buildSupabaseCredentialsInputs(theme),
             ] else ...[
-              // Already configured: summary & toggle to edit credentials
               _buildConfiguredSummary(theme),
               if (_showCredentialsConfig) ...[
                 AppSpacing.vGapMd,
@@ -2042,7 +2021,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
         ] else ...[
-          // Clean SegmentedButton: ["Sign In", "Create Account"]
           SizedBox(
             width: double.infinity,
             child: SegmentedButton<int>(
@@ -2067,7 +2045,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           AppSpacing.vGapMd,
 
           if (_authTabIndex == 0) ...[
-            // SIGN IN TAB
             TextField(
               controller: _authEmailController,
               keyboardType: TextInputType.emailAddress,
@@ -2128,7 +2105,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ],
             ),
           ] else ...[
-            // CREATE ACCOUNT TAB
             TextField(
               controller: _authEmailController,
               keyboardType: TextInputType.emailAddress,
@@ -2244,7 +2220,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Top Profile Card
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -2257,7 +2232,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             children: [
               Row(
                 children: [
-                  // User Avatar with Auroral Jade gradient
                   Container(
                     width: 50,
                     height: 50,
@@ -2306,7 +2280,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            // "Cloud Synced" badge with Auroral Jade indicator
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
@@ -2411,7 +2384,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ],
               ),
               const SizedBox(height: 14),
-              // Action Buttons: Sync Now & Sign Out
               Row(
                 children: [
                   Expanded(
@@ -2446,7 +2418,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
         AppSpacing.vGapMd,
 
-        // User Data & Privacy Section
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -2538,8 +2509,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ],
     );
   }
-
-  // --- Supabase Actions ---
 
   Future<void> _testSupabaseConnection() async {
     final url = _supabaseUrlController.text.trim();
@@ -2881,7 +2850,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (!mounted) return;
 
     if (res.isSuccess) {
-      // Wipe local data for this user
       await ref.read(appDatabaseProvider).wipeUserData(userId);
       if (!mounted) return;
       ref.read(currentUserIdProvider.notifier).state = 'local-user';

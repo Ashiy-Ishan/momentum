@@ -8,11 +8,6 @@ import '../../../data/local/database.dart';
 import '../../../domain/models/models.dart';
 import '../../../shared/providers/database_provider.dart';
 
-// =============================================================================
-// Theme Mode Provider & Persistence
-// =============================================================================
-
-/// Manages and persists application theme mode (light, dark, system).
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   static const String _prefKey = 'momentum_theme_mode';
 
@@ -34,7 +29,6 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
         }
       }
     } catch (_) {
-      // Fallback to system default on preference read error
     }
   }
 
@@ -44,7 +38,6 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
     _persist(value);
   }
 
-  /// Sets and persists a new theme mode.
   Future<void> setThemeMode(ThemeMode mode) async {
     state = mode;
   }
@@ -54,22 +47,15 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_prefKey, mode.name);
     } catch (_) {
-      // Ignored
     }
   }
 }
 
-/// Active theme mode provider.
 final themeModeProvider =
     StateNotifierProvider<ThemeModeNotifier, ThemeMode>((ref) {
   return ThemeModeNotifier();
 });
 
-// =============================================================================
-// Notification Settings Provider & Persistence
-// =============================================================================
-
-/// Manages and persists reminder schedule and quiet hour preferences.
 class NotificationSettingsNotifier extends StateNotifier<NotificationSettings> {
   final Ref _ref;
   static const Uuid _uuid = Uuid();
@@ -126,7 +112,6 @@ class NotificationSettingsNotifier extends StateNotifier<NotificationSettings> {
     }
   }
 
-  /// Updates and persists the entire settings configuration.
   Future<void> updateSettings(NotificationSettings newSettings) async {
     if (_loadFuture != null) {
       await _loadFuture;
@@ -135,32 +120,26 @@ class NotificationSettingsNotifier extends StateNotifier<NotificationSettings> {
     await _saveToDatabase(state);
   }
 
-  /// Toggles hourly reminder notifications.
   Future<void> toggleHourlyReminders(bool enabled) async {
     await updateSettings(state.copyWith(hourlyRemindersEnabled: enabled));
   }
 
-  /// Toggles quiet hours filter.
   Future<void> toggleQuietHours(bool enabled) async {
     await updateSettings(state.copyWith(quietHoursEnabled: enabled));
   }
 
-  /// Toggles daily productivity end-of-day report.
   Future<void> toggleDailyReport(bool enabled) async {
     await updateSettings(state.copyWith(dailyReportEnabled: enabled));
   }
 
-  /// Toggles periodic motivational quotes.
   Future<void> toggleMotivation(bool enabled) async {
     await updateSettings(state.copyWith(motivationEnabled: enabled));
   }
 
-  /// Updates daily report trigger time (format HH:mm).
   Future<void> setDailyReportTime(String time) async {
     await updateSettings(state.copyWith(dailyReportTime: time));
   }
 
-  /// Updates active hours start and end (format HH:mm).
   Future<void> setActiveHours(String start, String end) async {
     await updateSettings(
       state.copyWith(
@@ -197,7 +176,6 @@ class NotificationSettingsNotifier extends StateNotifier<NotificationSettings> {
   }
 }
 
-/// Notification settings provider.
 final notificationSettingsProvider = StateNotifierProvider<
     NotificationSettingsNotifier, NotificationSettings>((ref) {
   return NotificationSettingsNotifier(ref);

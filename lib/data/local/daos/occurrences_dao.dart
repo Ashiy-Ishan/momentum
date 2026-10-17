@@ -14,7 +14,6 @@ class OccurrencesDao extends DatabaseAccessor<AppDatabase>
   DateTime _endOfDay(DateTime d) =>
       DateTime(d.year, d.month, d.day, 23, 59, 59, 999);
 
-  /// Retrieves occurrences for a user on a specific calendar day.
   Future<List<TaskOccurrence>> getOccurrencesForDate(
     String userId,
     DateTime date,
@@ -33,7 +32,6 @@ class OccurrencesDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
-  /// Retrieves occurrences within a specified date range.
   Future<List<TaskOccurrence>> getOccurrencesForDateRange(
     String userId,
     DateTime start,
@@ -51,19 +49,16 @@ class OccurrencesDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
-  /// Retrieves a single occurrence by ID.
   Future<TaskOccurrence?> getOccurrenceById(String id) {
     return (select(taskOccurrences)
           ..where((tbl) => tbl.id.equals(id) & tbl.isDeleted.equals(false)))
         .getSingleOrNull();
   }
 
-  /// Inserts a task occurrence.
   Future<void> insertOccurrence(TaskOccurrencesCompanion occ) async {
     await into(taskOccurrences).insert(occ);
   }
 
-  /// Updates occurrence status and optional completion timestamp.
   Future<void> updateOccurrenceStatus(
     String id,
     String status, {
@@ -80,12 +75,10 @@ class OccurrencesDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
-  /// Inserts a completion event.
   Future<void> insertCompletionEvent(CompletionEventsCompanion event) async {
     await into(completionEvents).insert(event);
   }
 
-  /// Retrieves all completion events for a specific task.
   Future<List<CompletionEvent>> getCompletionEventsForTask(String taskId) {
     return (select(completionEvents)
           ..where(
@@ -95,7 +88,6 @@ class OccurrencesDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
-  /// Counts completed occurrences in a date range.
   Future<int> countCompletedOccurrences(
     String userId,
     DateTime start,
@@ -116,7 +108,6 @@ class OccurrencesDao extends DatabaseAccessor<AppDatabase>
     return row?.read(countExpr) ?? 0;
   }
 
-  /// Counts all scheduled occurrences in a date range.
   Future<int> countScheduledOccurrences(
     String userId,
     DateTime start,
@@ -135,7 +126,6 @@ class OccurrencesDao extends DatabaseAccessor<AppDatabase>
     return row?.read(countExpr) ?? 0;
   }
 
-  /// Watches occurrences on a specific calendar day.
   Stream<List<TaskOccurrence>> watchOccurrencesForDate(
     String userId,
     DateTime date,

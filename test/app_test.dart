@@ -8,7 +8,6 @@ import 'package:momentum/shared/providers/database_provider.dart';
 
 void main() {
   testWidgets('MomentumApp launches and renders Dashboard', (tester) async {
-    // Provide an in-memory database for testing
     final testDb = AppDatabase.forTesting(NativeDatabase.memory());
 
     await tester.pumpWidget(
@@ -23,7 +22,6 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    // Verify Dashboard renders with core branding and sections
     expect(find.byType(MaterialApp), findsOneWidget);
 
     await testDb.close();

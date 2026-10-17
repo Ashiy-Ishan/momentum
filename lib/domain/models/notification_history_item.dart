@@ -1,14 +1,13 @@
 import 'package:equatable/equatable.dart';
 
-/// Represents an archived notification alert in the notification history.
 class NotificationHistoryItem extends Equatable {
   final String id;
   final String title;
   final String body;
-  final String type; // 'task_reminder', 'hourly_nudge', 'daily_report', 'streak_milestone', 'creator_cadence', 'system'
+  final String type;
   final DateTime createdAt;
   final bool isRead;
-  final String? payload; // e.g. '/tasks', '/today', '/analytics'
+  final String? payload;
   final String? taskId;
 
   const NotificationHistoryItem({

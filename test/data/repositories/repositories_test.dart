@@ -124,12 +124,10 @@ void main() {
       expect(tasks.first.title, equals('Review PR'));
       expect(tasks.first.status, equals(TaskStatus.pending));
 
-      // Complete occurrence
       await taskRepo.completeTaskOccurrence(testUserId, 'task-1', today, notes: 'Done well');
       final updatedTasks = await taskRepo.getTasksForDate(testUserId, today);
       expect(updatedTasks.first.status, equals(TaskStatus.done));
 
-      // Uncomplete occurrence
       await taskRepo.uncompleteTaskOccurrence(testUserId, 'task-1', today);
       final revertedTasks = await taskRepo.getTasksForDate(testUserId, today);
       expect(revertedTasks.first.status, equals(TaskStatus.pending));

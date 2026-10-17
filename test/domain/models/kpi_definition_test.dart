@@ -49,8 +49,8 @@ void main() {
       );
 
       expect(kpi.hasLongTermTarget, isTrue);
-      expect(kpi.shortTermProgress, 0.5); // 2.5 / 5.0
-      expect(kpi.longTermProgress, 0.05); // 2.5 / 50.0
+      expect(kpi.shortTermProgress, 0.5);
+      expect(kpi.longTermProgress, 0.05);
     });
 
     test('Progress clamps at 1.0 when exceeding target', () {
@@ -148,7 +148,6 @@ void main() {
       final kpis = DefaultKpis.getDefaults('user_123');
       expect(kpis.length, 11);
 
-      // YouTube: Weekly Video Generation
       final weeklyVideos = kpis.firstWhere((k) => k.name == 'Weekly Video Generation');
       expect(weeklyVideos.targetValue, 2.0);
       expect(weeklyVideos.unit, 'videos');
@@ -157,7 +156,6 @@ void main() {
       expect(weeklyVideos.platform, 'youtube');
       expect(weeklyVideos.period, KpiPeriod.weekly);
 
-      // YouTube: YouTube Shorts Velocity
       final shortsVelocity = kpis.firstWhere((k) => k.name == 'YouTube Shorts Velocity');
       expect(shortsVelocity.targetValue, 5.0);
       expect(shortsVelocity.unit, 'shorts');
@@ -165,7 +163,6 @@ void main() {
       expect(shortsVelocity.longTermTarget, 100.0);
       expect(shortsVelocity.platform, 'youtube');
 
-      // YouTube: Channel Subscribers
       final subs = kpis.firstWhere((k) => k.name == 'Channel Subscribers');
       expect(subs.currentValue, 0.0);
       expect(subs.targetValue, 2500.0);
@@ -175,7 +172,6 @@ void main() {
       expect(subs.period, KpiPeriod.monthly);
       expect(subs.platform, 'youtube');
 
-      // Instagram: Weekly Post Publication
       final posts = kpis.firstWhere((k) => k.name == 'Weekly Post Publication');
       expect(posts.targetValue, 7.0);
       expect(posts.unit, 'posts');
@@ -184,7 +180,6 @@ void main() {
       expect(posts.platform, 'instagram');
       expect(posts.period, KpiPeriod.weekly);
 
-      // Instagram: Audience & Followers
       final followers = kpis.firstWhere((k) => k.name == 'Audience & Followers');
       expect(followers.currentValue, 0.0);
       expect(followers.targetValue, 5000.0);
@@ -194,34 +189,29 @@ void main() {
       expect(followers.period, KpiPeriod.monthly);
       expect(followers.platform, 'instagram');
 
-      // GitHub: Weekly Commits & PRs
       final ghCommits = kpis.firstWhere((k) => k.name == 'Weekly Commits & PRs');
       expect(ghCommits.targetValue, 10.0);
       expect(ghCommits.unit, 'commits');
       expect(ghCommits.metricCategory, 'output');
       expect(ghCommits.platform, 'github');
 
-      // GitHub: GitHub Stars & Followers
       final ghStars = kpis.firstWhere((k) => k.name == 'GitHub Stars & Followers');
       expect(ghStars.currentValue, 0.0);
       expect(ghStars.targetValue, 500.0);
       expect(ghStars.unit, 'stars');
       expect(ghStars.platform, 'github');
 
-      // LinkedIn: Weekly LinkedIn Insights
       final linkedinPosts = kpis.firstWhere((k) => k.name == 'Weekly LinkedIn Insights');
       expect(linkedinPosts.targetValue, 3.0);
       expect(linkedinPosts.unit, 'posts');
       expect(linkedinPosts.platform, 'linkedin');
 
-      // LinkedIn: Professional Network
       final linkedinConn = kpis.firstWhere((k) => k.name == 'LinkedIn Connections');
       expect(linkedinConn.currentValue, 0.0);
       expect(linkedinConn.targetValue, 2500.0);
       expect(linkedinConn.unit, 'connections');
       expect(linkedinConn.platform, 'linkedin');
 
-      // Blog: Weekly Blog Publication
       final blogs = kpis.firstWhere((k) => k.name == 'Weekly Blog Publication');
       expect(blogs.targetValue, 1.0);
       expect(blogs.unit, 'articles');
@@ -230,7 +220,6 @@ void main() {
       expect(blogs.platform, 'blog');
       expect(blogs.period, KpiPeriod.weekly);
 
-      // Blog: Newsletter Readers
       final readers = kpis.firstWhere((k) => k.name == 'Newsletter Readers');
       expect(readers.currentValue, 0.0);
       expect(readers.targetValue, 1000.0);
@@ -310,13 +299,11 @@ void main() {
       final initial = await kpiRepo.getAllKpis(userId);
       final ytVideos = initial.firstWhere((k) => k.name == 'Weekly Video Generation');
 
-      // Update to new value
       await kpiRepo.updateCurrentValue(ytVideos.id, 1.0);
       var updated = await kpiRepo.getAllKpis(userId);
       var current = updated.firstWhere((k) => k.id == ytVideos.id);
       expect(current.currentValue, 1.0);
 
-      // Increment by delta
       await kpiRepo.incrementCurrentValue(ytVideos.id, 2.0);
       updated = await kpiRepo.getAllKpis(userId);
       current = updated.firstWhere((k) => k.id == ytVideos.id);

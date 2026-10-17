@@ -10,7 +10,6 @@ import '../../domain/models/models.dart';
 import '../../features/timer/providers/timer_providers.dart';
 import '../providers/database_provider.dart';
 
-/// Provider fetching the task currently associated with the active timer session.
 final activeTimerTaskProvider = FutureProvider<Task?>((ref) async {
   final session = ref.watch(activeTimerStreamProvider).valueOrNull;
   if (session == null) return null;
@@ -42,7 +41,6 @@ final activeTimerTaskProvider = FutureProvider<Task?>((ref) async {
   );
 });
 
-/// Formats a [Duration] into standard digital timer format (e.g. "00:24:15").
 String formatDurationTimer(Duration duration) {
   final d = duration.isNegative ? Duration.zero : duration;
   final hours = d.inHours.toString().padLeft(2, '0');
@@ -51,24 +49,13 @@ String formatDurationTimer(Duration duration) {
   return '$hours:$minutes:$seconds';
 }
 
-/// Floating or fixed banner showing the user's currently active timer session.
-///
-/// Displays:
-/// - Task title (or fallback indicator)
-/// - Live ticking elapsed time ("00:24:15")
-/// - Quick action buttons: Pause, Resume, Stop & Save
-/// - Animated pulsing indicator when running
 class ActiveTimerBanner extends ConsumerWidget {
-  /// Whether the banner should float over the layout with an elevated drop-shadow.
   final bool isFloating;
 
-  /// Optional custom callback when user taps on the banner.
   final VoidCallback? onTap;
 
-  /// Optional callback after timer is stopped.
   final VoidCallback? onStopped;
 
-  /// Optional padding around the banner.
   final EdgeInsetsGeometry? margin;
 
   const ActiveTimerBanner({
@@ -146,16 +133,10 @@ class ActiveTimerBanner extends ConsumerWidget {
           borderRadius: isFloating ? AppRadius.borderLg : AppRadius.borderNone,
           child: Row(
             children: [
-              // ---------------------------------------------------------------
-              // Status Indicator Dot / Icon
-              // ---------------------------------------------------------------
               _TimerStatusIndicator(isRunning: isRunning, isPaused: isPaused),
 
               AppSpacing.hGapSm,
 
-              // ---------------------------------------------------------------
-              // Task Title & State Description
-              // ---------------------------------------------------------------
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -191,9 +172,6 @@ class ActiveTimerBanner extends ConsumerWidget {
 
               AppSpacing.hGapSm,
 
-              // ---------------------------------------------------------------
-              // Live Timer Monospace Digits
-              // ---------------------------------------------------------------
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.sm,
@@ -221,9 +199,6 @@ class ActiveTimerBanner extends ConsumerWidget {
 
               AppSpacing.hGapSm,
 
-              // ---------------------------------------------------------------
-              // Controls: Pause / Resume / Stop
-              // ---------------------------------------------------------------
               if (isRunning)
                 IconButton(
                   icon: const Icon(Icons.pause_circle_filled_rounded),
@@ -265,7 +240,6 @@ class ActiveTimerBanner extends ConsumerWidget {
   }
 }
 
-/// Compact pill widget representation of the active timer for sidebars, rails, or headers.
 class ActiveTimerPill extends ConsumerWidget {
   final VoidCallback? onTap;
 

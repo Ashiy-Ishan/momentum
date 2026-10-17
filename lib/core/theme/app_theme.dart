@@ -5,22 +5,7 @@ import 'app_radius.dart';
 import 'app_spacing.dart';
 import 'app_typography.dart';
 
-/// Complete Material 3 themes for the Momentum application.
-///
-/// Palette Philosophy: "Solar Obsidian & Auroral Jade"
-/// - Editorial precision craft aesthetic (Linear, Raycast, Amie)
-/// - Primary: Solar Amber & Radiant Gold for sharp luminous focus
-/// - Secondary: Auroral Jade & Emerald for momentum, streaks, and completion
-/// - Tertiary: Electric Cyan for time tracking, deep focus, and metrics
-/// - Dark Mode: Deep space titanium obsidian (#080B11), elevated tactical surface (#0F1523),
-///   tactile card surface (#141C2E) with precision hairline borders rgba(255, 255, 255, 0.08),
-///   and elevated dialogs (#182238).
-/// - Light Mode: Architectural crisp ivory & slate (#F8FAFC, #FFFFFF, #F1F5F9)
-///   with deep graphite obsidian text (#0A0F1D) and warm solar amber accents.
 class AppTheme {
-  // ===========================================================================
-  // LIGHT THEME
-  // ===========================================================================
   static ThemeData lightTheme() {
     const colorScheme = ColorScheme(
       brightness: Brightness.light,
@@ -56,7 +41,6 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.backgroundLight,
       textTheme: AppTypography.lightTextTheme,
 
-      // 1. AppBar Theme
       appBarTheme: const AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 1.0,
@@ -73,7 +57,6 @@ class AppTheme {
         iconTheme: IconThemeData(color: AppColors.textPrimaryLight, size: 24),
       ),
 
-      // 2. Card Theme - Tactile hairline border via colorScheme.outlineVariant
       cardTheme: CardThemeData(
         elevation: 0,
         color: AppColors.cardLight,
@@ -86,7 +69,6 @@ class AppTheme {
         ),
       ),
 
-      // 3. Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceVariantLight,
@@ -129,7 +111,6 @@ class AppTheme {
         ),
       ),
 
-      // 4. Elevated Button Theme - Solar Amber with obsidian contrast
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
@@ -146,7 +127,6 @@ class AppTheme {
         ),
       ),
 
-      // 5. Outlined Button Theme
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           elevation: 0,
@@ -162,7 +142,6 @@ class AppTheme {
         ),
       ),
 
-      // 6. Text Button Theme
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primaryDark,
@@ -175,7 +154,6 @@ class AppTheme {
         ),
       ),
 
-      // 7. Chip Theme
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceVariantLight,
         selectedColor: AppColors.primaryContainerLight,
@@ -203,7 +181,6 @@ class AppTheme {
         pressElevation: 0,
       ),
 
-      // 8. Dialog Theme
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.dialogLight,
         surfaceTintColor: Colors.transparent,
@@ -220,7 +197,6 @@ class AppTheme {
         ),
       ),
 
-      // 9. Bottom Navigation Bar Theme
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.surfaceLight,
         selectedItemColor: AppColors.primaryDark,
@@ -237,7 +213,6 @@ class AppTheme {
         ),
       ),
 
-      // 10. Navigation Rail Theme
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: AppColors.surfaceLight,
         selectedIconTheme: const IconThemeData(
@@ -261,7 +236,6 @@ class AppTheme {
         indicatorColor: AppColors.primaryContainerLight,
       ),
 
-      // 11. Drawer Theme
       drawerTheme: const DrawerThemeData(
         backgroundColor: AppColors.surfaceLight,
         surfaceTintColor: Colors.transparent,
@@ -269,7 +243,6 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: AppRadius.rightLg),
       ),
 
-      // 12. SnackBar Theme
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.textPrimaryLight,
         contentTextStyle: AppTypography.bodyMedium.copyWith(
@@ -281,7 +254,6 @@ class AppTheme {
         elevation: 4.0,
       ),
 
-      // 13. Floating Action Button Theme - Solar Amber with obsidian contrast
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
@@ -292,7 +264,6 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
       ),
 
-      // 14. Switch Theme
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) return AppColors.primary;
@@ -310,7 +281,6 @@ class AppTheme {
         }),
       ),
 
-      // 15. Checkbox Theme - Auroral Jade accent
       checkboxTheme: CheckboxThemeData(
         shape: AppRadius.shapeXs,
         fillColor: WidgetStateProperty.resolveWith((states) {
@@ -321,14 +291,12 @@ class AppTheme {
         side: BorderSide(color: colorScheme.outlineVariant, width: 1.5),
       ),
 
-      // 16. Divider Theme
       dividerTheme: DividerThemeData(
         color: colorScheme.outlineVariant,
         thickness: 1.0,
         space: 1.0,
       ),
 
-      // 17. TabBar Theme
       tabBarTheme: TabBarThemeData(
         labelColor: AppColors.primaryDark,
         unselectedLabelColor: AppColors.textSecondaryLight,
@@ -339,7 +307,6 @@ class AppTheme {
         unselectedLabelStyle: AppTypography.labelLarge,
       ),
 
-      // 18. ListTile Theme
       listTileTheme: const ListTileThemeData(
         contentPadding: AppSpacing.listTilePadding,
         shape: AppRadius.shapeSm,
@@ -349,9 +316,6 @@ class AppTheme {
     );
   }
 
-  // ===========================================================================
-  // DARK THEME ("Solar Obsidian & Auroral Jade")
-  // ===========================================================================
   static ThemeData darkTheme() {
     const colorScheme = ColorScheme(
       brightness: Brightness.dark,
@@ -387,7 +351,6 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.backgroundDark,
       textTheme: AppTypography.darkTextTheme,
 
-      // 1. AppBar Theme - Deep space titanium obsidian surface
       appBarTheme: const AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 1.0,
@@ -404,7 +367,6 @@ class AppTheme {
         iconTheme: IconThemeData(color: AppColors.textPrimaryDark, size: 24),
       ),
 
-      // 2. Card Theme - Tactile card surface with hairline border rgba(255, 255, 255, 0.08)
       cardTheme: CardThemeData(
         elevation: 0,
         color: AppColors.cardDark,
@@ -417,7 +379,6 @@ class AppTheme {
         ),
       ),
 
-      // 3. Input Decoration Theme - Tactical dark surface with precision hairline border
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceDark,
@@ -457,7 +418,6 @@ class AppTheme {
         ),
       ),
 
-      // 4. Elevated Button Theme - Solar Gold with deep titanium obsidian text
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
@@ -474,7 +434,6 @@ class AppTheme {
         ),
       ),
 
-      // 5. Outlined Button Theme - Hairline tactical border
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           elevation: 0,
@@ -490,7 +449,6 @@ class AppTheme {
         ),
       ),
 
-      // 6. Text Button Theme
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primaryLight,
@@ -503,7 +461,6 @@ class AppTheme {
         ),
       ),
 
-      // 7. Chip Theme - Tactical surface with hairline border
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceDark,
         selectedColor: AppColors.primaryContainerDark,
@@ -531,7 +488,6 @@ class AppTheme {
         pressElevation: 0,
       ),
 
-      // 8. Dialog Theme - Elevated dialog surface (#182238)
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.dialogDark,
         surfaceTintColor: Colors.transparent,
@@ -548,7 +504,6 @@ class AppTheme {
         ),
       ),
 
-      // 9. Bottom Navigation Bar Theme - Elevated tactical surface
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.surfaceDark,
         selectedItemColor: AppColors.primary,
@@ -565,7 +520,6 @@ class AppTheme {
         ),
       ),
 
-      // 10. Navigation Rail Theme
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: AppColors.surfaceDark,
         selectedIconTheme: const IconThemeData(
@@ -589,7 +543,6 @@ class AppTheme {
         indicatorColor: AppColors.primaryContainerDark,
       ),
 
-      // 11. Drawer Theme - Elevated tactical surface
       drawerTheme: const DrawerThemeData(
         backgroundColor: AppColors.surfaceDark,
         surfaceTintColor: Colors.transparent,
@@ -597,7 +550,6 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: AppRadius.rightLg),
       ),
 
-      // 12. SnackBar Theme
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.surfaceElevatedDark,
         contentTextStyle: AppTypography.bodyMedium.copyWith(
@@ -609,7 +561,6 @@ class AppTheme {
         elevation: 6.0,
       ),
 
-      // 13. Floating Action Button Theme - Solar Gold with obsidian contrast
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
@@ -620,7 +571,6 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
       ),
 
-      // 14. Switch Theme
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
@@ -640,7 +590,6 @@ class AppTheme {
         }),
       ),
 
-      // 15. Checkbox Theme - Auroral Jade accent
       checkboxTheme: CheckboxThemeData(
         shape: AppRadius.shapeXs,
         fillColor: WidgetStateProperty.resolveWith((states) {
@@ -653,14 +602,12 @@ class AppTheme {
         side: BorderSide(color: colorScheme.outlineVariant, width: 1.5),
       ),
 
-      // 16. Divider Theme
       dividerTheme: DividerThemeData(
         color: colorScheme.outlineVariant,
         thickness: 1.0,
         space: 1.0,
       ),
 
-      // 17. TabBar Theme
       tabBarTheme: TabBarThemeData(
         labelColor: AppColors.primary,
         unselectedLabelColor: AppColors.textSecondaryDark,
@@ -671,7 +618,6 @@ class AppTheme {
         unselectedLabelStyle: AppTypography.labelLarge,
       ),
 
-      // 18. ListTile Theme
       listTileTheme: const ListTileThemeData(
         contentPadding: AppSpacing.listTilePadding,
         shape: AppRadius.shapeSm,

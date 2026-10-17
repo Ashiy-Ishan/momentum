@@ -15,9 +15,6 @@ import '../../tasks/providers/task_providers.dart';
 import '../../tasks/widgets/task_card.dart';
 import '../providers/label_providers.dart';
 
-/// Detailed dashboard screen for an individual child sub-label (e.g., Channel 1,
-/// Instagram, Programming Project), featuring KPI targets, progress gauges,
-/// target creation, specific tasks, and completion history.
 class SubLabelDashboardScreen extends ConsumerStatefulWidget {
   final String labelId;
 
@@ -446,7 +443,6 @@ class _SubLabelDashboardScreenState
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Breadcrumb: Parent -> Sub-label
             if (parentLabel != null)
               InkWell(
                 onTap: () =>
@@ -487,7 +483,6 @@ class _SubLabelDashboardScreenState
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
-          // Sub-Label Header Banner
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -533,7 +528,6 @@ class _SubLabelDashboardScreenState
                     ],
                   ),
                 ),
-                // Stats badge
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -557,7 +551,6 @@ class _SubLabelDashboardScreenState
 
           AppSpacing.vGapLg,
 
-          // KPI Targets Section
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -576,7 +569,6 @@ class _SubLabelDashboardScreenState
           ),
           AppSpacing.vGapSm,
 
-          // KPI Cards
           kpisAsync.when(
             data: (kpiSummaries) {
               if (kpiSummaries.isEmpty) {
@@ -649,7 +641,6 @@ class _SubLabelDashboardScreenState
 
           AppSpacing.vGapLg,
 
-          // Sub-Label Tasks Section
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

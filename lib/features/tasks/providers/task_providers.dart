@@ -5,14 +5,8 @@ import '../../../domain/enums/enums.dart';
 import '../../../domain/models/models.dart';
 import '../../../shared/providers/database_provider.dart';
 
-// =============================================================================
-// Selected Date & Filters
-// =============================================================================
-
-/// Currently selected calendar date in task view.
 final selectedDateProvider = StateProvider<DateTime>((ref) => DateTime.now());
 
-/// Filter criteria for querying and displaying tasks.
 class TaskFilter {
   final TaskStatus? status;
   final String? labelId;
@@ -52,21 +46,14 @@ class TaskFilter {
   TaskFilter clear() => const TaskFilter();
 }
 
-/// Active task filter state provider.
 final taskFilterProvider = StateProvider<TaskFilter>((ref) => const TaskFilter());
 
-// =============================================================================
-// Task Streams
-// =============================================================================
-
-/// Watches active tasks scheduled or occurring today.
 final todayTasksStreamProvider = StreamProvider<List<Task>>((ref) {
   final userId = ref.watch(currentUserIdProvider);
   final repo = ref.watch(taskRepositoryProvider);
   return repo.watchTasksForDate(userId, DateTime.now());
 });
 
-/// Watches tasks scheduled or occurring on [selectedDateProvider].
 final tasksForSelectedDateProvider = StreamProvider<List<Task>>((ref) {
   final userId = ref.watch(currentUserIdProvider);
   final date = ref.watch(selectedDateProvider);
@@ -74,14 +61,12 @@ final tasksForSelectedDateProvider = StreamProvider<List<Task>>((ref) {
   return repo.watchTasksForDate(userId, date);
 });
 
-/// Watches all active non-archived, non-deleted tasks for the current user.
 final allTasksStreamProvider = StreamProvider<List<Task>>((ref) {
   final userId = ref.watch(currentUserIdProvider);
   final repo = ref.watch(taskRepositoryProvider);
   return repo.watchAllActiveTasks(userId);
 });
 
-/// Computes filtered tasks list based on [tasksForSelectedDateProvider] and [taskFilterProvider].
 final filteredTasksProvider = Provider<AsyncValue<List<Task>>>((ref) {
   final tasksAsync = ref.watch(tasksForSelectedDateProvider);
   final filter = ref.watch(taskFilterProvider);
@@ -113,11 +98,6 @@ final filteredTasksProvider = Provider<AsyncValue<List<Task>>>((ref) {
   });
 });
 
-// =============================================================================
-// Task Controller
-// =============================================================================
-
-/// Controller managing task mutations and completion state transitions.
 class TaskController extends StateNotifier<AsyncValue<void>> {
   final Ref _ref;
 
@@ -126,7 +106,6 @@ class TaskController extends StateNotifier<AsyncValue<void>> {
   String get _userId => _ref.read(currentUserIdProvider);
   TaskRepository get _repo => _ref.read(taskRepositoryProvider);
 
-  /// Creates a new task and optional recurrence rule.
   Future<void> createTask(Task task, {RecurrenceRule? recurrence}) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -134,7 +113,6 @@ class TaskController extends StateNotifier<AsyncValue<void>> {
     });
   }
 
-  /// Updates an existing task.
   Future<void> updateTask(Task task) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -142,7 +120,6 @@ class TaskController extends StateNotifier<AsyncValue<void>> {
     });
   }
 
-  /// Deletes a task by ID.
   Future<void> deleteTask(String id) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -150,7 +127,6 @@ class TaskController extends StateNotifier<AsyncValue<void>> {
     });
   }
 
-  /// Archives or unarchives a task.
   Future<void> archiveTask(String id, bool archive) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -158,7 +134,6 @@ class TaskController extends StateNotifier<AsyncValue<void>> {
     });
   }
 
-  /// Updates status for a task directly.
   Future<void> setTaskStatus(String id, TaskStatus status) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -166,7 +141,6 @@ class TaskController extends StateNotifier<AsyncValue<void>> {
     });
   }
 
-  /// Marks a specific occurrence on [occurrenceDate] as completed.
   Future<void> completeTaskOccurrence(
     String taskId,
     DateTime occurrenceDate, {
@@ -183,7 +157,6 @@ class TaskController extends StateNotifier<AsyncValue<void>> {
     });
   }
 
-  /// Reverts completion of a task occurrence on [occurrenceDate].
   Future<void> uncompleteTaskOccurrence(
     String taskId,
     DateTime occurrenceDate,
@@ -198,7 +171,6 @@ class TaskController extends StateNotifier<AsyncValue<void>> {
     });
   }
 
-  /// Toggles completion status for [task] on [occurrenceDate].
   Future<void> toggleTaskCompletion(
     Task task,
     DateTime occurrenceDate, {
@@ -212,7 +184,6 @@ class TaskController extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-/// Task controller provider.
 final taskControllerProvider =
     StateNotifierProvider<TaskController, AsyncValue<void>>((ref) {
   return TaskController(ref);

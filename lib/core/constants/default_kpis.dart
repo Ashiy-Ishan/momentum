@@ -2,18 +2,13 @@ import '../../domain/enums/enums.dart';
 import '../../domain/models/kpi_definition.dart';
 import '../../domain/models/label.dart';
 
-/// Pre-seeded creator KPI definitions for platforms (YouTube, Instagram/Social Media, Blog).
 abstract class DefaultKpis {
-  /// Generates the standard platform and output KPI definitions for a user.
-  ///
-  /// Optionally associates KPIs with matching domain [labels] if available.
   static List<KpiDefinition> getDefaults(
     String userId, {
     List<Label> labels = const [],
   }) {
     final now = DateTime.now();
 
-    // Resolve matching label IDs if available in the labels list
     String? findLabelId(bool Function(Label l) predicate) {
       try {
         return labels.firstWhere(predicate).id;
@@ -66,9 +61,6 @@ abstract class DefaultKpis {
     );
 
     return [
-      // -----------------------------------------------------------------------
-      // 1. YouTube: Weekly Video Generation
-      // -----------------------------------------------------------------------
       KpiDefinition(
         id: 'kpi_${userId}_youtube_weekly_videos',
         userId: userId,
@@ -88,9 +80,6 @@ abstract class DefaultKpis {
         updatedAt: now,
       ),
 
-      // -----------------------------------------------------------------------
-      // 2. YouTube: YouTube Shorts Velocity
-      // -----------------------------------------------------------------------
       KpiDefinition(
         id: 'kpi_${userId}_youtube_shorts_velocity',
         userId: userId,
@@ -110,9 +99,6 @@ abstract class DefaultKpis {
         updatedAt: now,
       ),
 
-      // -----------------------------------------------------------------------
-      // 3. YouTube: Channel Subscribers
-      // -----------------------------------------------------------------------
       KpiDefinition(
         id: 'kpi_${userId}_youtube_subscribers',
         userId: userId,
@@ -132,9 +118,6 @@ abstract class DefaultKpis {
         updatedAt: now,
       ),
 
-      // -----------------------------------------------------------------------
-      // 4. Social Media / Instagram: Weekly Post Publication
-      // -----------------------------------------------------------------------
       KpiDefinition(
         id: 'kpi_${userId}_instagram_weekly_posts',
         userId: userId,
@@ -154,9 +137,6 @@ abstract class DefaultKpis {
         updatedAt: now,
       ),
 
-      // -----------------------------------------------------------------------
-      // 5. Social Media / Instagram: Audience & Followers
-      // -----------------------------------------------------------------------
       KpiDefinition(
         id: 'kpi_${userId}_instagram_followers',
         userId: userId,
@@ -176,9 +156,6 @@ abstract class DefaultKpis {
         updatedAt: now,
       ),
 
-      // -----------------------------------------------------------------------
-      // 6. Blog / Technical Writing: Weekly Blog Publication
-      // -----------------------------------------------------------------------
       KpiDefinition(
         id: 'kpi_${userId}_blog_weekly_publication',
         userId: userId,
@@ -198,9 +175,6 @@ abstract class DefaultKpis {
         updatedAt: now,
       ),
 
-      // -----------------------------------------------------------------------
-      // 7. Blog: Newsletter Readers
-      // -----------------------------------------------------------------------
       KpiDefinition(
         id: 'kpi_${userId}_blog_newsletter_readers',
         userId: userId,
@@ -220,9 +194,6 @@ abstract class DefaultKpis {
         updatedAt: now,
       ),
 
-      // -----------------------------------------------------------------------
-      // 8. GitHub: Weekly Code Commits & PRs
-      // -----------------------------------------------------------------------
       KpiDefinition(
         id: 'kpi_${userId}_github_weekly_commits',
         userId: userId,
@@ -242,9 +213,6 @@ abstract class DefaultKpis {
         updatedAt: now,
       ),
 
-      // -----------------------------------------------------------------------
-      // 9. GitHub: Stars & Followers
-      // -----------------------------------------------------------------------
       KpiDefinition(
         id: 'kpi_${userId}_github_followers',
         userId: userId,
@@ -264,9 +232,6 @@ abstract class DefaultKpis {
         updatedAt: now,
       ),
 
-      // -----------------------------------------------------------------------
-      // 10. LinkedIn: Weekly Insights
-      // -----------------------------------------------------------------------
       KpiDefinition(
         id: 'kpi_${userId}_linkedin_weekly_posts',
         userId: userId,
@@ -286,9 +251,6 @@ abstract class DefaultKpis {
         updatedAt: now,
       ),
 
-      // -----------------------------------------------------------------------
-      // 11. LinkedIn: Professional Network Connections
-      // -----------------------------------------------------------------------
       KpiDefinition(
         id: 'kpi_${userId}_linkedin_connections',
         userId: userId,

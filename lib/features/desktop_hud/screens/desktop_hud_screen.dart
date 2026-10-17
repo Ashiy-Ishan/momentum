@@ -23,12 +23,6 @@ enum HudPosition {
   fullOverlay,
 }
 
-/// Interactive Desktop HUD screen inspired by Conky.
-///
-/// Overlays on top of the user's wallpaper with a translucent glassmorphic
-/// backdrop, live digital clock, daily momentum streak, real-time KPI stats,
-/// and an interactive task list allowing users to check off, toggle, and add
-/// tasks in real time across Linux, macOS, Windows, and Web.
 class DesktopHudScreen extends ConsumerStatefulWidget {
   final bool isStandalone;
   const DesktopHudScreen({super.key, this.isStandalone = false});
@@ -109,7 +103,6 @@ class _DesktopHudScreenState extends ConsumerState<DesktopHudScreen> {
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // 1. Semi-translucent interactive background layer (only in preview/in-app mode)
           if (!widget.isStandalone)
             GestureDetector(
               onTap: () {
@@ -122,7 +115,6 @@ class _DesktopHudScreenState extends ConsumerState<DesktopHudScreen> {
               ),
             ),
 
-          // 2. HUD Positioning Box
           Align(
             alignment: widget.isStandalone
                 ? Alignment.topCenter
@@ -164,11 +156,9 @@ class _DesktopHudScreenState extends ConsumerState<DesktopHudScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // HUD Header: Title & Window Controls
                         _buildHudHeader(context),
                         const Divider(height: 1, color: Colors.white24),
 
-                        // Scrollable HUD Body
                         Flexible(
                           child: SingleChildScrollView(
                             padding: const EdgeInsets.symmetric(
@@ -178,33 +168,27 @@ class _DesktopHudScreenState extends ConsumerState<DesktopHudScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Clock & Date Display (Conky Signature)
                                 _buildClockDateSection(),
                                 AppSpacing.vGapMd,
 
-                                // Daily Progress & Streak Stats
                                 _buildMomentumStreakSection(stats),
                                 AppSpacing.vGapMd,
 
-                                // Interactive Today's Tasks
                                 _buildInteractiveTasksSection(
                                   todayTasksAsync,
                                   theme,
                                 ),
                                 AppSpacing.vGapMd,
 
-                                // Creator Platform KPIs
                                 _buildKpiSection(kpisAsync),
                                 AppSpacing.vGapMd,
 
-                                // Motivational Quote Citation
                                 _buildQuoteSection(quoteAsync),
                               ],
                             ),
                           ),
                         ),
 
-                        // HUD Bottom Bar: Opacity & Position Controls
                         const Divider(height: 1, color: Colors.white24),
                         _buildHudFooterControls(),
                       ],

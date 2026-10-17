@@ -274,7 +274,6 @@ void main() {
       expect(find.text('Page Not Found'), findsOneWidget);
       expect(find.text('Return to Dashboard'), findsOneWidget);
 
-      // Tap Return to Dashboard
       await tester.tap(find.text('Return to Dashboard'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -295,43 +294,36 @@ void main() {
       await pumpApp(tester);
       expect(find.byType(DashboardScreen), findsOneWidget);
 
-      // Navigate to Today's Tasks
       await tester.tap(find.widgetWithText(ListTile, "Today's Tasks"));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(TodayTasksScreen), findsOneWidget);
 
-      // Navigate to All Tasks
       await tester.tap(find.widgetWithText(ListTile, 'All Tasks'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(AllTasksScreen), findsOneWidget);
 
-      // Navigate to Labels & Projects
       await tester.tap(find.widgetWithText(ListTile, 'Labels & Projects'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(LabelsScreen), findsOneWidget);
 
-      // Navigate to Analytics & KPIs
       await tester.tap(find.widgetWithText(ListTile, 'Analytics & KPIs'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(AnalyticsScreen), findsOneWidget);
 
-      // Navigate to Calendar & History
       await tester.tap(find.widgetWithText(ListTile, 'Calendar & History'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(CalendarScreen), findsOneWidget);
 
-      // Navigate to Settings
       await tester.tap(find.widgetWithText(ListTile, 'Settings'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(SettingsScreen), findsOneWidget);
 
-      // Navigate back to Dashboard
       await tester.tap(find.widgetWithText(ListTile, 'Dashboard'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -346,7 +338,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(AuthGateScreen), findsOneWidget);
-      expect(find.text('SIGN IN'), findsNothing); // Text is 'Sign In'
+      expect(find.text('SIGN IN'), findsNothing);
       expect(find.text('Sign In'), findsWidgets);
       expect(find.text('Create Account'), findsOneWidget);
     });
@@ -419,7 +411,6 @@ void main() {
       expect(find.text('Display Name (Optional)'), findsNothing);
       expect(find.widgetWithText(FilledButton, 'Sign In'), findsOneWidget);
 
-      // Switch to Create Account
       await tester.tap(find.text('Create Account'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));

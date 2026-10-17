@@ -6,9 +6,7 @@ import 'app_icons.dart';
 
 export '../../domain/models/label.dart';
 
-/// Extension providing theme and visual convenience methods on the domain [Label].
 extension LabelVisualsExtension on Label {
-  /// Converts the hex color string (e.g. #EF4444) to a Flutter [Color].
   Color get colorAsColor {
     final cleanHex = color.replaceAll('#', '').trim();
     if (cleanHex.length == 6) {
@@ -21,20 +19,15 @@ extension LabelVisualsExtension on Label {
     return AppColors.primary;
   }
 
-  /// Resolves the corresponding Material [IconData] via [AppIcons].
   IconData get iconData => AppIcons.fromName(iconName);
 
-  /// Whether this label is a sub-label under a parent category.
   bool get isSubLabel => parentId != null && parentId!.isNotEmpty;
 }
 
-/// Pre-seeded default labels and hierarchical sub-labels for Momentum users.
 abstract class DefaultLabels {
-  /// Generate the complete initial set of default labels for a given user.
   static List<Label> getDefaults(String userId) {
     final now = DateTime.now();
 
-    // Deterministic parent IDs
     final youtubeId = 'label_${userId}_youtube';
     final socialId = 'label_${userId}_social_media';
     final learningId = 'label_${userId}_learning';
@@ -42,9 +35,6 @@ abstract class DefaultLabels {
     final personalId = 'label_${userId}_personal';
 
     return [
-      // -----------------------------------------------------------------------
-      // 1. YouTube (with Channel 1, 2, 3 sub-labels)
-      // -----------------------------------------------------------------------
       Label(
         id: youtubeId,
         userId: userId,
@@ -90,9 +80,6 @@ abstract class DefaultLabels {
         updatedAt: now,
       ),
 
-      // -----------------------------------------------------------------------
-      // 2. Social Media (Instagram, X, Facebook, TikTok, Other)
-      // -----------------------------------------------------------------------
       Label(
         id: socialId,
         userId: userId,
@@ -160,9 +147,6 @@ abstract class DefaultLabels {
         updatedAt: now,
       ),
 
-      // -----------------------------------------------------------------------
-      // 3. Learning (Programming, Linux, University, German, English)
-      // -----------------------------------------------------------------------
       Label(
         id: learningId,
         userId: userId,
@@ -230,9 +214,6 @@ abstract class DefaultLabels {
         updatedAt: now,
       ),
 
-      // -----------------------------------------------------------------------
-      // 4. Career (Internship, CV, Interview, Portfolio)
-      // -----------------------------------------------------------------------
       Label(
         id: careerId,
         userId: userId,
@@ -289,9 +270,6 @@ abstract class DefaultLabels {
         updatedAt: now,
       ),
 
-      // -----------------------------------------------------------------------
-      // 5. Personal (Daily Routine, Reading, Room Cleaning, Projects)
-      // -----------------------------------------------------------------------
       Label(
         id: personalId,
         userId: userId,
@@ -350,12 +328,10 @@ abstract class DefaultLabels {
     ];
   }
 
-  /// Returns only root parent labels.
   static List<Label> getParentDefaults(String userId) {
     return getDefaults(userId).where((l) => l.parentId == null).toList();
   }
 
-  /// Returns sub-labels for a specific parent label.
   static List<Label> getSubLabelsFor(String userId, String parentId) {
     return getDefaults(userId).where((l) => l.parentId == parentId).toList();
   }

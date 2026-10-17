@@ -1,16 +1,15 @@
 import 'package:equatable/equatable.dart';
 
-/// Represents a user's connected social or developer account (GitHub, LinkedIn, YouTube, etc.).
 class ConnectedAccount extends Equatable {
-  final String platform; // 'github', 'linkedin', 'youtube', 'instagram', 'twitter', 'blog'
-  final String handle; // e.g. '@alexdev', 'alex-coder'
-  final String profileUrl; // e.g. 'https://github.com/alexdev'
+  final String platform;
+  final String handle;
+  final String profileUrl;
   final String? displayName;
   final String? avatarUrl;
-  final String? authToken; // Optional API token (e.g. GitHub Personal Access Token)
-  final double? metricCount; // e.g. followers, subscribers, connections
-  final String? metricUnit; // e.g. 'followers', 'subs', 'connections'
-  final Map<String, dynamic>? additionalStats; // e.g. {'public_repos': 42, 'stars': 120, 'members': 15}
+  final String? authToken;
+  final double? metricCount;
+  final String? metricUnit;
+  final Map<String, dynamic>? additionalStats;
   final bool isConnected;
   final bool isSyncing;
   final String? syncError;
@@ -32,7 +31,6 @@ class ConnectedAccount extends Equatable {
     this.lastUpdatedAt,
   });
 
-  /// Human-readable brand name of the platform.
   String get platformDisplayName {
     switch (platform.toLowerCase()) {
       case 'github':
@@ -53,19 +51,14 @@ class ConnectedAccount extends Equatable {
     }
   }
 
-  /// Whether an API token / PAT is configured.
   bool get hasAuthToken => authToken != null && authToken!.trim().isNotEmpty;
 
-  /// Public repositories count (for GitHub or developer accounts).
   int? get publicRepos => additionalStats?['public_repos'] as int?;
 
-  /// Total stars received across repositories.
   int? get totalStars => additionalStats?['stars'] as int?;
 
-  /// Organization members or team contributors count.
   int? get membersCount => additionalStats?['members'] as int?;
 
-  /// Following count.
   int? get followingCount => additionalStats?['following'] as int?;
 
   ConnectedAccount copyWith({

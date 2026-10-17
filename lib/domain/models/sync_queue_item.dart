@@ -2,7 +2,6 @@ import 'package:equatable/equatable.dart';
 
 import '../enums/enums.dart';
 
-/// Represents a change operation queued for background synchronization.
 class SyncQueueItem with Equatable {
   final String id;
   final String tableName;

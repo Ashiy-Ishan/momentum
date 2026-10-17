@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/theme.dart';
 
-/// Modal dialog allowing the user to select a color from a preset palette.
 class ColorPickerDialog extends StatefulWidget {
   final String? selectedColorHex;
 
@@ -11,7 +10,6 @@ class ColorPickerDialog extends StatefulWidget {
     this.selectedColorHex,
   });
 
-  /// Displays the color picker and returns hex string (e.g. "#4F46E5") or null.
   static Future<String?> show(
     BuildContext context, {
     String? selectedColorHex,
@@ -28,22 +26,22 @@ class ColorPickerDialog extends StatefulWidget {
 
 class _ColorPickerDialogState extends State<ColorPickerDialog> {
   static const List<String> _presetHexColors = [
-    '#C4A480', // Warm Platinum Bronze
-    '#A87C5C', // Warm Sepia
-    '#C28D4E', // Refined Warm Ochre
-    '#4E9B78', // Soft Muted Sage
-    '#5D8568', // Muted Moss
-    '#5B82A6', // Subtle Steel Blue
-    '#6889A4', // Slate Steel
-    '#5E7A96', // Dusky Slate Blue
-    '#A06B82', // Muted Mauve
-    '#BD5B5B', // Muted Rosewood
-    '#B85454', // Soft Crimson
-    '#7E7B92', // Dusky Plum
-    '#788D98', // Cool Graphite Slate
-    '#94A3B8', // Architectural Platinum
-    '#64748B', // Muted Slate
-    '#1E293B', // Deep Titanium Slate
+    '#C4A480',
+    '#A87C5C',
+    '#C28D4E',
+    '#4E9B78',
+    '#5D8568',
+    '#5B82A6',
+    '#6889A4',
+    '#5E7A96',
+    '#A06B82',
+    '#BD5B5B',
+    '#B85454',
+    '#7E7B92',
+    '#788D98',
+    '#94A3B8',
+    '#64748B',
+    '#1E293B',
   ];
 
   late String _selectedHex;

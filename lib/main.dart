@@ -15,39 +15,32 @@ void main([List<String> args = const []]) async {
 
   final isHudMode = args.contains('--hud') || args.contains('--desktop-hud');
 
-  // 1. Initialize SharedPreferences for persistent settings
   await SharedPreferences.getInstance();
 
-  // 2. Initialize Local Notifications safely (graceful fallback on desktop)
   try {
     await NotificationService.instance.initialize();
   } catch (e) {
     debugPrint('NotificationService init notice: $e');
   }
 
-  // 3. Initialize Supabase client if configured
   try {
     await MomentumSupabaseClient.instance.initialize();
   } catch (e) {
     debugPrint('SupabaseClient init notice: $e');
   }
 
-  // 4. Run application with configured Riverpod ProviderScope
   final container = ProviderContainer();
 
-  // 5. Sync currentUserIdProvider with Supabase auth status on boot
   final currentUser = MomentumSupabaseClient.instance.currentUser;
   if (currentUser != null) {
     container.read(currentUserIdProvider.notifier).state = currentUser.id;
   }
 
-  // 6. Eagerly boot SyncEngine to establish network listeners, auth stream, and sync
   try {
     container.read(syncEngineProvider);
   } catch (e) {
     debugPrint('SyncEngine boot init notice: $e');
   }
-
 
   runApp(
     UncontrolledProviderScope(
@@ -57,7 +50,6 @@ void main([List<String> args = const []]) async {
   );
 }
 
-/// Standalone desktop overlay application for HUD (Conky mode)
 class DesktopHudStandaloneApp extends StatelessWidget {
   const DesktopHudStandaloneApp({super.key});
 

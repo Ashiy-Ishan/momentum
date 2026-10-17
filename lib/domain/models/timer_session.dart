@@ -2,7 +2,6 @@ import 'package:equatable/equatable.dart';
 
 import '../enums/enums.dart';
 
-/// Tracks a time-tracking session for a task or occurrence.
 class TimerSession with Equatable {
   final String id;
   final String userId;
@@ -34,10 +33,8 @@ class TimerSession with Equatable {
     this.isDeleted = false,
   });
 
-  /// The static recorded elapsed duration.
   Duration get elapsed => Duration(seconds: elapsedSeconds);
 
-  /// Dynamically calculated elapsed duration accounting for active running state.
   Duration get currentElapsed {
     if (status == TimerSessionStatus.running) {
       final runningDuration = DateTime.now().difference(startedAt);

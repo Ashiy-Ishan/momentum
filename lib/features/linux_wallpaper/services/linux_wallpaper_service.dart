@@ -29,7 +29,6 @@ class LinuxWallpaperService {
     await prefs.setBool(_prefEnabled, enabled);
 
     if (enabled) {
-      // Record original wallpaper before first change
       final currentOriginal = prefs.getString(_prefOriginalWallpaper);
       if (currentOriginal == null || currentOriginal.isEmpty) {
         final existing = await DesktopAdapter.getCurrentWallpaper(_env);
@@ -53,7 +52,6 @@ class LinuxWallpaperService {
     await prefs.setBool(_prefAutoUpdate, enabled);
   }
 
-  /// Debounced trigger for task/KPI changes
   void notifyDataChanged(WallpaperData data) {
     if (!isSupported) return;
     _debounceTimer?.cancel();
@@ -66,7 +64,6 @@ class LinuxWallpaperService {
     });
   }
 
-  /// Manually generate and apply wallpaper
   Future<bool> updateWallpaper(WallpaperData data) async {
     if (!isSupported) return false;
 
@@ -79,7 +76,6 @@ class LinuxWallpaperService {
     }
   }
 
-  /// Restore user's previous original wallpaper
   Future<bool> restoreOriginalWallpaper() async {
     if (!isSupported) return false;
     final prefs = await SharedPreferences.getInstance();

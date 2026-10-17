@@ -2,18 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 
-/// Typography system for the Momentum productivity application.
-///
-/// Implements Material 3 typography standards with crisp font weights,
-/// balanced line heights, and refined letter spacing.
-///
-/// Designed to provide maximum legibility across mobile, tablet, and desktop screens,
-/// with specialized styles for timer readouts, task cards, and dashboard metrics.
 abstract class AppTypography {
-  // ---------------------------------------------------------------------------
-  // Font Family Configuration
-  // Uses clean system font stack with standard sans-serif fallback
-  // ---------------------------------------------------------------------------
   static const String? fontFamily = null;
   static const List<String> fontFamilyFallback = [
     'Inter',
@@ -28,9 +17,6 @@ abstract class AppTypography {
 
   static const String monoFontFamily = 'monospace';
 
-  // ---------------------------------------------------------------------------
-  // Display Styles (Hero numbers, large promotional or welcome headers)
-  // ---------------------------------------------------------------------------
   static const TextStyle displayLarge = TextStyle(
     fontFamily: fontFamily,
     fontFamilyFallback: fontFamilyFallback,
@@ -58,9 +44,6 @@ abstract class AppTypography {
     height: 1.22,
   );
 
-  // ---------------------------------------------------------------------------
-  // Headline Styles (Section headers, screen headers)
-  // ---------------------------------------------------------------------------
   static const TextStyle headlineLarge = TextStyle(
     fontFamily: fontFamily,
     fontFamilyFallback: fontFamilyFallback,
@@ -88,9 +71,6 @@ abstract class AppTypography {
     height: 1.33,
   );
 
-  // ---------------------------------------------------------------------------
-  // Title Styles (Card titles, dialog headings, list group headers)
-  // ---------------------------------------------------------------------------
   static const TextStyle titleLarge = TextStyle(
     fontFamily: fontFamily,
     fontFamilyFallback: fontFamilyFallback,
@@ -118,9 +98,6 @@ abstract class AppTypography {
     height: 1.43,
   );
 
-  // ---------------------------------------------------------------------------
-  // Body Styles (Long text, descriptions, general task content)
-  // ---------------------------------------------------------------------------
   static const TextStyle bodyLarge = TextStyle(
     fontFamily: fontFamily,
     fontFamilyFallback: fontFamilyFallback,
@@ -148,9 +125,6 @@ abstract class AppTypography {
     height: 1.33,
   );
 
-  // ---------------------------------------------------------------------------
-  // Label Styles (Buttons, chips, tags, meta text, input labels)
-  // ---------------------------------------------------------------------------
   static const TextStyle labelLarge = TextStyle(
     fontFamily: fontFamily,
     fontFamilyFallback: fontFamilyFallback,
@@ -178,10 +152,6 @@ abstract class AppTypography {
     height: 1.45,
   );
 
-  // ---------------------------------------------------------------------------
-  // Specialized Momentum Styles (Timers, Metrics, Monospace)
-  // ---------------------------------------------------------------------------
-  /// Large countdown / stopwatch timer display (e.g. "25:00")
   static const TextStyle timerLarge = TextStyle(
     fontFamily: monoFontFamily,
     fontSize: 48,
@@ -190,7 +160,6 @@ abstract class AppTypography {
     height: 1.1,
   );
 
-  /// Medium timer readout for compact headers and floating bars
   static const TextStyle timerMedium = TextStyle(
     fontFamily: monoFontFamily,
     fontSize: 28,
@@ -199,7 +168,6 @@ abstract class AppTypography {
     height: 1.2,
   );
 
-  /// Dashboard metric numbers (e.g. "94%", "18 Tasks")
   static const TextStyle statNumber = TextStyle(
     fontFamily: fontFamily,
     fontFamilyFallback: fontFamilyFallback,
@@ -209,7 +177,6 @@ abstract class AppTypography {
     height: 1.2,
   );
 
-  /// Monospace font style for code blocks, durations, logs, and keyboard shortcuts
   static const TextStyle mono = TextStyle(
     fontFamily: monoFontFamily,
     fontSize: 13,
@@ -218,11 +185,6 @@ abstract class AppTypography {
     height: 1.4,
   );
 
-  // ---------------------------------------------------------------------------
-  // Material 3 TextTheme Builders
-  // ---------------------------------------------------------------------------
-
-  /// TextTheme populated for light backgrounds
   static TextTheme get lightTextTheme => TextTheme(
     displayLarge: displayLarge.copyWith(color: AppColors.textPrimaryLight),
     displayMedium: displayMedium.copyWith(color: AppColors.textPrimaryLight),
@@ -241,7 +203,6 @@ abstract class AppTypography {
     labelSmall: labelSmall.copyWith(color: AppColors.textTertiaryLight),
   );
 
-  /// TextTheme populated for dark backgrounds
   static TextTheme get darkTextTheme => TextTheme(
     displayLarge: displayLarge.copyWith(color: AppColors.textPrimaryDark),
     displayMedium: displayMedium.copyWith(color: AppColors.textPrimaryDark),

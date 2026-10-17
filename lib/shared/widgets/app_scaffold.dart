@@ -18,7 +18,6 @@ import '../../features/notifications/providers/notification_history_provider.dar
 import '../../features/settings/providers/settings_providers.dart';
 import 'active_timer_banner.dart';
 
-/// Navigation item descriptor for Momentum app navigation.
 class MomentumNavItem {
   final String label;
   final String route;
@@ -35,7 +34,6 @@ class MomentumNavItem {
   });
 }
 
-/// The 7 official navigation routes for Momentum.
 const List<MomentumNavItem> kMomentumNavItems = [
   MomentumNavItem(
     label: 'Dashboard',
@@ -88,54 +86,29 @@ const List<MomentumNavItem> kMomentumNavItems = [
   ),
 ];
 
-/// Primary responsive application layout for Momentum.
-///
-/// Responsive Breakpoints:
-/// - Desktop (screenWidth >= 1024):
-///   - Left Navigation Sidebar with Logo & Title
-///   - 7 Navigation Items with active indicators
-///   - Bottom Section with Active Timer Pill, Theme Mode Toggle, and Sync Status
-/// - Mobile / Tablet (screenWidth < 1024):
-///   - Top AppBar with Title, Search, and Quick Add Task actions
-///   - Bottom Navigation Bar with 5 primary items (Dashboard, Today, Tasks, Analytics, Settings)
-///   - Drawer with complete navigation list (including Labels and Calendar) + footer actions
-///   - Floating Action Button to quickly add tasks
 class AppScaffold extends ConsumerStatefulWidget {
-  /// The main screen body content.
   final Widget body;
 
-  /// Optional AppBar title string. Defaults to current screen name or 'Momentum'.
   final String? title;
 
-  /// Optional custom title widget.
   final Widget? titleWidget;
 
-  /// Custom quick action widgets in mobile AppBar or desktop header.
   final List<Widget>? actions;
 
-  /// Explicit current path route (e.g. '/today'). If omitted, automatically
-  /// resolved from [GoRouter].
   final String? currentPath;
 
-  /// Custom navigation handler. If omitted, uses [GoRouter.go].
   final ValueChanged<String>? onNavigate;
 
-  /// Callback when user taps the Add Task quick button.
   final VoidCallback? onAddTask;
 
-  /// Callback when user taps the Search quick button.
   final VoidCallback? onSearch;
 
-  /// Whether to display the Floating Action Button on mobile. Defaults to true.
   final bool showFab;
 
-  /// Custom override for Floating Action Button.
   final Widget? floatingActionButton;
 
-  /// Bottom sheet widget.
   final Widget? bottomSheet;
 
-  /// Whether to embed the active timer banner at the bottom of the body.
   final bool showActiveTimerBanner;
 
   const AppScaffold({
@@ -173,7 +146,6 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
   }
 
   void _handleNavigate(BuildContext context, String path) {
-    // If mobile drawer is open, close it
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
       Navigator.of(context).pop();
     }
@@ -210,9 +182,6 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
     return _buildMobileLayout(context, currentPath);
   }
 
-  // ===========================================================================
-  // DESKTOP LAYOUT (screenWidth >= 1024)
-  // ===========================================================================
   Widget _buildDesktopLayout(BuildContext context, String currentPath) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -222,9 +191,6 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // -------------------------------------------------------------------
-          // Left Navigation Sidebar
-          // -------------------------------------------------------------------
           Container(
             width: 260,
             decoration: BoxDecoration(
@@ -238,12 +204,10 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
             ),
             child: Column(
               children: [
-                // 1. App Header: Logo & Title
                 _buildSidebarHeader(isDark),
 
                 const Divider(height: 1),
 
-                // 2. Navigation Items List
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.symmetric(
@@ -263,31 +227,24 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
 
                 const Divider(height: 1),
 
-                // 3. Bottom Section: Active Timer Pill, Theme Toggle, Sync Status
                 _buildSidebarFooter(context, isDark),
               ],
             ),
           ),
 
-          // -------------------------------------------------------------------
-          // Main Body Area
-          // -------------------------------------------------------------------
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Desktop Header Bar (Search, Actions, Title)
                 _buildDesktopTopBar(context, currentPath, isDark),
 
                 const Divider(height: 1),
 
-                // Body Content with optional inline active timer banner
                 Expanded(
                   child: Stack(
                     children: [
                       widget.body,
 
-                      // Floating active timer banner if enabled
                       if (widget.showActiveTimerBanner)
                         const Positioned(
                           left: 0,
@@ -439,20 +396,16 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Active Timer Pill (shows when any timer session is active)
           ActiveTimerPill(
             onTap: () => _handleNavigate(context, '/tasks'),
           ),
 
           AppSpacing.vGapSm,
 
-          // Theme Toggle & Sync Status Row
           const Row(
             children: [
-              // Sync Status Indicator Button
               Expanded(child: _SyncStatusIndicator()),
 
-              // Theme Mode Toggle Button
               _ThemeModeToggleButton(),
             ],
           ),
@@ -474,7 +427,6 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
       color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
       child: Row(
         children: [
-          // Page Title
           if (widget.titleWidget != null)
             widget.titleWidget!
           else
@@ -487,7 +439,6 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
 
           const Spacer(),
 
-          // Search button
           if (widget.onSearch != null) ...[
             IconButton.outlined(
               icon: const Icon(Icons.search_rounded, size: 20),
@@ -497,11 +448,9 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
             AppSpacing.hGapSm,
           ],
 
-          // Notification Bell Button
           const _NotificationBellButton(),
           AppSpacing.hGapSm,
 
-          // Quick Add Task Button
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(
@@ -523,9 +472,6 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
     );
   }
 
-  // ===========================================================================
-  // MOBILE / TABLET LAYOUT (screenWidth < 1024)
-  // ===========================================================================
   Widget _buildMobileLayout(BuildContext context, String currentPath) {
     final titleText = widget.title ?? _resolveDefaultTitle(currentPath);
     final theme = Theme.of(context);
@@ -569,12 +515,10 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
         ],
       ),
 
-      // Drawer for full navigation items & settings
       drawer: _buildMobileDrawer(context, currentPath, isDark),
 
       body: Column(
         children: [
-          // Inline active timer banner when active
           if (widget.showActiveTimerBanner)
             ActiveTimerBanner(
               onTap: () => _handleNavigate(context, '/tasks'),
@@ -584,7 +528,6 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
         ],
       ),
 
-      // Bottom Navigation Bar
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
@@ -643,7 +586,6 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
         ),
       ),
 
-      // Floating Action Button
       floatingActionButton: widget.floatingActionButton ??
           (widget.showFab
               ? FloatingActionButton(
@@ -667,12 +609,10 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
       child: SafeArea(
         child: Column(
           children: [
-            // Header
             _buildSidebarHeader(isDark),
 
             const Divider(height: 1),
 
-            // All 7 Navigation Items
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(
@@ -699,7 +639,6 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
 
             const Divider(height: 1),
 
-            // Footer
             _buildSidebarFooter(context, isDark),
           ],
         ),
@@ -707,9 +646,6 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
     );
   }
 
-  // ===========================================================================
-  // ROUTE HELPERS
-  // ===========================================================================
   bool _isRouteSelected(String itemRoute, String currentPath) {
     if (itemRoute == '/') {
       return currentPath == '/' || currentPath.isEmpty;
@@ -738,10 +674,6 @@ class _AppScaffoldState extends ConsumerState<AppScaffold> {
     return AppConstants.appName;
   }
 }
-
-// =============================================================================
-// SIDEBAR NAV ITEM TILE
-// =============================================================================
 
 class _SidebarNavItemTile extends StatelessWidget {
   final MomentumNavItem item;
@@ -798,10 +730,6 @@ class _SidebarNavItemTile extends StatelessWidget {
     );
   }
 }
-
-// =============================================================================
-// SYNC STATUS INDICATOR
-// =============================================================================
 
 class _SyncStatusIndicator extends ConsumerWidget {
   const _SyncStatusIndicator();
@@ -885,10 +813,6 @@ class _SyncStatusIndicator extends ConsumerWidget {
     );
   }
 }
-
-// =============================================================================
-// THEME MODE TOGGLE BUTTON
-// =============================================================================
 
 class _ThemeModeToggleButton extends ConsumerWidget {
   const _ThemeModeToggleButton();

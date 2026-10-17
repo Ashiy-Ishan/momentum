@@ -23,7 +23,7 @@ void main() {
     syncEngine = SyncEngine(
       db: db,
       supabase: MomentumSupabaseClient.instance,
-      conflictResolver: ConflictResolver(),
+      conflictResolver: const ConflictResolver(),
     );
     taskRepo = TaskRepositoryImpl(
       database: db,

@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 
-/// Records the completion of a task or task occurrence.
 class CompletionEvent with Equatable {
   final String id;
   final String userId;

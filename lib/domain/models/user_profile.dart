@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 
-/// Represents a user's local profile and preferences.
 class UserProfile with Equatable {
   final String id;
   final String? email;

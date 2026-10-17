@@ -75,7 +75,6 @@ void main() {
       await tester.pumpWidget(buildTestApp());
       await tester.pumpAndSettle();
 
-      // Scroll down to the Supabase section in ListView
       final sectionTitleFinder = find.text('Supabase Cloud Database');
       await tester.scrollUntilVisible(
         sectionTitleFinder,
@@ -86,13 +85,11 @@ void main() {
 
       expect(sectionTitleFinder, findsOneWidget);
 
-      // Verify URL controller pre-populated
       final urlFieldFinder = find.byWidgetPredicate((w) =>
           w is TextField &&
           w.controller?.text == 'https://saved-project.supabase.co');
       expect(urlFieldFinder, findsOneWidget);
 
-      // Verify Test Connection and Save Credentials buttons exist
       expect(find.text('Test Connection'), findsOneWidget);
       expect(find.text('Save Credentials'), findsOneWidget);
     });
@@ -130,7 +127,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Scroll to SegmentedButton
       final segmentedButtonFinder = find.byType(SegmentedButton<int>);
       await tester.scrollUntilVisible(
         segmentedButtonFinder,
@@ -143,11 +139,9 @@ void main() {
       expect(find.text('Sign In'), findsWidgets);
       expect(find.text('Create Account'), findsWidgets);
 
-      // Initially on Sign In tab: shows Sign In button & Forgot Password
       expect(find.text('Forgot Password?'), findsOneWidget);
       expect(find.text('Confirm Password'), findsNothing);
 
-      // Switch to Create Account tab
       final createAccountTab = find.descendant(
         of: segmentedButtonFinder,
         matching: find.text('Create Account'),
@@ -155,7 +149,6 @@ void main() {
       await tester.tap(createAccountTab);
       await tester.pumpAndSettle();
 
-      // Should now show Create Account fields
       expect(find.text('Confirm Password'), findsOneWidget);
       expect(find.text('Full Name / Display Name (Optional)'), findsOneWidget);
       expect(find.text('Minimum 6 characters'), findsOneWidget);
@@ -163,9 +156,7 @@ void main() {
 
     testWidgets('database wipeUserData method clears user rows and queue',
         (tester) async {
-      // Test the AppDatabase.wipeUserData method directly
       await inMemoryDb.wipeUserData('test-user-to-wipe');
-      // Succeeds without exception
       expect(true, isTrue);
     });
 

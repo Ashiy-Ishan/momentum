@@ -21,7 +21,6 @@ import '../features/tasks/screens/task_form_screen.dart';
 import '../features/tasks/screens/today_tasks_screen.dart';
 import '../shared/widgets/app_scaffold.dart';
 
-/// Stream listener helper that notifies [GoRouter] when auth state changes.
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();
@@ -37,7 +36,6 @@ class GoRouterRefreshStream extends ChangeNotifier {
   }
 }
 
-/// Provider controlling whether the authentication gate redirects unauthenticated users to `/auth`.
 final authGateEnabledProvider = StateProvider<bool>((ref) => true);
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -147,7 +145,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 defaultScheduledDate = extra;
               }
 
-              // Fallback to query parameters if extra was not provided
               parentLabelId ??= state.uri.queryParameters['parentLabelId'] ??
                   state.uri.queryParameters['defaultParentLabelId'];
               subLabelId ??= state.uri.queryParameters['subLabelId'] ??
@@ -264,7 +261,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
-/// User-friendly, Material 3 404 Page Not Found view wrapped inside [AppScaffold].
 class NotFoundScreen extends StatelessWidget {
   final String path;
 

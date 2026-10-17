@@ -5,18 +5,6 @@ import '../../core/theme/app_radius.dart';
 import '../../domain/enums/enums.dart';
 import '../../domain/models/models.dart';
 
-/// Next-Generation Dual-Horizon KPI Card for Creator & Platform Output.
-///
-/// Distinctive Features (Non-AI Aesthetics):
-/// - Authentic Platform Identity badge (YouTube, Instagram, X/Twitter, Blog, LinkedIn).
-/// - Metric Category tag: Video Generation, Post Publication, Blog Publication, Audience Growth.
-/// - Dual-Horizon Progress:
-///   1. Short-Term Cadence: Weekly / Monthly target run-rate (e.g., 2/3 videos this week).
-///   2. Long-Term Milestone: Milestone tracker (e.g., 1,420 / 10,000 subscribers • 14.2%).
-/// - Tactile Interactive Controls:
-///   - "+1 Log" instant action button.
-///   - "Update Count" numeric dialog for subscribers / followers.
-/// - Status pill ("Cadence Met", "Ahead of Pace", "On Track", "Needs Focus").
 class KpiCard extends StatelessWidget {
   final KpiDefinition kpi;
   final double? currentValue;
@@ -52,7 +40,6 @@ class KpiCard extends StatelessWidget {
         shortTarget > 0 ? ((effectiveCurrent / shortTarget) * 100).round() : 0;
     final isShortTargetReached = shortTarget > 0 && effectiveCurrent >= shortTarget;
 
-    // Long term milestone
     final hasLongTerm = kpi.hasLongTermTarget;
     final longTarget = kpi.longTermTarget ?? 0.0;
     final longProgress = (hasLongTerm && longTarget > 0)
@@ -93,9 +80,6 @@ class KpiCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ---------------------------------------------------------------
-              // Header: Platform Badge + Metric Category + Menu
-              // ---------------------------------------------------------------
               Row(
                 children: [
                   if (kpi.platform != 'general') ...[
@@ -202,9 +186,6 @@ class KpiCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // ---------------------------------------------------------------
-              // KPI Name & Description
-              // ---------------------------------------------------------------
               Text(
                 kpi.name,
                 style: theme.textTheme.titleMedium?.copyWith(
@@ -227,9 +208,6 @@ class KpiCard extends StatelessWidget {
               ],
               const SizedBox(height: 14),
 
-              // ---------------------------------------------------------------
-              // HORIZON 1: Short-Term Cadence Run-Rate
-              // ---------------------------------------------------------------
               Row(
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
@@ -291,7 +269,6 @@ class KpiCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
 
-              // Short-term segmented progress bar
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
@@ -306,9 +283,6 @@ class KpiCard extends StatelessWidget {
                 ),
               ),
 
-              // ---------------------------------------------------------------
-              // HORIZON 2: Long-Term Milestone Track (Subscribers / Catalog)
-              // ---------------------------------------------------------------
               if (hasLongTerm) ...[
                 const SizedBox(height: 14),
                 Container(
@@ -385,9 +359,6 @@ class KpiCard extends StatelessWidget {
                 ),
               ],
 
-              // ---------------------------------------------------------------
-              // Quick Actions: "+1 Quick Log" & "Update Count"
-              // ---------------------------------------------------------------
               if (onIncrement != null || onUpdateValue != null) ...[
                 const SizedBox(height: 14),
                 const Divider(height: 1),
@@ -525,10 +496,6 @@ class KpiCard extends StatelessWidget {
     }
   }
 }
-
-// =============================================================================
-// SUB-WIDGETS: PLATFORM BADGE & CATEGORY TAGS
-// =============================================================================
 
 class _PlatformBadge extends StatelessWidget {
   final String platform;

@@ -7,42 +7,32 @@ import '../local/daos/timer_dao.dart';
 import '../local/database.dart' as db;
 import '../sync/sync_engine.dart';
 
-/// Contract for task time-tracking operations and session logging.
 abstract class TimerRepository {
-  /// Retrieves the active (running or paused) session for [userId], if any.
   Future<domain.TimerSession?> getActiveSession(String userId);
 
-  /// Starts a new time-tracking session for [taskId], stopping any active session first.
   Future<domain.TimerSession> startSession(
     String userId,
     String taskId, {
     String? occurrenceId,
   });
 
-  /// Pauses an ongoing session by [sessionId].
   Future<void> pauseSession(String sessionId);
 
-  /// Resumes a paused session by [sessionId].
   Future<void> resumeSession(String sessionId);
 
-  /// Stops and finalizes a session by [sessionId].
   Future<void> stopSession(String sessionId);
 
-  /// Returns total tracked duration in seconds for a specific [taskId].
   Future<int> getTotalTimeForTask(String taskId);
 
-  /// Returns total tracked duration in seconds for tasks under [labelId] between [start] and [end].
   Future<int> getTotalTimeForLabel(
     String labelId,
     DateTime start,
     DateTime end,
   );
 
-  /// Watches the active timer session for [userId].
   Stream<domain.TimerSession?> watchActiveSession(String userId);
 }
 
-/// Drift-backed implementation of [TimerRepository].
 class TimerRepositoryImpl implements TimerRepository {
   final db.AppDatabase database;
   final TimerDao timerDao;
@@ -67,7 +57,6 @@ class TimerRepositoryImpl implements TimerRepository {
     String taskId, {
     String? occurrenceId,
   }) async {
-    // If there is an active session, stop it first
     final active = await timerDao.getActiveSession(userId);
     if (active != null) {
       await stopSession(active.id);

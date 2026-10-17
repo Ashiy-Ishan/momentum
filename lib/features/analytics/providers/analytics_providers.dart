@@ -7,11 +7,6 @@ import '../../../shared/providers/database_provider.dart';
 import '../../labels/providers/label_providers.dart';
 import '../../tasks/providers/task_providers.dart';
 
-// =============================================================================
-// Dashboard Stats
-// =============================================================================
-
-/// Summary statistics for user's daily dashboard.
 class DashboardStats {
   final int scheduledTasks;
   final int completedTasks;
@@ -44,7 +39,6 @@ class DashboardStats {
   }
 }
 
-/// Provides daily dashboard metrics and calculates consecutive consistency streak.
 final dashboardStatsProvider = Provider<AsyncValue<DashboardStats>>((ref) {
   final todayTasksAsync = ref.watch(todayTasksStreamProvider);
   final streakAsync = ref.watch(streakDaysProvider);
@@ -66,14 +60,12 @@ final dashboardStatsProvider = Provider<AsyncValue<DashboardStats>>((ref) {
   });
 });
 
-/// Future provider calculating multi-day consecutive completion streak.
 final streakDaysProvider = FutureProvider<int>((ref) async {
   final userId = ref.watch(currentUserIdProvider);
   final database = ref.watch(appDatabaseProvider);
   final now = DateTime.now();
   final today = DateTime(now.year, now.month, now.day);
 
-  // Look back up to 365 days
   final lookbackStart = today.subtract(const Duration(days: 365));
 
   final completedOccurrences = await (database.select(database.taskOccurrences)
@@ -92,7 +84,6 @@ final streakDaysProvider = FutureProvider<int>((ref) async {
     daysWithCompletion.add('${d.year}-${d.month}-${d.day}');
   }
 
-  // Check today
   final todayKey = '${today.year}-${today.month}-${today.day}';
   var checkDate = today;
   var streak = 0;
@@ -101,7 +92,6 @@ final streakDaysProvider = FutureProvider<int>((ref) async {
     streak++;
     checkDate = checkDate.subtract(const Duration(days: 1));
   } else {
-    // If today is not completed yet, streak might still be intact from yesterday
     checkDate = checkDate.subtract(const Duration(days: 1));
   }
 
@@ -118,11 +108,6 @@ final streakDaysProvider = FutureProvider<int>((ref) async {
   return streak;
 });
 
-// =============================================================================
-// KPI Summaries
-// =============================================================================
-
-/// Summary of a single KPI definition and its current evaluated progress.
 class LabelKpiSummary {
   final KpiDefinition kpi;
   final double currentValue;
@@ -139,7 +124,6 @@ class LabelKpiSummary {
   });
 }
 
-/// Watches KPI definitions for [labelId] and evaluates each against task/time records.
 final labelKpisProvider =
     StreamProvider.family<List<LabelKpiSummary>, String>((ref, labelId) {
   final kpiRepo = ref.watch(kpiRepositoryProvider);
@@ -182,7 +166,7 @@ final labelKpisProvider =
             periodStart,
             now,
           );
-          currentValue = totalSeconds / 60.0; // In minutes
+          currentValue = totalSeconds / 60.0;
         } else if (kpi.kpiType == KpiType.count) {
           final tasks = await taskRepo.getTasksByLabel(labelId);
           final completed =
@@ -217,18 +201,12 @@ final labelKpisProvider =
   });
 });
 
-/// Watches all KPI definitions across all labels and platforms for the user.
 final allKpisStreamProvider = StreamProvider<List<KpiDefinition>>((ref) {
   final userId = ref.watch(currentUserIdProvider);
   final kpiRepo = ref.watch(kpiRepositoryProvider);
   return kpiRepo.watchAllKpis(userId);
 });
 
-// =============================================================================
-// Total / Aggregate KPI Metrics
-// =============================================================================
-
-/// Represents a single categorized metric item in the aggregate overview.
 class AggregateMetricItem {
   final String id;
   final String platform;
@@ -261,13 +239,11 @@ class AggregateMetricItem {
           : 0.0;
 }
 
-/// Comprehensive total KPI and creator cadence metrics aggregated across platforms.
 class TotalKpiMetrics {
   final int totalKpisCount;
   final int achievedCount;
-  final double overallCompletionRate; // 0.0 to 1.0
+  final double overallCompletionRate;
 
-  // Weekly & Short-Term Output Totals
   final double totalVideosCurrent;
   final double totalVideosTarget;
   final double? totalVideosLongTerm;
@@ -288,7 +264,6 @@ class TotalKpiMetrics {
   final double totalCommitsTarget;
   final double? totalCommitsLongTerm;
 
-  // Combined Audience / Subscriber / Community Reach (Long-Term vs Short-Term)
   final double totalAudienceCurrent;
   final double totalAudienceShortTermTarget;
   final double totalAudienceLongTermTarget;
@@ -324,18 +299,15 @@ class TotalKpiMetrics {
     this.allMetrics = const [],
   });
 
-  /// Short-term audience progress (clamped 0..1).
   double get audienceShortTermProgress => totalAudienceShortTermTarget > 0
       ? (totalAudienceCurrent / totalAudienceShortTermTarget).clamp(0.0, 1.0)
       : 0.0;
 
-  /// Long-term audience milestone progress (clamped 0..1).
   double get audienceLongTermProgress => totalAudienceLongTermTarget > 0
       ? (totalAudienceCurrent / totalAudienceLongTermTarget).clamp(0.0, 1.0)
       : 0.0;
 }
 
-/// Computes comprehensive aggregate KPI output and audience reach across all platforms.
 final totalKpiMetricsProvider = Provider<AsyncValue<TotalKpiMetrics>>((ref) {
   final allKpisAsync = ref.watch(allKpisStreamProvider);
   final allTasks = ref.watch(allTasksStreamProvider).valueOrNull ?? [];
@@ -506,12 +478,6 @@ final totalKpiMetricsProvider = Provider<AsyncValue<TotalKpiMetrics>>((ref) {
   });
 });
 
-
-// =============================================================================
-// Parent & Sub-Label Consolidated Metrics
-// =============================================================================
-
-/// Individual metrics for a sub-label.
 class ChildLabelMetrics {
   final Label label;
   final int totalTasks;
@@ -528,7 +494,6 @@ class ChildLabelMetrics {
   });
 }
 
-/// Consolidated metrics grouping a parent category and all its children.
 class ConsolidatedLabelMetrics {
   final Label parentLabel;
   final int totalTasks;
@@ -547,7 +512,6 @@ class ConsolidatedLabelMetrics {
   });
 }
 
-/// Computes consolidated metrics combining parent category and all child labels.
 final parentLabelSummaryProvider =
     FutureProvider.family<ConsolidatedLabelMetrics?, String>(
   (ref, parentLabelId) async {
@@ -569,7 +533,6 @@ final parentLabelSummaryProvider =
     final now = DateTime.now();
     final monthStart = DateTime(now.year, now.month, 1);
 
-    // Parent direct tasks & time
     final parentTasks = await taskRepo.getTasksByLabel(parent.id);
     final parentCompleted =
         parentTasks.where((t) => t.status == TaskStatus.done).length;
